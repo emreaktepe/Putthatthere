@@ -1,0 +1,164 @@
+[
+  {
+    "id": "metro-safety-strip-01",
+    "category": "transit",
+    "difficulty": 1,
+    "title_tr": "İstanbul Metrosu Peronu",
+    "title_en": "Istanbul Metro Platform",
+    "background": "assets/scenes/metro-platform.svg",
+    "missingObject": {
+      "id": "safety-strip",
+      "art": "assets/objects/safety-strip.svg",
+      "startPosition": { "x": 700, "y": 550 },
+      "defaultRotationDeg": 0
+    },
+    "target": {
+      "shape": "rect",
+      "x": 120, "y": 420, "width": 560, "height": 18,
+      "rotationDeg": 0,
+      "toleranceRadius": 36,
+      "toleranceRotationDeg": 10
+    },
+    "explanation_tr": "Dokunsal uyarı şeridi, yolcuların ani tren gelişinde güvenli mesafede durabilmesi için peron kenarından geride, kenar boyunca kesintisiz döşenir.",
+    "explanation_en": "The tactile warning strip runs continuously along the platform, set back a safety distance from the edge so waiting passengers keep a safe distance from an arriving train.",
+    "sourceNotes": "General transit accessibility / tactile paving convention: rail platform edge warning strips are set back roughly 500-700 mm from the edge, wider than the ~300 mm used for generic hazard warnings. Axis-aligned placement, no rotation required.",
+    "hints_tr": [
+      "Şerit, peron kenarının tam üzerinde değil, birazcık geride durmalı.",
+      "Şerit, tüm bekleme alanı boyunca kesintisiz uzanmalı."
+    ],
+    "hints_en": [
+      "The strip sits set back from the very edge, not right on top of it.",
+      "It should run continuously along the whole waiting area, not just one spot."
+    ]
+  },
+  {
+    "id": "crosswalk-stop-line-01",
+    "category": "traffic",
+    "difficulty": 4,
+    "title_tr": "Cadde Yaya Geçidi",
+    "title_en": "Street Crosswalk",
+    "background": "assets/scenes/street-crosswalk.svg",
+    "missingObject": {
+      "id": "stop-line",
+      "art": "assets/objects/stop-line.svg",
+      "startPosition": { "x": 680, "y": 520 },
+      "defaultRotationDeg": 0
+    },
+    "target": {
+      "shape": "rect",
+      "x": 330, "y": 250, "width": 140, "height": 16,
+      "rotationDeg": 90,
+      "toleranceRadius": 18,
+      "toleranceRotationDeg": 6
+    },
+    "explanation_tr": "Dur çizgisi, yaya geçidinin hemen üstüne değil, geçitten belirli bir mesafe önce ve şeride dik olarak çizilir, böylece duran araç geçidi ve yayaların görüşünü kapatmaz.",
+    "explanation_en": "The stop line is painted perpendicular to the lane, set back a short distance before the crosswalk rather than on top of it, so a stopped vehicle does not block the crossing or sightlines to pedestrians.",
+    "sourceNotes": "General MUTCD-style traffic engineering convention: stop line set back at least ~4 ft (1.2 m) before the nearest crosswalk edge. Requires rotation because the line must run perpendicular to the direction of travel, not parallel to it.",
+    "hints_tr": [
+      "Çizgi, yaya geçidinin üzerine değil, öncesine gelmeli.",
+      "Çizgiyi şeride dik olacak şekilde döndürmen gerekiyor."
+    ],
+    "hints_en": [
+      "The line goes before the crosswalk, not on top of it.",
+      "Rotate the line so it sits perpendicular to the lane."
+    ]
+  },
+  {
+    "id": "hallway-fire-extinguisher-01",
+    "category": "fire-safety",
+    "difficulty": 5,
+    "title_tr": "Bina Koridoru",
+    "title_en": "Building Hallway",
+    "background": "assets/scenes/building-hallway.svg",
+    "missingObject": {
+      "id": "fire-extinguisher",
+      "art": "assets/objects/fire-extinguisher.svg",
+      "startPosition": { "x": 100, "y": 520 },
+      "defaultRotationDeg": 0
+    },
+    "target": {
+      "shape": "rect",
+      "x": 560, "y": 260, "width": 40, "height": 90,
+      "rotationDeg": 90,
+      "toleranceRadius": 14,
+      "toleranceRotationDeg": 8
+    },
+    "explanation_tr": "Yangın söndürücü, çıkışa yakın bir duvara, tüpün üst noktası yerden yaklaşık 1,5 metreyi geçmeyecek şekilde dikey olarak asılır ki hem uzun hem kısa boylu kişiler kolayca ulaşabilsin.",
+    "explanation_en": "The fire extinguisher is wall-mounted, upright, near an exit route, with its top no higher than about 5 ft (1.5 m) off the floor so it is quickly visible and reachable by most people in an emergency.",
+    "sourceNotes": "General NFPA 10-style mounting-height convention: top of unit ≤ ~5 ft (1.5 m) above floor for extinguishers ≤ 40 lb, bottom a few inches off the floor, positioned along an egress path. rotationDeg=90 represents rotating the object from its default 'carried/lying' orientation to the vertical wall-mounted orientation.",
+    "hints_tr": [
+      "Söndürücü, koridorun ortasına değil, duvara asılmalı.",
+      "Söndürücüyü dikey duracak şekilde döndürmen gerekiyor.",
+      "Çıkışa yakın bir nokta doğru yer olur."
+    ],
+    "hints_en": [
+      "It mounts on the wall, not in the middle of the hallway floor.",
+      "Rotate it so it stands upright against the wall.",
+      "A spot near the exit route is the right place."
+    ]
+  },
+  {
+    "id": "sidewalk-curb-ramp-01",
+    "category": "accessibility",
+    "difficulty": 3,
+    "title_tr": "Kaldırım Köşesi",
+    "title_en": "Sidewalk Corner",
+    "background": "assets/scenes/sidewalk-corner.svg",
+    "missingObject": {
+      "id": "curb-ramp",
+      "art": "assets/objects/curb-ramp.svg",
+      "startPosition": { "x": 650, "y": 500 },
+      "defaultRotationDeg": 0
+    },
+    "target": {
+      "shape": "rect",
+      "x": 260, "y": 380, "width": 140, "height": 90,
+      "rotationDeg": 0,
+      "toleranceRadius": 26,
+      "toleranceRotationDeg": 10
+    },
+    "explanation_tr": "Kaldırım rampası, köşenin rastgele bir noktasına değil, karşıdaki yaya geçidiyle hizalanan noktaya, kaldırımın yola indiği yere yerleştirilir ki tekerlekli sandalye ve baston kullanan biri kesintisiz geçebilsin.",
+    "explanation_en": "The curb ramp is placed where the sidewalk meets the road directly in line with the crosswalk, not at an arbitrary point on the corner, so wheelchair and cane users have a continuous, unbroken path across the street.",
+    "sourceNotes": "General ADA/PROWAG-style convention: a curb ramp or blended transition is required in line with each marked crosswalk at a corner. Axis-aligned placement (ramp slope faces the street), no rotation tolerance beyond a light default.",
+    "hints_tr": [
+      "Rampa, karşıdaki yaya geçidiyle aynı hizada olmalı.",
+      "Rastgele bir köşe noktası değil, geçidin tam karşısı doğru yer."
+    ],
+    "hints_en": [
+      "The ramp should line up with the crosswalk across the street.",
+      "It's not just any point on the corner — it must face the crossing."
+    ]
+  },
+  {
+    "id": "parking-accessible-space-01",
+    "category": "accessibility",
+    "difficulty": 2,
+    "title_tr": "Otopark Alanı",
+    "title_en": "Parking Lot",
+    "background": "assets/scenes/parking-lot.svg",
+    "missingObject": {
+      "id": "accessible-parking-symbol",
+      "art": "assets/objects/accessible-parking-symbol.svg",
+      "startPosition": { "x": 700, "y": 540 },
+      "defaultRotationDeg": 0
+    },
+    "target": {
+      "shape": "rect",
+      "x": 340, "y": 300, "width": 120, "height": 120,
+      "rotationDeg": 0,
+      "toleranceRadius": 30,
+      "toleranceRotationDeg": 0
+    },
+    "explanation_tr": "Engelli park sembolü, park yerinin tam ortasına, yanında araç kapısının açılıp tekerlekli sandalyenin inip binmesine yetecek boş bir erişim şeridi bırakılacak şekilde boyanır.",
+    "explanation_en": "The accessible-parking symbol is painted centered in the stall, with a striped access aisle left free alongside it so a car door can fully open and a wheelchair can be loaded or unloaded.",
+    "sourceNotes": "General ADA-style accessible parking convention: symbol centered in the space, adjacent access aisle at least 60 in (1525 mm) wide running the full length of the space, vertical sign at ~60 in minimum height. Axis-aligned placement, no rotation.",
+    "hints_tr": [
+      "Sembol, park yerinin tam merkezine gelmeli.",
+      "Yanındaki çizgili şeridi boş bırakmayı unutma, o bir yürüme/erişim alanı."
+    ],
+    "hints_en": [
+      "The symbol goes right in the center of the parking stall.",
+      "Leave the striped lane next to it clear — that's the access aisle."
+    ]
+  }
+]
