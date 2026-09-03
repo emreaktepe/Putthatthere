@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#33383f"/>
+  <!-- parking space divider lines -->
+  <g stroke="#e7e9ec" stroke-width="6">
+    <line x1="220" y1="180" x2="220" y2="480"/>
+    <line x1="340" y1="180" x2="340" y2="480"/>
+    <line x1="460" y1="180" x2="460" y2="480"/>
+    <line x1="580" y1="180" x2="580" y2="480"/>
+  </g>
+  <!-- access aisle (hatched) beside the accessible space -->
+  <g stroke="#e7e9ec" stroke-width="4" opacity="0.85">
+    <line x1="466" y1="190" x2="574" y2="470"/>
+    <line x1="486" y1="190" x2="574" y2="430"/>
+    <line x1="506" y1="190" x2="574" y2="390"/>
+    <line x1="526" y1="190" x2="574" y2="350"/>
+    <line x1="546" y1="190" x2="574" y2="310"/>
+    <line x1="466" y1="230" x2="534" y2="470"/>
+    <line x1="466" y1="270" x2="494" y2="470"/>
+  </g>
+  <!-- accessible parking sign pole, marking the target stall -->
+  <rect x="336" y="120" width="8" height="70" fill="#5c6570"/>
+  <rect x="312" y="86" width="56" height="40" rx="4" fill="#3760a8"/>
+  <text x="340" y="112" font-size="20" font-family="sans-serif" fill="#fff" text-anchor="middle">♿</text>
+  <!-- parked cars in neighboring spaces -->
+  <g fill="#8a5a3c">
+    <rect x="228" y="260" width="104" height="180" rx="16"/>
+  </g>
+  <g fill="#4f5b6b">
+    <rect x="588" y="260" width="104" height="180" rx="16"/>
+  </g>
+  <!-- lot boundary -->
+  <rect x="0" y="480" width="800" height="10" fill="#e7e9ec" opacity="0.6"/>
+</svg>

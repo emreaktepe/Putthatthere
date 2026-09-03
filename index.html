@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Şunu Şuraya Koy — Put That There</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+
+  <section id="screen-intro" class="screen">
+    <div class="intro-card">
+      <h1 id="intro-title"></h1>
+      <p id="intro-body"></p>
+      <button id="btn-start" class="btn btn-primary"></button>
+    </div>
+  </section>
+
+  <section id="screen-game" class="screen" hidden>
+    <header id="topbar">
+      <span id="scene-counter"></span>
+      <span id="score-label"></span>
+      <button id="btn-lang" class="btn btn-ghost"></button>
+    </header>
+
+    <div id="canvas-wrap">
+      <svg id="scene-canvas" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+        <g id="bg-layer"></g>
+        <g id="hint-layer"></g>
+        <g id="ghost-layer"></g>
+        <g id="placed-layer"></g>
+      </svg>
+      <p id="pick-up-hint" class="floating-hint"></p>
+      <p id="rotate-hint" class="floating-hint" hidden></p>
+    </div>
+
+    <footer id="bottombar">
+      <div id="tray">
+        <svg id="tray-icon" viewBox="0 0 100 100"></svg>
+      </div>
+      <button id="btn-confirm" class="btn btn-primary" disabled></button>
+    </footer>
+
+    <div id="result-modal" class="modal-overlay" hidden>
+      <div class="modal-card">
+        <div id="result-stars" class="stars"></div>
+        <p id="result-message"></p>
+        <p id="result-explanation" class="explanation"></p>
+        <p id="result-placement-score"></p>
+        <p id="result-running-total"></p>
+        <button id="btn-next-scene" class="btn btn-primary"></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-final" class="screen" hidden>
+    <div class="intro-card">
+      <h1 id="final-title"></h1>
+      <p id="final-score"></p>
+      <p id="final-stars"></p>
+      <p id="final-rank"></p>
+      <button id="btn-play-again" class="btn btn-primary"></button>
+    </div>
+  </section>
+
+  <p id="error-banner" class="error-banner" hidden></p>
+
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
