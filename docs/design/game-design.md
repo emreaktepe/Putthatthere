@@ -1,262 +1,198 @@
-# Put-That-There Prototip — Oyun Tasarım Belgesi
+# Put-That-There Prototip — Oyun Tasarım Belgesi (3B sürüm)
 
-**Durum:** v1 prototip (yalnızca işaretçi/tıklama — konuşma girişi YOK)
+**Durum:** v2 prototip — Three.js ile 3B, yalnızca işaretçi/tıklama (konuşma girişi yok)
 **Kapsam:** 5 sahnelik tek oturumluk bulmaca akışı
-**Teknoloji:** Saf HTML/CSS/JS + SVG, framework/derleme aracı yok, GitHub Pages üzerinde barındırılır
-**Referans:** MIT Media Lab, "Put-That-There" (Richard Bolt, 1980) — bu prototipte yalnızca işaret/tıklama etkileşimi uyarlanmıştır, ses girişi bilinçli olarak v1 kapsamı dışında bırakılmıştır.
+**Teknoloji:** Saf HTML/CSS/JS + Three.js (r185, `vendor/` altında yerel), derleme aracı yok, GitHub Pages
+**Referans:** MIT Media Lab, "Put-That-There" (Richard Bolt, 1980) — bu prototipte işaret/tıklama etkileşimi 3B uzaya uyarlanmıştır; ses girişi bilinçli olarak kapsam dışıdır.
+
+> **v1'den farkı:** İlk prototip 2B SVG sahneler kullanıyordu. Görsel gerçekçilik ve uzamsal muhakeme için tüm sahneler gerçek ölçekli (metre) 3B ortamlara taşındı. Oyun mantığı (deiktik akış, yıldız bantları, puan formülü, i18n, senaryo metinleri) korundu; koordinatlar piksel yerine **metre**, hedefe uzaklık ise SVG birimi yerine **gerçek dünya mesafesi**.
 
 ---
 
 ## 1. Etkileşim Akışı — Durum Makinesi
 
-Oyun, sahne başına yedi durumdan geçen tekil bir durum makinesiyle yönetilir. `IDLE` durumundan `NEXT_SCENE` durumuna kadar olan döngü her sahne için bir kez çalışır; 5. sahne tamamlandığında `NEXT_SCENE` yerine `FINAL_SUMMARY` ekranına geçilir.
+`js/input-raycast.js` içinde tek bir durum makinesi; sahne başına bir kez döner.
 
-### 1.1 Durum listesi ve amaç
+| # | Durum | Açıklama |
+|---|-------|----------|
+| 1 | `IDLE` | Sahne yüklendi, nesne tepside, hiçbir şey seçili değil. |
+| 2 | `OBJECT_SELECTED` | Oyuncu tepsideki nesneyi aldı ("that"); henüz sahneye dokunmadı. |
+| 3 | `DESTINATION_HOVERED` | İşaretçi sahne üzerinde geziniyor; yarı saydam hayalet, ışın (raycast) yüzeye çarptığı noktayı takip ediyor. |
+| 4 | `DESTINATION_CONFIRMED` | Oyuncu bir noktaya tıkladı ("there"); hayalet orada duruyor. Yeniden konumlandırma ve döndürme serbest. |
+| 5 | `LOCKED` | "Bunu Oraya Koy!" basıldı; yerleşim donduruldu ve puanlandı, sonuç paneli açıldı. |
 
-| # | Durum | Türkçe karşılığı | Açıklama |
-|---|-------|-------------------|----------|
-| 1 | `IDLE` | Bekleme | Sahne yüklenmiş, nesne tepside duruyor, hiçbir şey seçili değil. |
-| 2 | `OBJECT_SELECTED` | Nesne seçili ("that") | Oyuncu tepsideki nesneyi seçti/tuttu; henüz sahneye dokunmadı. |
-| 3 | `DESTINATION_HOVERED` | Hedef üzerinde gezinme | İşaretçi, nesne seçiliyken sahne tuvali üzerinde geziniyor; hayalet (ghost) önizleme işaretçiyi takip ediyor. |
-| 4 | `DESTINATION_CONFIRMED` | Hedef işaretlendi ("there") | Oyuncu sahne üzerinde bir noktaya tıkladı/bıraktı; hayalet o noktada asılı duruyor, kilitlenmedi. Döndürme ve yeniden konumlandırma bu durumda serbesttir. |
-| 5 | `LOCKED_SCORED` | Kilitlendi ve puanlandı | "Put That There!" butonuna basıldı; yerleşim donduruldu, `positionError`/`rotationError` hesaplandı. |
-| 6 | `RESULT_SHOWN` | Sonuç gösteriliyor | Yıldız, açıklama metni ve puan içeren sonuç paneli ekranda. |
-| 7 | `NEXT_SCENE` | Sonraki sahneye geçiş | Kısa geçiş animasyonu; ardından `IDLE`'a (sahne < 5) ya da `FINAL_SUMMARY`'ye (sahne = 5) döner. |
+### 1.1 Geçişler
 
-### 1.2 Geçiş tablosu
+| Kaynak | Tetikleyici | Hedef |
+|---|---|---|
+| `IDLE` | Tepsiye `pointerdown` | `OBJECT_SELECTED` |
+| `OBJECT_SELECTED` | Tuval üzerinde `pointermove` (ışın bir yerleştirme yüzeyine çarparsa) | `DESTINATION_HOVERED` |
+| `DESTINATION_HOVERED` | Tuval üzerinde **tıklama** | `DESTINATION_CONFIRMED` |
+| `DESTINATION_CONFIRMED` | Başka bir noktaya tıklama | `DESTINATION_CONFIRMED` (yeniden konumlandırma, dönüş korunur) |
+| `DESTINATION_CONFIRMED` | `←` / `→` (yalnızca `target.rotationRequired` ise) | `DESTINATION_CONFIRMED` (5°, `Shift` ile 15°) |
+| herhangi biri | `Escape` veya tepsiye tekrar tıklama | `IDLE` |
+| `DESTINATION_CONFIRMED` | Onay butonu | `LOCKED` |
 
-| Kaynak durum | Tetikleyici | Hedef durum | Not |
-|---|---|---|---|
-| `IDLE` | Tepsideki nesne üzerinde `pointerdown` / `click` | `OBJECT_SELECTED` | Tıkla-tıkla ve sürükle-bırak akışlarının ortak giriş noktası. |
-| `OBJECT_SELECTED` | Sahne tuvali üzerinde `pointerenter`/`pointermove` | `DESTINATION_HOVERED` | Sürükleme akışında bu geçiş `pointerdown` sonrası anında, tuval üstünde gerçekleşir. |
-| `OBJECT_SELECTED` | Tepsideki nesneye tekrar tıklama veya `Escape` | `IDLE` | Seçim iptali; nesne tepsiye geri "düşer". |
-| `DESTINATION_HOVERED` | Sahne tuvali üzerinde `pointerup` / `click` (geçerli bir bırakma noktasında) | `DESTINATION_CONFIRMED` | Hayaletin merkez noktası (centroid), tıklanan SVG koordinatına sabitlenir ("snap"). |
-| `DESTINATION_HOVERED` | İşaretçi tuvalden çıkıp tepsiye döner | `OBJECT_SELECTED` | Nesne hâlâ seçili, sadece hover kaybolur. |
-| `DESTINATION_CONFIRMED` | Tuval üzerinde farklı bir noktaya `click` | `DESTINATION_CONFIRMED` (kendi üzerine) | Yeniden konumlandırma; hayalet yeni noktaya taşınır, önceki dönüş açısı korunur. |
-| `DESTINATION_CONFIRMED` | `ArrowLeft` / `ArrowRight` (yalnızca `scene.rotationRequired === true` ise etkin) | `DESTINATION_CONFIRMED` (kendi üzerine) | Her tuş basımı 5°; `Shift` basılıyken 15° döndürür. Değer sürekli tutulur, 360° modülo alınır. |
-| `DESTINATION_CONFIRMED` | `Escape` veya tepsideki nesneye tekrar tıklama | `OBJECT_SELECTED` | Hedef iptal edilir, hayalet kaybolur, nesne yeniden "elde" tutulur hâle döner. |
-| `DESTINATION_CONFIRMED` | "Put That There!" butonuna `click` | `LOCKED_SCORED` | Buton yalnızca bu durumda etkindir (bkz. §4). `positionError`/`rotationError` bu geçişte hesaplanır (bkz. §2). |
-| `LOCKED_SCORED` | Otomatik (kilit animasyonu ~300 ms sonra) | `RESULT_SHOWN` | Kullanıcı girdisi gerekmez; tuval ve tepsi bu andan itibaren `pointer-events: none`. |
-| `RESULT_SHOWN` | Sonuç panelindeki "Sonraki Sahne" / "Sonuçları Gör" butonuna `click` | `NEXT_SCENE` | Buton metni sahne 5'te `finishButton` metnine döner. |
-| `NEXT_SCENE` | Otomatik, geçiş animasyonu (~250 ms) sonrası | `IDLE` (sahne < 5) veya `FINAL_SUMMARY` (sahne = 5) | Sahne sayacı, tepsi nesnesi ve tuval içeriği bu geçişte yeniden yüklenir. |
+**Tıklama mı, kamera sürüklemesi mi?** Kamera da aynı tuval üzerinde fare sürüklemesiyle döndüğü için, `pointerdown` ile `pointerup` arasında **6 pikselden fazla** hareket eden etkileşim yerleştirme değil, kamera sürüklemesi sayılır (`CLICK_SLOP_PX`). Böylece etrafına bakmak yanlışlıkla hedef seçmez.
 
-### 1.3 Durum başına görsel geri bildirim
+### 1.2 Yerleştirme yüzeyleri (raycast hedefleri)
 
-| Durum | Tepsi/nesne görünümü | Hayalet (ghost) önizleme | Buton / diğer |
-|---|---|---|---|
-| `IDLE` | Nesne normal, hafif `drop-shadow`; `:hover`'da %5 büyüme + `cursor: pointer`. | Yok. | "Put That There!" butonu devre dışı (opaklık 0.4, `pointer-events: none`). |
-| `OBJECT_SELECTED` | Nesne etrafında amber renkli (`#ffd166`) SVG `filter: drop-shadow` parlaması; nesne 4px yukarı kalkar; tepsi boşluğunda kesikli çerçeveli yer tutucu belirir; `cursor: grabbing`. | Yok (henüz tuvalde değil). | Buton devre dışı. |
-| `DESTINATION_HOVERED` | Aynı (seçili) durum korunur. | Nesnenin yarı saydam kopyası (`opacity: 0.45`), işaretçinin SVG koordinatını takip eder; kayıt noktası nesnenin centroid'i ile hizalanır. | Buton devre dışı. |
-| `DESTINATION_CONFIRMED` | Aynı (seçili) durum korunur. | Opaklık 0.75'e çıkar; kesikli mavi (`#4d96ff`) çerçeve eklenir; `scene.rotationRequired` doğruysa merkezde küçük bir döndürme halkası ve "← → ile döndür" ipucu metni görünür. | Buton etkinleşir: tam opaklık + hafif nabız (pulse) animasyonu ile dikkat çeker. |
-| `LOCKED_SCORED` | Tepsi boşalır (nesne artık sahnede). | Opaklık 1.0'a çıkar, çerçeve düz çizgiye döner (artık "gerçek" nesne gibi render edilir); 300 ms'lik ölçek nabzı (`1.0 → 1.08 → 1.0`). | Buton gizlenir/devre dışı kalır; tuval etkileşimi kilitlenir. |
-| `RESULT_SHOWN` | — | Yerleştirilen nesne olduğu yerde sabit kalır; skor 3 yıldızdan azsa, doğru hedefin soluk bir taslak (outline) kopyası karşılaştırma için tuval üzerinde belirir (bkz. §2.3 ipucu kuralı). | Sonuç paneli alttan yukarı kayarak (veya ortadan solarak) belirir: yıldızlar, açıklama metni, bu yerleştirmenin puanı, güncel toplam puan, "Sonraki Sahne" butonu. |
-| `NEXT_SCENE` | Eski sahne 200–300 ms'de solarak kaybolur, yeni sahne ve tepsi nesnesi solarak belirir. | — | Üst bar sahne sayacı ve toplam puan güncellenir. |
+Her sahne, `placementSurfaces` altında bir veya daha fazla görünmez düzlem tanımlar; ışın bunlara çarpar ve **en yakın** isabet kazanır:
 
-**Snap davranışı netliği:** "Hedefte kilitlenmiş önizleme" ifadesi, hayaletin *doğru* konuma değil, oyuncunun *tıkladığı* noktaya kaydığı (registration point = nesnenin centroid'i = tıklama koordinatı) anlamına gelir. Doğru hedefe manyetik çekim/otomatik hizalama **yoktur** — bu, bulmacayı anlamsızlaştırır. İsteğe bağlı, tamamen kozmetik bir ayrıntı olarak 2 birimlik bir SVG ızgarasına yuvarlama uygulanabilir (yalnızca daha temiz render için, puanlamayı etkilemez).
+- `floor` — yatay düzlem (peron zemini, asfalt, koridor zemini)
+- `wall` — dikey düzlem; `facing` ile normali verilir (örn. `-x`)
+
+Bu, 5. sahnenin can alıcı noktasıdır: koridorda hem duvar hem zemin yerleştirilebilir yüzeydir, dolayısıyla yangın söndürücüyü **yanlışlıkla yere koymak mümkündür** ve doğal olarak sıfır puan alır. 2B sürümde bu ayrım rotasyonla taklit ediliyordu; 3B'de gerçek bir uzamsal karardır.
+
+Duvara yerleşen nesneler yüzey normali boyunca 11 cm dışarı taşınır (braket payı) ve normale bakacak şekilde döndürülür.
+
+### 1.3 Görsel geri bildirim
+
+| Durum | Geri bildirim |
+|---|---|
+| `IDLE` | Tepside nesnenin yavaşça dönen 3B önizlemesi (`js/tray-preview.js`, ayrı küçük renderer). |
+| `OBJECT_SELECTED` | Tepsi kutusu amber çerçeveyle vurgulanır. |
+| `DESTINATION_HOVERED` / `DESTINATION_CONFIRMED` | Nesnenin %55 saydam kopyası hedef noktada; döndürme gerekiyorsa "← → ile döndür" ipucu görünür. |
+| `LOCKED` | Nesne tam opak, gölge düşüren katı hale gelir; tepsi boşalır. |
+| Sonuç (≤1 yıldız) | Doğru konumda yeşil yarı saydam kopya **ve** yarıçapı tolerans kadar olan bir halka belirir. |
 
 ---
 
-## 2. Puanlama Formülü
+## 2. Puanlama
 
 ### 2.1 Hata metrikleri
 
-Her sahne JSON'u şu alanları tanımlar (`viewBox="0 0 800 600"` varsayımıyla):
+`js/scoring.js`, sahne JSON'undaki şu alanları kullanır:
 
 ```
-targetX, targetY          → hedef centroid (SVG kullanıcı birimi)
-targetAngleDeg             → hedef dönüş açısı (derece, 0–360)
-rotationRequired           → boolean
-toleranceRadius            → SVG kullanıcı birimi (bkz. §3 tablosu)
-toleranceRotationDeg       → derece (yalnızca rotationRequired=true ise anlamlı)
+target.position          → hedef nokta [x, y, z], metre
+target.rotationDeg       → doğru yatay dönüş (yaw)
+target.rotationRequired  → boolean
+target.toleranceMeters   → konum toleransı, metre
+target.toleranceRotationDeg
 ```
 
-**`positionError`** — yerleştirilen nesnenin centroid'i ile hedef centroid arasındaki Öklid mesafesi, SVG kullanıcı birimi cinsinden:
-
 ```
-positionError = √[ (placedX − targetX)² + (placedY − targetY)² ]
-```
-
-**`rotationError`** — mutlak açı farkı, derece cinsinden, [0°, 180°] aralığına normalize edilmiş:
-
-```
-Eğer scene.rotationRequired === false:
-    rotationError = 0
-
-Aksi hâlde:
-    delta = (placedAngleDeg − targetAngleDeg) mod 360
-    Eğer delta > 180: delta = 360 − delta
-    rotationError = |delta|
+positionError = |placedPoint − target.position|          (3B Öklid mesafesi, metre)
+rotationError = rotationRequired ? açıFarkı(yaw, hedefYaw) : 0   (0-180°)
 ```
 
-### 2.2 Birleşik hata oranı (`combinedRatio`)
+Puanlanan nokta, oyuncunun **nişan aldığı yüzey noktasıdır** — nesnenin merkezi değil. Bu sayede zemin ve duvar sahneleri aynı formülle ölçülür.
 
-Yıldız eşikleri, konum ve dönüş hatasının *her ikisinin de* tolerans dışına çıkmamasını garanti etmek için, ikisinden **daha kötü olanı** temel alır (biri iyi diye diğerindeki büyük hata maskelenmesin):
-
-```
-posRatio = positionError / toleranceRadius
-rotRatio = scene.rotationRequired
-             ? rotationError / toleranceRotationDeg
-             : 0
-
-combinedRatio = max(posRatio, rotRatio)
-```
-
-### 2.3 Yıldız eşikleri
-
-| `combinedRatio` aralığı | Yıldız | Anlamı | Ekstra davranış |
-|---|---|---|---|
-| `combinedRatio ≤ 1.0` | ★★★ (3) | Tolerans içinde (1x) — mükemmel yerleşim | — |
-| `1.0 < combinedRatio ≤ 2.0` | ★★☆ (2) | Toleransın 2 katı içinde — iyi | — |
-| `2.0 < combinedRatio ≤ 3.0` | ★☆☆ (1) | Toleransın 3 katı içinde — yeterli | Sonuç panelinde ipucu metni (`hintRevealLabel`) gösterilir. |
-| `combinedRatio > 3.0` | ☆☆☆ (0) | Tolerans dışı | İpucu metni **ve** tuval üzerinde doğru hedefin soluk taslağı (outline) gösterilir. |
-
-### 2.4 Sayısal puan (0–100)
-
-Aynı `combinedRatio` değerinden, yıldız bantlarıyla tutarlı doğrusal bir sayısal puan türetilir:
+### 2.2 Birleşik oran ve yıldızlar
 
 ```
-score = round( 100 × clamp(1 − combinedRatio / 3, 0, 1) )
+combinedRatio = max(positionError / toleranceMeters,
+                    rotationRequired ? rotationError / toleranceRotationDeg : 0)
 ```
 
-Bu formül yıldız sınırlarıyla örtüşür:
-
-| `combinedRatio` | Puan aralığı | Karşılık gelen yıldız |
+| `combinedRatio` | Yıldız | Ekstra |
 |---|---|---|
-| 0 | 100 | ★★★ (üst sınır) |
-| 1.0 | ≈ 66.7 | ★★★ / ★★☆ sınırı |
-| 2.0 | ≈ 33.3 | ★★☆ / ★☆☆ sınırı |
-| ≥ 3.0 | 0 | ☆☆☆ |
+| ≤ 1.0 | ★★★ | — |
+| ≤ 2.0 | ★★☆ | — |
+| ≤ 3.0 | ★☆☆ | doğru konum işaretlenir |
+| > 3.0 | ☆☆☆ | doğru konum işaretlenir |
 
-### 2.5 Sahneler arası toplam
+İki eksenden **kötü olanı** belirleyici olduğu için, konumu mükemmel ama 90° yanlış dönmüş bir dur çizgisi yine 0 yıldız alır.
 
-5 sahne boyunca:
+### 2.3 Sayısal puan
 
-- **Toplam puan** = Σ(`score`), maksimum 500.
-- **Toplam yıldız** = Σ(yıldız), maksimum 15.
-- **Genel başarı yüzdesi** (öneri, final ekranı için) = `toplamPuan / 500 × 100`.
+```
+score = round(100 × clamp(1 − combinedRatio / 3, 0, 1))
+```
 
-Öneri notlandırma katmanları (final özet ekranı için, isteğe bağlı süsleme):
+5 sahne → maksimum 500 puan, 15 yıldız. Sonuç panelinde ayrıca sapma metre/santimetre olarak gösterilir (`errorDistanceLabel`).
 
-| Başarı yüzdesi | Rütbe (öneri) |
+### 2.4 Rütbeler
+
+| Başarı | Rütbe (kurgu belgesinden) |
 |---|---|
-| ≥ 90% | "Usta Yerleştirici" |
-| 70–89% | "Deneyimli" |
-| 50–69% | "Gelişmekte" |
-| < 50% | "Tekrar Dene" |
+| ≥ 90% | Şehir Gözü Ustası |
+| 70-89% | Şehir Dedektifi |
+| 50-69% | Dikkatli Gözlemci |
+| < 50% | Çaylak Gözlemci |
 
 ---
 
 ## 3. Zorluk Eğrisi
 
-Zorluğu artıran üç faktör: **(a)** daha küçük `toleranceRadius` (daha hassas konum gerektirir), **(b)** dönüş gerekliliği (`rotationRequired = true`, ekstra bir serbestlik derecesi ekler), **(c)** SVG arka planındaki görsel dikkat dağıtıcı öğe sayısı (benzer çizgiler, benzer nesneler, birden fazla aday konum). Sahneler bu üç eksende kademeli olarak zorlaşacak şekilde sıralanmıştır — verilen 5 sahne, önerilen zorluk sırasına göre yeniden düzenlenmiştir (oynatma sırası bu tabloyla aynıdır).
+Zorluk üç eksende artar: **(a)** daralan tolerans, **(b)** dönüş gerekliliği, **(c)** yerleştirme yüzeyinin kendisinin bir karar haline gelmesi. Sıralama `difficulty` alanına göre yapılır ve `data/scenes.json` ile birebir eşleşir.
 
-**Referans:** `viewBox="0 0 800 600"`. `toleranceRadius` değerleri bu 800×600 alanına göredir (kıyas: tuvalin kısa kenarı 600 birim → %5 tolerans ≈ 30 birim).
-
-> **Not (senkronizasyon düzeltmesi):** Aşağıdaki tablo, ilk taslaktan sonra `docs/design/research.md` ve `data/scenes.json`'daki gerçek dünya kaynaklı içerikle senkronize edilmiştir. Döndürme gerekliliği nesnenin **kendi fiziksel mantığından** gelir (bir söndürücü duvara asılırken tepsideki "yatık" halinden dikeye döner; bir dur çizgisi şeride dik olmalıdır), sabit/paralel bir çizgi veya sembolün ise (peron şeridi, rampa, engelli sembolü) döndürülmesine gerek yoktur — bunlar zaten tepsideki varsayılan yönleriyle doğru yöndedir. Sıralama ve tolerans değerleri `data/scenes.json` ile birebir eşleşir.
-
-| Sıra | Sahne | `difficulty` | `toleranceRadius` (birim) | `rotationRequired` | `toleranceRotationDeg` | Zorluk kaynağı |
+| Sıra | Sahne | `difficulty` | Tolerans | Yüzey | Dönüş | Zorluk kaynağı |
 |---|---|---|---|---|---|---|
-| 1 | Metro peronu güvenlik şeridi (metro platform safety strip) | 1 | 36 | Hayır | — | Uzun, tolere edilebilir bir şerit; peron kenarına paralel, sabit yönde; en geniş tolerans. |
-| 2 | Otopark engelli işareti (parking lot accessible marking) | 2 | 30 | Hayır | — | Park yeri ortasına yerleştirme; çevredeki diğer boş park yerleri hafif dikkat dağıtıcıdır. |
-| 3 | Kaldırım rampası (sidewalk curb ramp) | 3 | 26 | Hayır | — | Karşıdaki yaya geçidiyle hizalanmalı; sahnede birden fazla köşe olası yanlış hedefler sunar. |
-| 4 | Yaya geçidi dur çizgisi (crosswalk stop line) | 4 | 18 | Evet | 6 | Çizgi şeride **dik** olacak şekilde döndürülmeli; küçülen tolerans ve mevcut yol çizgileri zorluğu artırır. |
-| 5 | Koridor yangın söndürücü (hallway fire extinguisher) | 5 | 14 | Evet | 8 | En küçük tolerans; söndürücü tepsideki varsayılan yatık halinden duvara asılı dikey konuma döndürülmeli; çıkışa yakınlık da doğru olmalı. |
-
-**Not:** Gerçek `data/scenes.json` şeması bu alanları şu adlarla taşır: `id`, `difficulty`, `target.x`/`target.y` (dikdörtgenin sol-üst köşesi; centroid = `x + width/2`, `y + height/2`), `target.rotationDeg`, `rotationRequired`, `target.toleranceRadius`, `target.toleranceRotationDeg`, `missingObject.id`/`missingObject.art` (tepside gösterilecek nesnenin referansı), `missingObject.defaultRotationDeg`. `viewBox` sabittir, `"0 0 800 600"`, ve kod tarafında sabit değer olarak tutulur (JSON'da tekrar edilmez).
+| 1 | Metro peronu güvenlik şeridi | 1 | 0.55 m | zemin | Hayır | En geniş tolerans; şerit zaten peronla hizalı, tek karar kenardan geri çekilme mesafesi. |
+| 2 | Otopark engelli sembolü | 2 | 0.50 m | zemin | Hayır | Sembolün park yerine mi yoksa bitişik erişim şeridine mi ait olduğu ayırt edilmeli. |
+| 3 | Kaldırım rampası | 3 | 0.45 m | zemin | **Evet** (±12°) | Yaya geçidiyle hizalanmalı **ve** eğim yola bakmalı. |
+| 4 | Yaya geçidi dur çizgisi | 4 | 0.40 m | zemin | **Evet** (±8°) | Geçitten geri çekilme + şeride dik olma + doğru şerit; en dar dönüş toleransı. |
+| 5 | Koridor yangın söndürücü | 5 | 0.35 m | **duvar + zemin** | Hayır | En dar tolerans; doğru yüzey (duvar), doğru yükseklik (üst nokta ≤1,5 m) ve çıkışa yakınlık birlikte tutturulmalı. |
 
 ---
 
-## 4. Arayüz Düzeni (UI Layout)
-
-Tek, tam-viewport düzen. Mobil uyum v1 için zorunlu değildir (nice-to-have); düzen `flex`/`grid` ile responsive olacak şekilde tasarlanmalı, ama optimize edilmesi gerekmez.
+## 4. Arayüz Düzeni
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ ÜST BAR (yükseklik ~60px)                                        │
-│  [Sahne 2 / 5]        [Puan: 233 / 500]        [🌐 EN]           │
+│ ÜST BAR:  [Sahne 2/5]   [Sahne adı]   [Puan: 233/500]   [🌐 EN] │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                    │
-│                     SAHNE TUVALİ (SVG, viewBox 0 0 800 600)      │
-│                     — kalan dikey alanın tamamı —                 │
-│                     (nesne tepsiden buraya taşınır,                │
-│                      hayalet önizleme burada render edilir)       │
+│         3B GÖRÜNÜM (Three.js tuvali, perspektif kamera)           │
+│         üstte: "Nesneyi almak için alttaki kutuya tıkla"          │
+│         altta: "Sürükleyerek etrafına bak · tekerlekle yakınlaş"  │
 │                                                                    │
 ├──────────────────────────────────────────────────────────────────┤
-│ ALT BAR (yükseklik ~100–120px)                                    │
-│  [ Nesne Tepsisi ]                    [ Put That There! Butonu ] │
-│  (soldan hizalı, tek                  (ortada/sağda, büyük,      │
-│   nesne kartı)                         belirgin buton)            │
-└──────────────────────────────────────────────────────────────────┘
-
-RESULT_SHOWN durumunda: yukarıdaki düzenin üzerine yarı saydam
-karartma + ortalanmış modal panel biner:
-┌───────────────────────────────┐
-│   ★ ★ ☆                       │
-│   "İyi iş! Az daha yaklaş."    │
-│   Bu yerleştirme: 58 / 100     │
-│   Toplam: 233 / 500            │
-│   [ Sonraki Sahne → ]          │
-└───────────────────────────────┘
-
-Sahne 5 sonrası FINAL_SUMMARY, tüm viewport'u kaplayan ayrı bir
-ekrana geçer (tuval/tepsi kaybolur):
-┌──────────────────────────────────────────────────────────────────┐
-│                     Oyun Bitti!                                   │
-│               Toplam Puan: 388 / 500  (%77.6)                     │
-│               Toplam Yıldız: ★★★★★★★★★★★★☆☆☆ (12/15)              │
-│               Rütbe: Deneyimli                                    │
-│               [ Tekrar Oyna ]                                     │
+│ ALT BAR:  [3B nesne tepsisi]              [ Bunu Oraya Koy! ]    │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Bölge özeti
+Sonuç paneli modal olarak biner: yıldızlar, açıklama metni, **sapma mesafesi**, bu yerleştirmenin puanı, toplam ve "Sonraki Sahne". 5. sahneden sonra tam ekran özet: toplam puan, yıldız, rütbe, "Tekrar Oyna".
 
-| Bölge | İçerik | Görünürlük |
-|---|---|---|
-| Üst bar | Sahne sayacı (`sceneCounter`), güncel toplam puan (`scoreLabel`), dil değiştirme butonu (`languageToggle`) | Her zaman görünür (final ekranı hariç). |
-| Sahne tuvali | Stilize SVG sahne + hayalet önizleme katmanı | `IDLE`'dan `RESULT_SHOWN`'a kadar görünür; `NEXT_SCENE`'de yeniden yüklenir. |
-| Nesne tepsisi | Taşınabilir tek nesne kartı, seçim durumuna göre stil değişir | `IDLE`–`DESTINATION_CONFIRMED` arası etkin; `LOCKED_SCORED`'dan sonra boşalır. |
-| Onay butonu | "Put That There!" (`putThatThereButton`) | Yalnızca `DESTINATION_CONFIRMED` durumunda etkin; diğer durumlarda devre dışı/gizli. |
-| Sonuç paneli | Yıldızlar, açıklama, puan, toplam, sonraki sahne butonu | Yalnızca `RESULT_SHOWN` durumunda, modal olarak. |
-| Final özet ekranı | Toplam puan, toplam yıldız, rütbe, "Tekrar Oyna" | Yalnızca sahne 5 → `NEXT_SCENE` sonrası, tam ekran. |
+### Kamera
+
+Her sahne kendi kadrajını ve sınırlarını taşır (`camera` alanı): başlangıç konumu, bakılan nokta, `minDistance`/`maxDistance`, dikey açı sınırları ve başlangıç açısına göre **±`azimuthRangeDeg`** yatay serbestlik. Böylece oyuncu derinliği algılamak için etrafına bakabilir ama sahneyi arkadan/altından görüp kadrajı bozamaz.
 
 ---
 
-## 5. i18n Metin Anahtarları (Arayüz Metinleri)
+## 5. i18n Metin Anahtarları
 
-Aşağıdaki anahtarlar yalnızca **arayüz iskeleti** (chrome) için gereklidir; sahne içeriği (nesne adları, sahne açıklamaları vb.) her sahne JSON'unda ayrı `_tr`/`_en` alanları olarak tutulur ve bu tabloya dahil değildir. Bu tablo, `data/strings.tr.json` ve `data/strings.en.json` dosyalarının doğrudan referansı olarak kullanılabilir.
+Arayüz metinleri `data/strings.tr.json` / `data/strings.en.json` içinde; sahne metinleri (`title`, `explanation`, `hints`) her sahnede `_tr`/`_en` alanı olarak durur.
 
-| Anahtar | Türkçe (`strings.tr.json`) | English (`strings.en.json`) |
+| Anahtar | Türkçe | English |
 |---|---|---|
 | `appTitle` | Şunu Şuraya Koy | Put That There |
 | `languageToggle` | EN | TR |
 | `sceneCounter` | Sahne {current} / {total} | Scene {current} / {total} |
 | `scoreLabel` | Puan: {score} / {max} | Score: {score} / {max} |
-| `pickUpHint` | Nesneyi seçmek için tıkla veya sürükle | Click or drag to pick up the object |
-| `thatBadge` | BU | THAT |
-| `thereBadge` | ORAYA | THERE |
+| `pickUpHint` | Nesneyi almak için alttaki kutuya tıkla | Click the tray below to pick up the object |
+| `orbitHint` | Sürükleyerek etrafına bak · tekerlekle yakınlaş | Drag to look around · scroll to zoom |
 | `putThatThereButton` | Bunu Oraya Koy! | Put That There! |
-| `confirmDisabledHint` | Önce bir hedef seç | Choose a destination first |
 | `rotateHint` | ← → ile döndür | Rotate with ← → |
 | `cancelHint` | İptal etmek için Esc | Press Esc to cancel |
-| `resultTitle` | Sonuç | Result |
-| `starRating_0` | Hedeften uzak kaldın. Tekrar dene! | You missed the target. Try again! |
-| `starRating_1` | Yeterli — biraz daha dikkatli olabilirsin. | Acceptable — you can be more precise. |
-| `starRating_2` | İyi iş! Az daha yaklaş. | Good job! Just a bit closer. |
-| `starRating_3` | Mükemmel yerleşim! | Perfect placement! |
+| `starRating_0..3` | (0) Hedeften uzak kaldın… → (3) Mükemmel yerleşim! | (0) You missed the target… → (3) Perfect placement! |
+| `errorDistanceLabel` | Sapma: {distance} | Off by: {distance} |
 | `scorePlacementLabel` | Bu yerleştirme: {score} / 100 | This placement: {score} / 100 |
 | `runningTotalLabel` | Toplam: {total} / {max} | Total: {total} / {max} |
-| `hintRevealLabel` | İşte doğru yer: | Here's the correct spot: |
-| `nextSceneButton` | Sonraki Sahne → | Next Scene → |
-| `finishButton` | Sonuçları Gör | See Results |
+| `nextSceneButton` / `finishButton` | Sonraki Sahne → / Sonuçları Gör | Next Scene → / See Results |
 | `finalSummaryTitle` | Oyun Bitti! | Game Over! |
 | `finalSummaryScoreLabel` | Toplam Puan: {total} / {max} ({percent}%) | Total Score: {total} / {max} ({percent}%) |
 | `finalSummaryStarsLabel` | Toplam Yıldız: {stars} / {maxStars} | Total Stars: {stars} / {maxStars} |
 | `finalSummaryRankLabel` | Rütbe: {rank} | Rank: {rank} |
-| `rank_master` | Usta Yerleştirici | Master Placer |
-| `rank_experienced` | Deneyimli | Experienced |
-| `rank_developing` | Gelişmekte | Developing |
-| `rank_retry` | Tekrar Dene | Try Again |
+| `rank_master` … `rank_retry` | Şehir Gözü Ustası … Çaylak Gözlemci | Master of City Eye … Rookie Observer |
 | `playAgainButton` | Tekrar Oyna | Play Again |
-| `loadingLabel` | Yükleniyor… | Loading… |
-| `errorGeneric` | Bir şeyler ters gitti. Sayfayı yenile. | Something went wrong. Please refresh. |
+| `introTitle` / `introBody` / `startButton` | Şehir Gözü kurgusu (bkz. `narrative.md`) | City Eye premise |
+| `loadingLabel` / `errorGeneric` | Yükleniyor… / Bir şeyler ters gitti. | Loading… / Something went wrong. |
+
+---
+
+## 6. Kod Haritası
+
+| Dosya | Sorumluluk |
+|---|---|
+| `js/main.js` | Akış kontrolü: sahne sırası, puan toplama, ekran geçişleri, dil |
+| `js/three-app.js` | Renderer, kamera, ışık/gölge, orbit sınırları, raycast, hayalet ve hedef işareti |
+| `js/scene-builders.js` | 5 ortamın ve 5 nesnenin prosedürel geometrisi (gerçek ölçüler) |
+| `js/materials.js` | Prosedürel dokular (asfalt, beton, döşeme, dokunsal şerit, engelli sembolü) ve PBR materyaller |
+| `js/input-raycast.js` | Deiktik durum makinesi, tıklama/sürükleme ayrımı, döndürme |
+| `js/tray-preview.js` | Tepsideki dönen 3B nesne önizlemesi |
+| `js/scoring.js` | Mesafe/dönüş hatası, yıldız ve puan |
+| `js/ui-results.js` | Sonuç paneli ve final özeti |
+| `js/i18n.js` | TR/EN metinler, `localStorage` ile kalıcı dil seçimi |

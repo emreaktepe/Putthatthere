@@ -1,8 +1,12 @@
 # "Put That There" — Sahne Araştırması / Scene Research
 
 Bu belge, oyundaki 5 sahnenin her biri için eksik nesnenin gerçek dünyadaki yerleşim kuralını,
-kısa Türkçe ve İngilizce açıklamalarla ve arka plan SVG'sinin içermesi gereken görsel öğelerle
-özetler. Kurallar; toplu taşıma erişilebilirlik rehberleri, trafik mühendisliği standartları
+kısa Türkçe ve İngilizce açıklamalarla ve sahnenin içermesi gereken görsel öğelerle özetler.
+
+> **Not:** Bu araştırma 2B SVG prototipi için yapıldı; sahneler o zamandan beri Three.js ile
+> gerçek ölçekli (metre) 3B ortamlara taşındı. Aşağıdaki yerleşim kuralları ve kaynak
+> dayanakları aynen geçerlidir — yalnızca "SVG arka planı" notlarını, 3B ortamın içermesi
+> gereken öğelerin listesi olarak okuyun (`js/scene-builders.js`). Kurallar; toplu taşıma erişilebilirlik rehberleri, trafik mühendisliği standartları
 (MUTCD tarzı), NFPA 10 yangın söndürücü rehberi ve ADA/PROWAG erişilebilirlik rehberlerine
 dayanan **genel, yaygın kabul görmüş** kurallardır. Prototip amaçlı olduğu için birebir yasal
 madde numaraları yerine, doğru ve iyi kaynaklı genel kural anlatımı kullanılmıştır.

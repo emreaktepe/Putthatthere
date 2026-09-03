@@ -6,6 +6,14 @@
 <title>Şunu Şuraya Koy — Put That There</title>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
 <link rel="stylesheet" href="css/style.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.min.js",
+    "three/addons/": "./vendor/addons/"
+  }
+}
+</script>
 </head>
 <body>
 <div id="app">
@@ -21,24 +29,21 @@
   <section id="screen-game" class="screen" hidden>
     <header id="topbar">
       <span id="scene-counter"></span>
+      <span id="scene-title"></span>
       <span id="score-label"></span>
       <button id="btn-lang" class="btn btn-ghost"></button>
     </header>
 
     <div id="canvas-wrap">
-      <svg id="scene-canvas" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
-        <g id="bg-layer"></g>
-        <g id="hint-layer"></g>
-        <g id="ghost-layer"></g>
-        <g id="placed-layer"></g>
-      </svg>
+      <canvas id="scene-canvas"></canvas>
       <p id="pick-up-hint" class="floating-hint"></p>
-      <p id="rotate-hint" class="floating-hint" hidden></p>
+      <p id="orbit-hint" class="floating-hint hint-bottom"></p>
+      <p id="rotate-hint" class="floating-hint hint-rotate" hidden></p>
     </div>
 
     <footer id="bottombar">
-      <div id="tray">
-        <svg id="tray-icon" viewBox="0 0 100 100"></svg>
+      <div id="tray" title="">
+        <canvas id="tray-canvas"></canvas>
       </div>
       <button id="btn-confirm" class="btn btn-primary" disabled></button>
     </footer>
@@ -48,8 +53,9 @@
         <div id="result-stars" class="stars"></div>
         <p id="result-message"></p>
         <p id="result-explanation" class="explanation"></p>
-        <p id="result-placement-score"></p>
-        <p id="result-running-total"></p>
+        <p id="result-error" class="metric"></p>
+        <p id="result-placement-score" class="metric"></p>
+        <p id="result-running-total" class="metric"></p>
         <button id="btn-next-scene" class="btn btn-primary"></button>
       </div>
     </div>

@@ -6,20 +6,23 @@ function angleDelta(a, b) {
 }
 
 /**
- * placement: { x, y, rotationDeg }
- * scene: one entry from scenes.json
+ * placement: { point: THREE.Vector3, rotationDeg }
+ * scene: one entry from scenes.json (world units are metres)
  */
 export function scorePlacement(scene, placement) {
   const target = scene.target;
-  const targetCenterX = target.x + target.width / 2;
-  const targetCenterY = target.y + target.height / 2;
+  const [tx, ty, tz] = target.position;
 
-  const positionError = Math.hypot(placement.x - targetCenterX, placement.y - targetCenterY);
+  const positionError = Math.hypot(
+    placement.point.x - tx,
+    placement.point.y - ty,
+    placement.point.z - tz
+  );
   const rotationError = target.rotationRequired
     ? angleDelta(placement.rotationDeg, target.rotationDeg)
     : 0;
 
-  const posRatio = positionError / target.toleranceRadius;
+  const posRatio = positionError / target.toleranceMeters;
   const rotRatio = target.rotationRequired ? rotationError / target.toleranceRotationDeg : 0;
   const combinedRatio = Math.max(posRatio, rotRatio);
 
@@ -31,14 +34,7 @@ export function scorePlacement(scene, placement) {
 
   const score = Math.round(100 * Math.min(Math.max(1 - combinedRatio / 3, 0), 1));
 
-  return {
-    positionError,
-    rotationError,
-    combinedRatio,
-    stars,
-    score,
-    revealHint: stars <= 1,
-  };
+  return { positionError, rotationError, combinedRatio, stars, score, revealHint: stars <= 1 };
 }
 
 export function rankForPercent(percent) {

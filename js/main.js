@@ -1,8 +1,9 @@
-import { initI18n, setLang, getLang, t } from "./i18n.js";
-import { loadScenes, loadBackgroundMarkup, loadObjectMarkup } from "./sceneLoader.js";
+import { initI18n, setLang, getLang, t, field } from "./i18n.js";
 import { scorePlacement, rankForPercent } from "./scoring.js";
-import { PointerController } from "./input-pointer.js";
-import { renderHintOutline, clearHintOutline, renderResultModal, hideResultModal, renderFinalSummary } from "./ui-results.js";
+import { ThreeApp } from "./three-app.js";
+import { PlacementController } from "./input-raycast.js";
+import { TrayPreview } from "./tray-preview.js";
+import { renderResultModal, hideResultModal, renderFinalSummary } from "./ui-results.js";
 
 const dom = {
   screenIntro: document.getElementById("screen-intro"),
@@ -12,22 +13,21 @@ const dom = {
   introBody: document.getElementById("intro-body"),
   btnStart: document.getElementById("btn-start"),
   sceneCounter: document.getElementById("scene-counter"),
+  sceneTitle: document.getElementById("scene-title"),
   scoreLabel: document.getElementById("score-label"),
   btnLang: document.getElementById("btn-lang"),
   canvas: document.getElementById("scene-canvas"),
-  bgLayer: document.getElementById("bg-layer"),
-  hintLayer: document.getElementById("hint-layer"),
-  ghostLayer: document.getElementById("ghost-layer"),
-  placedLayer: document.getElementById("placed-layer"),
+  trayCanvas: document.getElementById("tray-canvas"),
   pickUpHint: document.getElementById("pick-up-hint"),
+  orbitHint: document.getElementById("orbit-hint"),
   rotateHint: document.getElementById("rotate-hint"),
   tray: document.getElementById("tray"),
-  trayIcon: document.getElementById("tray-icon"),
   btnConfirm: document.getElementById("btn-confirm"),
   modal: document.getElementById("result-modal"),
   resultStars: document.getElementById("result-stars"),
   resultMessage: document.getElementById("result-message"),
   resultExplanation: document.getElementById("result-explanation"),
+  resultError: document.getElementById("result-error"),
   resultPlacementScore: document.getElementById("result-placement-score"),
   resultRunningTotal: document.getElementById("result-running-total"),
   btnNextScene: document.getElementById("btn-next-scene"),
@@ -47,7 +47,9 @@ const game = {
   index: 0,
   totalScore: 0,
   totalStars: 0,
-  pointerController: null,
+  app: null,
+  controller: null,
+  trayPreview: null,
   lastResult: null,
   lastMaxSoFar: 0,
 };
@@ -63,6 +65,13 @@ function showError(message) {
   dom.errorBanner.hidden = false;
 }
 
+async function loadScenes() {
+  const res = await fetch("data/scenes.json");
+  if (!res.ok) throw new Error("Failed to load scenes.json");
+  const scenes = await res.json();
+  return scenes.slice().sort((a, b) => a.difficulty - b.difficulty);
+}
+
 function applyStaticStrings() {
   document.title = t("appTitle");
   dom.introTitle.textContent = t("introTitle");
@@ -70,38 +79,40 @@ function applyStaticStrings() {
   dom.btnStart.textContent = t("startButton");
   dom.btnLang.textContent = t("languageToggle");
   dom.pickUpHint.textContent = t("pickUpHint");
+  dom.orbitHint.textContent = t("orbitHint");
   dom.rotateHint.textContent = t("rotateHint");
   dom.btnConfirm.textContent = t("putThatThereButton");
-  dom.btnNextScene.textContent = game.index >= game.scenes.length - 1 ? t("finishButton") : t("nextSceneButton");
   dom.btnPlayAgain.textContent = t("playAgainButton");
+  dom.btnNextScene.textContent =
+    game.index >= game.scenes.length - 1 ? t("finishButton") : t("nextSceneButton");
 }
 
 function updateTopbar() {
-  dom.sceneCounter.textContent = t("sceneCounter", { current: game.index + 1, total: game.scenes.length });
-  dom.scoreLabel.textContent = t("scoreLabel", { score: game.totalScore, max: game.scenes.length * MAX_SCORE_PER_SCENE });
+  const scene = game.scenes[game.index];
+  dom.sceneCounter.textContent = t("sceneCounter", {
+    current: game.index + 1,
+    total: game.scenes.length,
+  });
+  dom.sceneTitle.textContent = scene ? field(scene, "title") : "";
+  dom.scoreLabel.textContent = t("scoreLabel", {
+    score: game.totalScore,
+    max: game.scenes.length * MAX_SCORE_PER_SCENE,
+  });
 }
 
-async function loadCurrentScene() {
+function loadCurrentScene() {
   const scene = game.scenes[game.index];
-  clearHintOutline(dom.hintLayer);
   hideResultModal(dom);
   dom.btnConfirm.classList.remove("pulse");
   dom.rotateHint.hidden = true;
 
-  const [bgMarkup, objMarkup] = await Promise.all([
-    loadBackgroundMarkup(scene),
-    loadObjectMarkup(scene),
-  ]);
+  game.app.loadScene(scene);
+  game.controller.loadScene(scene);
+  game.trayPreview.show(scene.missingObject.builder);
 
-  dom.canvas.setAttribute("viewBox", "0 0 800 600");
-  dom.bgLayer.replaceChildren();
-  for (const child of bgMarkup.children) {
-    dom.bgLayer.appendChild(child.cloneNode(true));
-  }
-
-  game.pointerController.loadScene(scene, objMarkup);
   updateTopbar();
-  dom.btnNextScene.textContent = game.index >= game.scenes.length - 1 ? t("finishButton") : t("nextSceneButton");
+  dom.btnNextScene.textContent =
+    game.index >= game.scenes.length - 1 ? t("finishButton") : t("nextSceneButton");
 }
 
 function onConfirmReady(ready) {
@@ -114,7 +125,7 @@ function onRotateHintVisible(visible) {
 }
 
 function onConfirmClick() {
-  const placement = game.pointerController.lock();
+  const placement = game.controller.lock();
   if (!placement) return;
   const scene = game.scenes[game.index];
   const result = scorePlacement(scene, placement);
@@ -122,9 +133,7 @@ function onConfirmClick() {
   game.totalScore += result.score;
   game.totalStars += result.stars;
 
-  if (result.revealHint) {
-    renderHintOutline(dom.hintLayer, scene);
-  }
+  if (result.revealHint) game.app.showTargetMarker(scene);
 
   const maxSoFar = (game.index + 1) * MAX_SCORE_PER_SCENE;
   game.lastResult = result;
@@ -133,41 +142,38 @@ function onConfirmClick() {
   updateTopbar();
 }
 
-async function onNextSceneClick() {
+function onNextSceneClick() {
   hideResultModal(dom);
   game.index += 1;
   if (game.index >= game.scenes.length) {
     showFinalSummary();
     return;
   }
-  await loadCurrentScene();
+  loadCurrentScene();
 }
 
 function showFinalSummary() {
   const maxScore = game.scenes.length * MAX_SCORE_PER_SCENE;
   const maxStars = game.scenes.length * MAX_STARS_PER_SCENE;
   const percent = Math.round((game.totalScore / maxScore) * 100);
-  const rankKey = rankForPercent(percent);
-  renderFinalSummary(dom, game.totalScore, maxScore, game.totalStars, maxStars, rankKey);
+  renderFinalSummary(dom, game.totalScore, maxScore, game.totalStars, maxStars, rankForPercent(percent));
   showScreen(dom.screenFinal);
 }
 
-async function startGame() {
+function startGame() {
   game.index = 0;
   game.totalScore = 0;
   game.totalStars = 0;
   showScreen(dom.screenGame);
-  await loadCurrentScene();
+  loadCurrentScene();
 }
 
 async function onLangToggle() {
-  const next = getLang() === "tr" ? "en" : "tr";
-  await setLang(next);
+  await setLang(getLang() === "tr" ? "en" : "tr");
   applyStaticStrings();
   updateTopbar();
   if (!dom.modal.hidden && game.lastResult) {
-    const scene = game.scenes[game.index];
-    renderResultModal(dom, scene, game.lastResult, game.totalScore, game.lastMaxSoFar);
+    renderResultModal(dom, game.scenes[game.index], game.lastResult, game.totalScore, game.lastMaxSoFar);
   }
 }
 
@@ -177,18 +183,18 @@ async function init() {
     game.scenes = await loadScenes();
     applyStaticStrings();
 
-    game.pointerController = new PointerController(
-      dom.canvas,
-      { ghostLayer: dom.ghostLayer, placedLayer: dom.placedLayer, trayEl: dom.tray, trayIcon: dom.trayIcon },
+    game.app = new ThreeApp(dom.canvas);
+    game.trayPreview = new TrayPreview(dom.trayCanvas);
+    game.controller = new PlacementController(
+      game.app,
+      { canvas: dom.canvas, trayEl: dom.tray },
       { onConfirmReady, onRotateHintVisible }
     );
 
     dom.btnStart.addEventListener("click", startGame);
     dom.btnConfirm.addEventListener("click", onConfirmClick);
     dom.btnNextScene.addEventListener("click", onNextSceneClick);
-    dom.btnPlayAgain.addEventListener("click", () => {
-      showScreen(dom.screenIntro);
-    });
+    dom.btnPlayAgain.addEventListener("click", () => showScreen(dom.screenIntro));
     dom.btnLang.addEventListener("click", onLangToggle);
 
     showScreen(dom.screenIntro);
