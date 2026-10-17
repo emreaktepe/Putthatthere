@@ -106,71 +106,194 @@ function signOnPost(x, z, texName, height, signW, signH) {
 /* Environments                                                        */
 /* ------------------------------------------------------------------ */
 
+/* Station volume (metres): platform x -6..3 (edge at +3), tracks to x 9.4,
+   hall z -11..11, floor y 0, track bed y -1.1, ceiling y 4.8. */
+const STATION = { xBack: -6, xFar: 9.4, zHalf: 11, yBed: -1.1, yTop: 4.8 };
+
+/** Inward-facing flat wall; UVs are scaled so one texture tile covers `tile` metres. */
+function wallPlane(w, h, mat, tile = 1) {
+  const geo = new THREE.PlaneGeometry(w, h);
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) * w) / tile, (uv.getY(i) * h) / tile);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function put(mesh, x, y, z, ry = 0, rx = 0) {
+  mesh.position.set(x, y, z);
+  mesh.rotation.set(rx, ry, 0);
+  return mesh;
+}
+
+/** Static scenery that should not cast shadows (structure, track, fixtures). */
+function still(mesh) {
+  mesh.castShadow = false;
+  return mesh;
+}
+
+function bench(x, z) {
+  const b = new THREE.Group();
+  b.add(box(0.5, 0.08, 1.8, material("wood"), 0, 0.45, 0));
+  b.add(box(0.06, 0.4, 1.8, material("wood"), -0.22, 0.72, 0));
+  b.add(box(0.44, 0.42, 0.1, material("steel"), 0, 0.22, -0.75));
+  b.add(box(0.44, 0.42, 0.1, material("steel"), 0, 0.22, 0.75));
+  b.position.set(x, 0, z);
+  return b;
+}
+
+function trashBin(x, z) {
+  const b = new THREE.Group();
+  b.add(cylinder(0.22, 0.8, material("binGreen"), 0, 0.4, 0, 16));
+  b.add(cylinder(0.24, 0.06, material("darkMetal"), 0, 0.83, 0, 16));
+  b.position.set(x, 0, z);
+  return b;
+}
+
+/** Framed board mounted on a wall facing +x (ry = 90deg) or -x (ry = -90deg). */
+function wallBoard(x, y, z, w, h, matName, ry) {
+  const g = new THREE.Group();
+  const dir = ry > 0 ? 1 : -1;
+  g.add(still(put(box(0.05, h + 0.1, w + 0.1, material("darkMetal")), x + dir * 0.025, y, z)));
+  g.add(put(new THREE.Mesh(new THREE.PlaneGeometry(w, h), material(matName)), x + dir * 0.055, y, z, ry));
+  return g;
+}
+
 function metroPlatform() {
   const g = new THREE.Group();
+  const { xBack, xFar, zHalf, yBed, yTop } = STATION;
+  const hallH = yTop - yBed;
+  const hallMidY = (yTop + yBed) / 2;
+  const tunnelZ = 16.3; // tunnel stub depth beyond the end walls
+  const trackLen = tunnelZ * 2;
 
-  // platform slab: top surface at y = 0, edge at x = +3
-  g.add(box(7, 1.1, 30, material("paving"), -0.5, -0.55, 0));
-  // yellow painted edge line right at the drop-off
-  g.add(marking(0.1, 30, material("paintWorn"), 2.94, 0, 0.008));
+  /* platform: granite floor over a concrete slab, edge at x = +3 */
+  g.add(still(box(9, 1.096, zHalf * 2, material("concrete"), -1.5, -0.552, 0)));
+  g.add(put(wallPlane(9, zHalf * 2, material("granite"), 2), -1.5, 0, 0, 0, -90 * DEG));
+  g.add(marking(0.1, zHalf * 2, material("paintYellow"), 2.94, 0, 0.008));
 
-  // track bed and rails
-  g.add(box(6.4, 0.5, 30, material("ballast"), 6.2, -1.35, 0));
-  for (const rx of [4.7, 6.15]) {
-    g.add(box(0.09, 0.14, 30, material("rail"), rx, -1.03, 0));
+  /* track bed, sleepers, running rails, third rail */
+  g.add(still(box(6.4, 0.5, trackLen, material("ballast"), 6.2, yBed - 0.25, 0)));
+  const sleeperCount = Math.floor(trackLen / 0.65);
+  const sleepers = new THREE.InstancedMesh(new THREE.BoxGeometry(2.4, 0.16, 0.26), material("concrete"), sleeperCount);
+  const m4 = new THREE.Matrix4();
+  for (let i = 0; i < sleeperCount; i++) {
+    m4.setPosition(5.42, yBed + 0.08, -trackLen / 2 + 0.4 + i * 0.65);
+    sleepers.setMatrixAt(i, m4);
   }
-  for (let z = -14; z <= 14; z += 1.4) {
-    g.add(box(2.2, 0.11, 0.24, material("wood"), 5.42, -1.15, z));
+  sleepers.receiveShadow = true;
+  g.add(sleepers);
+  for (const rx of [4.7, 6.135]) g.add(still(box(0.07, 0.17, trackLen, material("rail"), rx, yBed + 0.245, 0)));
+  // third rail with its protective cover band
+  g.add(still(box(0.1, 0.1, trackLen, material("rail"), 7.0, yBed + 0.35, 0)));
+  g.add(still(box(0.16, 0.025, trackLen, material("railCover"), 7.0, yBed + 0.412, 0)));
+  // cable tray along the far wall
+  g.add(still(box(0.2, 0.12, zHalf * 2, material("darkMetal"), xFar - 0.12, -0.3, 0)));
+
+  /* enclosure: back wall, far wall, ceiling */
+  const tiles = material("wallTile");
+  g.add(put(wallPlane(zHalf * 2, hallH, tiles), xBack, hallMidY, 0, 90 * DEG));
+  g.add(put(wallPlane(zHalf * 2, hallH, tiles), xFar, hallMidY, 0, -90 * DEG));
+  g.add(put(wallPlane(xFar - xBack, zHalf * 2, material("ceiling"), 2), (xFar + xBack) / 2, yTop, 0, 0, 90 * DEG));
+  // green M2 line stripe on both long walls
+  g.add(still(box(0.03, 0.22, zHalf * 2, material("m2Green"), xBack + 0.015, 1.3, 0)));
+  g.add(still(box(0.03, 0.22, zHalf * 2, material("m2Green"), xFar - 0.015, 1.3, 0)));
+
+  /* end walls with a tunnel mouth over the tracks (x 3.5..7.4, up to y 3.2) */
+  const mouthL = 3.5;
+  const mouthR = 7.4;
+  const mouthTop = 3.2;
+  const voidMat = material("tunnelVoid");
+  voidMat.side = THREE.DoubleSide;
+  for (const s of [-1, 1]) {
+    const ry = s < 0 ? 0 : 180 * DEG;
+    const wz = s * zHalf;
+    g.add(put(wallPlane(mouthL - xBack, hallH, tiles), (xBack + mouthL) / 2, hallMidY, wz, ry));
+    g.add(put(wallPlane(mouthR - mouthL, yTop - mouthTop, tiles), (mouthL + mouthR) / 2, (yTop + mouthTop) / 2, wz, ry));
+    g.add(put(wallPlane(xFar - mouthR, hallH, tiles), (mouthR + xFar) / 2, hallMidY, wz, ry));
+    // dark tunnel stub: liner, roof and a black end cap so nothing outside is ever visible
+    const stubLen = tunnelZ - zHalf;
+    const mid = s * (zHalf + stubLen / 2);
+    const stubH = mouthTop - yBed;
+    g.add(still(box(0.2, stubH, stubLen, material("tunnel"), mouthL - 0.1, yBed + stubH / 2, mid)));
+    g.add(still(box(0.2, stubH, stubLen, material("tunnel"), mouthR + 0.1, yBed + stubH / 2, mid)));
+    g.add(still(box(mouthR - mouthL + 0.4, 0.2, stubLen, material("tunnel"), (mouthL + mouthR) / 2, mouthTop + 0.1, mid)));
+    const cap = new THREE.Mesh(new THREE.PlaneGeometry(mouthR - mouthL + 0.4, stubH + 0.4), voidMat);
+    g.add(put(cap, (mouthL + mouthR) / 2, yBed + stubH / 2, s * tunnelZ));
+    // steel frame around the mouth
+    const fz = s * (zHalf - 0.04);
+    g.add(still(box(mouthR - mouthL + 0.2, 0.14, 0.1, material("darkMetal"), (mouthL + mouthR) / 2, mouthTop, fz)));
+    g.add(still(box(0.14, stubH, 0.1, material("darkMetal"), mouthL, yBed + stubH / 2, fz)));
+    g.add(still(box(0.14, stubH, 0.1, material("darkMetal"), mouthR, yBed + stubH / 2, fz)));
+    // signal head beside the mouth
+    const sz = s * (zHalf - 0.1);
+    g.add(still(box(0.25, 0.7, 0.12, material("darkMetal"), 8.4, 2.4, sz)));
+    const lensRed = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), material("signalRed"));
+    const lensDim = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), material("darkMetal"));
+    g.add(put(lensRed, 8.4, 2.6, sz - s * 0.07));
+    g.add(put(lensDim, 8.4, 2.35, sz - s * 0.07));
   }
 
-  // enclosing structure
-  g.add(box(0.3, 4.4, 30, material("wallTiled"), -4.15, 2.2, 0));
-  g.add(box(0.3, 5.2, 30, material("wallTiled"), 9.55, 1.5, 0));
-  g.add(box(14.2, 0.3, 30, material("ceiling"), 2.7, 4.45, 0));
+  /* ceiling: beams plus emissive light panels (instanced) */
+  for (let z = -10; z <= 10; z += 4) {
+    g.add(still(box(xFar - xBack, 0.2, 0.3, material("ceiling"), (xFar + xBack) / 2, yTop - 0.1, z)));
+  }
+  const panelXs = [-3.8, 0.2, 5.4];
+  const panelZs = [-8, -4, 0, 4, 8];
+  const panels = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(1.2, 0.05, 2.4),
+    material("panelLit"),
+    panelXs.length * panelZs.length
+  );
+  let pi = 0;
+  for (const px of panelXs) {
+    for (const pz of panelZs) {
+      m4.setPosition(px, yTop - 0.03, pz);
+      panels.setMatrixAt(pi++, m4);
+    }
+  }
+  g.add(panels);
 
-  // columns down the platform
-  for (const z of [-9, -3, 3, 9]) {
-    g.add(box(0.42, 4.3, 0.42, material("concrete"), -2.6, 2.15, z));
+  /* columns along the platform */
+  const colGeo = new THREE.BoxGeometry(0.45, yTop, 0.45);
+  const baseGeo = new THREE.BoxGeometry(0.5, 0.15, 0.5);
+  for (const z of [-8, -4, 0, 8]) {
+    const col = new THREE.Mesh(colGeo, material("concrete"));
+    col.castShadow = true;
+    col.receiveShadow = true;
+    g.add(put(col, -2.4, yTop / 2, z));
+    g.add(put(new THREE.Mesh(baseGeo, material("darkMetal")), -2.4, 0.075, z));
   }
 
-  // benches against the back wall
-  for (const z of [-6, 6]) {
-    const bench = new THREE.Group();
-    bench.add(box(0.5, 0.08, 1.8, material("wood"), 0, 0.45, 0));
-    bench.add(box(0.44, 0.42, 0.1, material("steel"), 0, 0.22, -0.75));
-    bench.add(box(0.44, 0.42, 0.1, material("steel"), 0, 0.22, 0.75));
-    bench.position.set(-3.4, 0, z);
-    g.add(bench);
+  /* back wall: benches, bin, signage, map and ad panels */
+  g.add(bench(-5.55, -7));
+  g.add(bench(-5.55, -0.5));
+  g.add(trashBin(-5.5, 7.6));
+  const nameMat = material("stationName");
+  const nameGeo = new THREE.PlaneGeometry(2.4, 0.6);
+  for (const z of [-8.5, 0, 8.5]) g.add(put(new THREE.Mesh(nameGeo, nameMat), xBack + 0.03, 2.9, z, 90 * DEG));
+  for (const z of [-6, 6]) g.add(put(new THREE.Mesh(nameGeo, nameMat), xFar - 0.03, 2.9, z, -90 * DEG));
+  const dirGeo = new THREE.PlaneGeometry(2.0, 0.5);
+  for (const z of [-4, 4]) g.add(put(new THREE.Mesh(dirGeo, material("directionSign")), xBack + 0.03, 3.8, z, 90 * DEG));
+  g.add(wallBoard(xBack, 1.6, -3.2, 0.9, 0.9, "lineMap", 90 * DEG));
+  for (const z of [0.8, 2.4]) g.add(wallBoard(xBack, 1.5, z, 1.0, 1.5, "adPoster", 90 * DEG));
+  for (const z of [-9, -2.5, 2.5, 9]) g.add(wallBoard(xFar, 1.7, z, 1.0, 1.5, "adPoster", -90 * DEG));
+
+  /* passengers: clear of the strip zone (x ~2.25) and of the main sightline */
+  g.add(person("#3d5a80", -1.2, -5.5, 100 * DEG));
+  g.add(person("#7a4b52", -3.0, -9.0, 80 * DEG));
+  g.add(person("#4d6b4a", -1.0, -9.6, 95 * DEG));
+  g.add(person("#8a7a3a", -4.6, -8.2, 70 * DEG));
+  g.add(person("#5b4a7a", -3.4, 9.4, 120 * DEG));
+
+  /* lighting: hemisphere + 3 point lights + one shadow-casting directional */
+  const lights = [new THREE.HemisphereLight(0xc9d8e6, 0x3a3733, 1.1)];
+  for (const z of [-7, 0, 7]) {
+    const lamp = new THREE.PointLight(0xffeccd, 14, 20, 2);
+    lamp.position.set(-1.5, yTop - 0.6, z);
+    lights.push(lamp);
   }
-
-  // station signage on the back wall
-  for (const z of [-7, 4]) {
-    const sign = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.4, 0.7),
-      new THREE.MeshStandardMaterial({ map: texture("stationSign"), roughness: 0.6 })
-    );
-    sign.rotation.y = 90 * DEG;
-    sign.position.set(-3.98, 2.3, z);
-    g.add(sign);
-  }
-
-  // ceiling light strips — emissive panels plus the lights that actually carry the room
-  const lights = [new THREE.HemisphereLight(0xc3d6e8, 0x33302c, 0.9)];
-  for (let z = -12; z <= 12; z += 4) {
-    const strip = box(1.6, 0.08, 1.2, material("lampLit"), 0.5, 4.24, z);
-    strip.castShadow = false;
-    g.add(strip);
-    const lamp = new THREE.PointLight(0xffeccd, 9, 18, 2);
-    lamp.position.set(0.5, 4.05, z);
-    g.add(lamp);
-  }
-
-  // passengers waiting, standing well back from the edge and clear of the sightline
-  g.add(person("#3d5a80", 0.1, -3.5, 100 * DEG));
-  g.add(person("#7a4b52", -1.4, -7.5, 80 * DEG));
-  g.add(person("#4d6b4a", 0.8, -11, 95 * DEG));
-
-  const fill = new THREE.DirectionalLight(0xfff0d8, 1.1);
+  const fill = new THREE.DirectionalLight(0xfff0d8, 1.2);
   fill.position.set(-5, 8, 9);
   fill.castShadow = true;
   lights.push(fill);
@@ -178,8 +301,8 @@ function metroPlatform() {
   return {
     group: g,
     lights,
-    background: new THREE.Color("#0d1116"),
-    fog: new THREE.Fog(0x0d1116, 22, 48),
+    background: new THREE.Color("#05070a"),
+    fog: new THREE.Fog(0x0b0e12, 20, 50),
   };
 }
 
