@@ -1,3 +1,7 @@
+## English summary
+
+*Put That There* is a browser-based "genius test" puzzle inspired by Richard Bolt's 1980 MIT Media Lab "Put-That-There" demo. In each real-scale 3D scene (a metro platform, a parking lot, a sidewalk corner, a crosswalk and a building corridor), one real-world object or marking is missing, and you pick it ("that") and place it in the right spot ("there"). Placement error is measured in real-world units (e.g. "Offset: 38 cm"), and you earn stars and points based on position and rotation accuracy, following real accessibility, traffic and fire-safety rules. There is no build step: it is plain static HTML/CSS/JS, so serve the folder with any static file server, e.g. `python3 -m http.server 8000`, and open http://localhost:8000 (opening `index.html` via `file://` will not work). The interface defaults to Turkish and can be switched to English from the top-right corner. Play it live at **https://emreaktepe.github.io/Putthatthere/**.
+
 # Şunu Şuraya Koy (Put That There)
 
 MIT Media Lab'ın 1980 tarihli ["Put-That-There"](https://en.wikipedia.org/wiki/Put-That-There) demosundan (Richard Bolt) ilham alan, tarayıcı tabanlı bir "dahi testi" bulmacası. Oyuncu **3B** ve gerçek ölçekli bir sahnede (metro peronu, otopark, kaldırım köşesi, yaya geçidi, bina koridoru) eksik olan tek bir gerçek dünya nesnesini/işaretini bulur, seçer ("that") ve doğru noktaya yerleştirir ("there"); konum ve gerekiyorsa döndürme doğruluğuna göre yıldız ve puan alır. Sahnede sürükleyerek etrafına bakabilir, tekerlekle yakınlaşabilir.
