@@ -45,7 +45,8 @@ export function showMenu({ hasSave, saveInfo, notice, onContinue, onNew }) {
       notice ? h("p", { class: "notice", role: "status" }, notice) : null,
       h("div", { class: "menu-btns" }, ...list),
       h("details", { class: "how" }, h("summary", null, "Nasıl oynanır?"),
-        h("p", null, STRINGS.controlsHelp), h("p", null, "Kamera: V açı değiştir · Z/C döndür · fare tekerleği yakınlaştır · sağ tuşla sürükle (📷)"), h("p", { class: "small" }, STRINGS.mobileHelp))),
+        h("p", null, STRINGS.controlsHelp), h("p", null, "Kamera: V açı değiştir · Z/C döndür · fare tekerleği yakınlaştır · sağ tuşla sürükle (📷)"), h("p", { class: "small" }, STRINGS.mobileHelp)),
+      h("a", { class: "admin-link", href: "./admin.html" }, "Yönetim")),
     h("footer", { class: "ver" }, `${STRINGS.title} · v${UI.version}`));
   mount(node, sc, { cls: "menu-stage" });
 }

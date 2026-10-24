@@ -328,3 +328,9 @@ h3 { font-size: 17px; color: var(--violet-2); }
   .link.open { animation: none; }
   .node.available .halo { animation: none; opacity: .7; }
 }
+
+/* ---------- Yönetim bağlantısı ve geliştirici şeridi (?dev=1) ---------- */
+.admin-link { margin-top: 6px; padding: 12px 16px; min-height: 44px; box-sizing: border-box; font: 13px var(--ui); color: var(--muted); text-decoration: underline; opacity: .8; }
+.admin-link:hover { color: var(--gold-2); opacity: 1; }
+#devbar { position: fixed; top: 2px; left: 50%; transform: translateX(-50%); z-index: 8; max-width: 94vw; padding: 2px 10px; border-radius: 0 0 8px 8px; background: rgba(0, 0, 0, .65); color: var(--gold-2); font: 10px/1.4 var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+#devbar.warn { color: var(--danger); }

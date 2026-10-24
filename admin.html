@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#0a0714" />
+<title>Yönetim · Büyücünün Gecesi</title>
+<link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png" />
+<link rel="stylesheet" href="./css/admin.css" />
+</head>
+<body>
+<a class="skip-link" href="#panel">İçeriğe geç</a>
+<div id="app"><p class="loading">Yükleniyor…</p></div>
+<noscript><p>Bu sayfa JavaScript gerektirir.</p></noscript>
+<script type="module">
+  import { boot } from "./js/admin/app.js";
+  boot().catch((e) => {
+    const p = document.createElement("p");
+    p.className = "banner bad";
+    p.setAttribute("role", "alert");
+    p.textContent = "Yönetim sayfası açılamadı: " + (e && e.message ? e.message : e);
+    document.getElementById("app").replaceChildren(p);
+  });
+</script>
+</body>
+</html>

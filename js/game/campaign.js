@@ -44,7 +44,7 @@ export function newGame() {
 export function persist() {
   const run = camp.practice ? camp.practice.real : S;
   const save = buildSave({ levelIds: LEVEL_IDS, completed: camp.completed, level: run.level, run, best: camp.best, configHash: CONFIG_INFO.baseHash });
-  if (writeSave(save)) camp.pending = save;
+  if (!camp.noSave && writeSave(save)) camp.pending = save; // noSave: geliştirici başlatması (?dev=1&level=) kayda dokunmaz
   return save;
 }
 export function wipeSave() { clearSave(); camp.pending = null; camp.status = "none"; }

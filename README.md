@@ -27,6 +27,14 @@ Telefondan denemek için sunucunun yazdığı "Network" adresini (aynı Wi-Fi) k
 - `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md` — hikâye, bölüm, düşman, büyü, görsel ve müzik tasarım belgesi
 - `.github/workflows/deploy-pages.yml` — `main`'e push'ta GitHub Pages'e dağıtım
 
+## Yönetim sayfası
+
+`http://localhost:8000/admin.html` (oyun menüsünde "Yönetim"). Düşman, büyü, bölüm, harita, hikâye ve ses ayarları formlardan düzenlenir; değişiklikler yalnız bu tarayıcıda taslak olarak (localStorage) kalır, repoya yazılmaz.
+
+- **Dene:** "Taslakla oyna" -> `index.html?cfg=draft`; bölüm formunda "Bu bölümden başlat" -> `?cfg=draft&dev=1&level=<id>` (kayda yazmaz).
+- **Dışa aktar:** tam `game.config.json`, değişiklik yaması ya da Claude için Türkçe yönlendirme paketi (.md). Dosyayı `data/game.config.json` yerine koyup `npm run validate` çalıştırın veya paketi Claude'a verin.
+- Taslak adres bazlıdır (localhost ile github.io ayrı).
+
 ## Lisans
 
 Bkz. `LICENSE`. Three.js için `vendor/THREE_LICENSE`.

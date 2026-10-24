@@ -46,6 +46,16 @@ export function openMap(focusId = null, freshId = null) {
   });
 }
 
+// ?dev=1&level=<id>: seçilen bölümü, önceki bölümlerin ödülleriyle (alıştırma donanımı) kayda yazmadan açar. Geçersiz kimlikte false.
+export function devStart(levelId) {
+  if (!camp.booted) { camp.booted = true; initCampaign(); }
+  if (!LEVEL_IDS.includes(levelId)) return false;
+  camp.noSave = true;
+  if (hasSave()) continueGame();
+  playLevel(levelId, true);
+  return true;
+}
+
 function playLevel(id, practice) {
   const idx = LEVEL_IDS.indexOf(id);
   if (practice) startPractice(idx); else { endPractice(); S.level = idx; }
