@@ -2,13 +2,13 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Büyücünün Gecesi — Three.js demo</title>
 <script type="importmap">
 { "imports": { "three": "../vendor/three.module.min.js" } }
 </script>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0714; font-family: Georgia, "Times New Roman", serif; color: #f1e6ff; user-select: none; }
+  html, body { margin: 0; height: 100%; height: 100dvh; overflow: hidden; touch-action: none; overscroll-behavior: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; background: #0a0714; font-family: Georgia, "Times New Roman", serif; color: #f1e6ff; user-select: none; }
   canvas { display: block; width: 100%; height: 100%; }
   #hud { position: fixed; top: 12px; left: 0; right: 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 26px; font-size: 19px; pointer-events: none; text-shadow: 0 0 8px #8e44ff, 0 2px 6px #000; }
   #hearts { letter-spacing: 3px; color: #ff7a93; }
@@ -24,6 +24,24 @@
   p { margin: 0; max-width: 560px; line-height: 1.5; }
   .gbtn { font-family: inherit; font-size: 17px; padding: 10px 24px; border: 1px solid #d9b3ff; border-radius: 8px; background: #3a1d7a; color: #fff; cursor: pointer; box-shadow: 0 0 14px #8e44ff; }
   .gbtn:hover { background: #5128a8; }
+  #joy { position: fixed; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid rgba(217,179,255,.5); background: rgba(80,40,160,.2); pointer-events: none; display: none; }
+  #joy i { position: absolute; left: 40px; top: 40px; width: 40px; height: 40px; border-radius: 50%; background: rgba(217,179,255,.75); box-shadow: 0 0 12px #8e44ff; }
+  #fire { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: 74px; width: 92px; height: 92px; border-radius: 50%; border: 2px solid #fff; background: rgba(120,50,220,.6); color: #fff; font-size: 34px; box-shadow: 0 0 18px #8e44ff; display: none; touch-action: none; }
+  #fire:active { background: rgba(160,90,255,.85); }
+  body.touch #fire { display: block; }
+  body.touch.playing #fire { display: block; }
+  body:not(.playing) #fire, body:not(.playing) #joy { display: none !important; }
+  .wbtn .k { opacity: .7; }
+  @media (max-width: 700px), (pointer: coarse) {
+    #hud { font-size: 14px; gap: 4px 14px; top: max(6px, env(safe-area-inset-top)); }
+    h1 { font-size: 30px; }
+    p { font-size: 15px; }
+    #msg { overflow-y: auto; justify-content: flex-start; padding-top: 8vh; padding-bottom: 20px; }
+    .wbtn { font-size: 20px; padding: 8px 12px; }
+    .wbtn .wn, .wbtn .k { display: none; }
+    #weapons { bottom: max(12px, env(safe-area-inset-bottom)); }
+    .gbtn { font-size: 16px; padding: 12px 18px; }
+  }
   .gbtn small { display: block; font-size: 13px; color: #cdb8ff; margin-top: 3px; }
 </style>
 </head>
@@ -32,6 +50,8 @@
   <span id="level"></span><span id="goal"></span><span id="hearts"></span><span id="time"></span><span id="score"></span><span id="boss"></span>
 </div>
 <div id="weapons"></div>
+<div id="joy"><i></i></div>
+<button id="fire" aria-label="Büyü yap">✦</button>
 <div id="msg"><h1 id="title"></h1><p id="sub"></p><div id="btns"></div></div>
 <script type="module">
 import * as THREE from "three";
@@ -54,10 +74,10 @@ const LEVELS = [
 ];
 
 const WEAPONS = {
-  fire: { name: "Ateş Topu", key: "1", color: 0xffa03a, cd: 0.35, dmg: 1, speed: 16 },
-  frost: { name: "Buz Oku", key: "2", color: 0x7fd6ff, cd: 0.5, dmg: 1, speed: 15, slow: true },
-  arcane: { name: "Üçlü Büyü", key: "3", color: 0xd27bff, cd: 0.65, dmg: 1, speed: 15, spread: 3 },
-  lightning: { name: "Yıldırım", key: "4", color: 0xfff27a, cd: 0.9, dmg: 2, chain: 3, range: 13 },
+  fire: { name: "Ateş Topu", icon: "🔥", key: "1", color: 0xffa03a, cd: 0.35, dmg: 1, speed: 16 },
+  frost: { name: "Buz Oku", icon: "❄️", key: "2", color: 0x7fd6ff, cd: 0.5, dmg: 1, speed: 15, slow: true },
+  arcane: { name: "Üçlü Büyü", icon: "✨", key: "3", color: 0xd27bff, cd: 0.65, dmg: 1, speed: 15, spread: 3 },
+  lightning: { name: "Yıldırım", icon: "⚡", key: "4", color: 0xfff27a, cd: 0.9, dmg: 2, chain: 3, range: 13 },
 };
 const WEAPON_ORDER = ["fire", "frost", "arcane", "lightning"];
 
@@ -246,7 +266,12 @@ const keys = new Set();
 const aim = new THREE.Vector3(0, 0, -1);
 const ray = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-let drag = null;
+let joy = null; // { id, x, y, dx, dy }
+let fireHeld = false;
+const joyEl = $("joy"), fireEl = $("fire");
+const isTouch = matchMedia("(pointer: coarse)").matches;
+if (isTouch) document.body.classList.add("touch");
+addEventListener("contextmenu", (e) => e.preventDefault());
 addEventListener("keydown", (e) => {
   keys.add(e.code);
   if (e.code === "Space") { e.preventDefault(); cast(); }
@@ -255,17 +280,38 @@ addEventListener("keydown", (e) => {
 });
 addEventListener("keyup", (e) => keys.delete(e.code));
 addEventListener("pointermove", (e) => {
-  mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
-  if (drag) { drag.dx = e.clientX - drag.x; drag.dy = e.clientY - drag.y; }
+  if (e.pointerType !== "touch") mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  if (joy && e.pointerId === joy.id) {
+    const R = 50;
+    let dx = e.clientX - joy.x, dy = e.clientY - joy.y;
+    const len = Math.hypot(dx, dy);
+    if (len > R) { dx = (dx / len) * R; dy = (dy / len) * R; }
+    joy.dx = dx / R; joy.dy = dy / R;
+    joyEl.firstElementChild.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
 });
 addEventListener("pointerdown", (e) => {
   if (e.target.closest("button")) return;
   if (e.pointerType === "touch") {
-    drag = { x: e.clientX, y: e.clientY };
-    cast();
+    document.body.classList.add("touch");
+    if (!joy) {
+      joy = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0 };
+      joyEl.style.left = e.clientX + "px";
+      joyEl.style.top = e.clientY + "px";
+      joyEl.style.display = "block";
+      joyEl.firstElementChild.style.transform = "";
+    }
   } else cast();
 });
-addEventListener("pointerup", () => { drag = null; });
+function endPointer(e) {
+  if (joy && e.pointerId === joy.id) { joy = null; joyEl.style.display = "none"; }
+}
+addEventListener("pointerup", endPointer);
+addEventListener("pointercancel", endPointer);
+fireEl.addEventListener("pointerdown", (e) => { e.preventDefault(); fireHeld = true; fireEl.setPointerCapture(e.pointerId); cast(); });
+const stopFire = () => { fireHeld = false; };
+fireEl.addEventListener("pointerup", stopFire);
+fireEl.addEventListener("pointercancel", stopFire);
 
 function selectWeapon(id) {
   if (!S.unlocked.includes(id)) return;
@@ -282,7 +328,7 @@ function renderWeapons() {
     const b = document.createElement("button");
     const open = S.unlocked.includes(id);
     b.className = "wbtn" + (id === S.weapon ? " active" : "") + (open ? "" : " locked");
-    b.textContent = open ? `${w.key} · ${w.name}` : `${w.key} · 🔒`;
+    b.innerHTML = open ? `${w.icon} <span class="k">${w.key} ·</span> <span class="wn">${w.name}</span>` : `🔒`;
     b.onclick = () => selectWeapon(id);
     bar.appendChild(b);
   }
@@ -375,6 +421,8 @@ function renderHud() {
 
 function screen(title, html, buttons) {
   running = false;
+  document.body.classList.remove("playing");
+  fireHeld = false;
   $("title").textContent = title;
   $("sub").innerHTML = html;
   const box = $("btns");
@@ -415,6 +463,7 @@ function startLevel() {
   for (const [type, n] of Object.entries(L.start)) for (let i = 0; i < n; i++) spawnEnemy(type);
   orbTip.material.color.setHex(WEAPONS[S.weapon].color);
   $("msg").hidden = true;
+  document.body.classList.add("playing");
   running = true;
   renderHud();
   renderWeapons();
@@ -453,15 +502,21 @@ function levelClear() {
   })));
 }
 
+let camK = 1;
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  camK = camera.aspect < 1 ? Math.min(1.6, 0.9 / camera.aspect) : 1;
+  scene.fog.density = 0.035 / camK;
 }
 addEventListener("resize", resize);
 resize();
 
 // ---------- Döngü ----------
+let mouseSeen = false;
+addEventListener("mousemove", () => { mouseSeen = true; });
+const mouseUsed = () => mouseSeen;
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const hit = new THREE.Vector3();
 const clock = new THREE.Clock();
@@ -471,6 +526,10 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
   ring.rotation.z += dt * 0.3;
+  const focus = wizard.position.clone().multiplyScalar(0.6);
+  camera.position.set(focus.x, 17 * camK, focus.z + 12 * camK);
+  camera.lookAt(focus);
+  camera.updateMatrixWorld();
   pickups.forEach((p, i) => { p.mesh.position.y = 0.9 + Math.sin(t * 2.5 + i) * 0.2; p.mesh.rotation.y += dt * 1.5; });
 
   for (let i = sparks.length - 1; i >= 0; i--) {
@@ -494,7 +553,7 @@ renderer.setAnimationLoop(() => {
     // Hareket
     let dx = (keys.has("KeyD") || keys.has("ArrowRight")) - (keys.has("KeyA") || keys.has("ArrowLeft"));
     let dz = (keys.has("KeyS") || keys.has("ArrowDown")) - (keys.has("KeyW") || keys.has("ArrowUp"));
-    if (drag && drag.dx !== undefined) { dx += THREE.MathUtils.clamp(drag.dx / 60, -1, 1); dz += THREE.MathUtils.clamp(drag.dy / 60, -1, 1); }
+    if (joy) { dx += joy.dx; dz += joy.dy; }
     const dir = new THREE.Vector3(dx, 0, dz);
     if (dir.lengthSq() > 1) dir.normalize();
     wizard.position.addScaledVector(dir, BASE_SPEED * S.speedMul * dt);
@@ -503,11 +562,16 @@ renderer.setAnimationLoop(() => {
 
     // Nişan: fare yerde nereyi gösteriyorsa; dokunmatikte yürüme yönü
     ray.setFromCamera(mouse, camera);
-    if (drag) { if (dir.lengthSq() > 0) aim.copy(dir).normalize(); }
-    else if (ray.ray.intersectPlane(groundPlane, hit)) {
+    if (joy || (isTouch && !mouseUsed())) {
+      // dokunmatik: en yakın düşmana otomatik nişan, yoksa yürüme yönü
+      const near = nearestEnemies(wizard.position, 1, 18)[0];
+      if (near) aim.copy(near.mesh.position).sub(wizard.position).setY(0).normalize();
+      else if (dir.lengthSq() > 0) aim.copy(dir).normalize();
+    } else if (ray.ray.intersectPlane(groundPlane, hit)) {
       const d = hit.sub(wizard.position).setY(0);
       if (d.lengthSq() > 0.01) aim.copy(d.normalize());
     }
+    if (fireHeld) cast();
     wizard.rotation.y = Math.atan2(aim.x, aim.z);
     wand.position.set(wizard.position.x, 2.2, wizard.position.z);
     wizard.visible = invuln <= 0 || Math.floor(t * 12) % 2 === 0;
@@ -593,7 +657,7 @@ renderer.setAnimationLoop(() => {
 
 // Açılış ekranı
 renderWeapons();
-screen("Büyücünün Gecesi", "5 lanetli bölümden geç. Mana kristallerini topla, düşmanları büyüyle durdur, yeni büyüler ve yetenekler kazan.<br>WASD / ok tuşları: yürü · Fare: nişan · Boşluk / tık: büyü · 1-4: büyü seç<br><small>Mobilde: dokunup sürükle</small>", [
+screen("Büyücünün Gecesi", "5 lanetli bölümden geç. Mana kristallerini topla, düşmanları büyüyle durdur, yeni büyüler ve yetenekler kazan.<br>WASD / ok tuşları: yürü · Fare: nişan · Boşluk / tık: büyü · 1-4: büyü seç<br><small>Mobilde: ekranda parmağını sürükleyerek yürü, sağ alttaki ✦ butonuna basılı tutarak ateş et (nişan otomatik). Alttaki simgelerle büyü değiştir.</small>", [
   { label: "Büyüyü Başlat", fn: introLevel },
 ]);
 </script>
