@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { ENEMIES } from "../core/data.js";
 import { RT, bolts, clouds, echoQ, enemies, enemyShots, fxs, hazards, pickups, shots, strikes } from "../core/state.js";
 import { ARENA, rand } from "../core/util.js";
-import { BLOB_GEO, BLOB_MAT, buildEnemy, disposeEnemy } from "../render/enemies.js";
+import { BLOB_GEO, BLOB_MAT, buildEnemy, clearDying, disposeEnemy } from "../render/enemies.js";
 import { PICKUP_LOOK, burst, dropHazard, removeObj, resetSparks } from "../render/fx.js";
 import { glowSprite } from "../render/gfx.js";
 import { scene } from "../render/scene.js";
@@ -22,7 +22,7 @@ export const liveCount = () => enemies.reduce((n, e) => n + (e.d.noCap ? 0 : 1),
 
 export function spawnEnemy(type, at) {
   const d = ENEMIES[type];
-  const { obj, mat: m, base, anim, baked } = buildEnemy(type);
+  const { obj, mat: m, base, anim, baked, vis, shieldK } = buildEnemy(type);
   if (at) obj.position.set(at.x, d.y, at.z);
   else {
     const a = Math.random() * Math.PI * 2;
@@ -33,7 +33,7 @@ export function spawnEnemy(type, at) {
   const e = {
     mesh: obj, mat: m, base, type, d, hp: d.hp, maxHp: d.hp, slow: 0, phase: Math.random() * 10, spd: d.speed,
     glow: 0, sq: 1, shield: 0, dead: false, st: "approach", tm: 0, cd: 0, fuse: 0,
-    anim, baked, age: 0, flash: 0, kx: 0, kz: 0, blob: null, iceG: null,
+    anim, baked, vis, shieldK, tintKey: -1, ts: 1, moving: false, dying: false, hurtT: 0, atkT: 0, windT: 0, age: 0, flash: 0, kx: 0, kz: 0, blob: null, iceG: null,
   };
   if (d.ai !== "boss" && d.ai !== "knight") { // kontakt gölgesi: gerçek gölge yerine yumuşak daire
     e.blob = new THREE.Mesh(BLOB_GEO, BLOB_MAT);
@@ -59,6 +59,7 @@ export function clearWorld() {
   strikes.forEach((s) => s.ball.material.dispose());
   enemies.forEach((e) => { disposeEnemy(e); if (e.blob) scene.remove(e.blob); });
   pickups.length = enemies.length = shots.length = enemyShots.length = bolts.length = hazards.length = clouds.length = strikes.length = fxs.length = echoQ.length = 0;
+  clearDying();
   resetSparks();
   RT.bossRef = null;
   RT.shieldT = RT.timeslowT = 0;

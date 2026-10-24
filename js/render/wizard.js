@@ -7,6 +7,7 @@ import { PLAYER } from "../core/data.js";
 import { BMAT, BOX, CONE, CYL, OCT, SMAT, SPH, TOR, bakeNode, glowSprite, glowTex, mat, mk, rippleLathe } from "./gfx.js";
 import { scene, wand } from "./scene.js";
 import { createProWizard, TIP_Y } from "./aldemir-pro.js";
+import { createPiril } from "./models/piril.js";
 import { detectEnv, readQuality, resolveQuality } from "../core/quality.js";
 
 export const wizard = new THREE.Group();
@@ -245,17 +246,15 @@ export const shieldBall = new THREE.Mesh(new THREE.SphereGeometry(1.4, 20, 14), 
 shieldBall.visible = false;
 scene.add(shieldBall);
 
-// Pırıl (dost ruh): parlayan çekirdek, hale, yörünge kıvılcımları ve iz bırakan kuyruk
+// Pırıl (dost ruh): Core6 Pro paketinin createPiril modeli (parlayan çekirdek, cam kabuk içinde küçük kız silueti, yörünge kıvılcımları; ışık yok)
+// + iz bırakan kuyruk (aşağıdaki sprite'lar). Model yerelde zeminden 1.18 yukarıda merkezlenir; PIRIL_SCALE eski görselin (çekirdek ~0.12, hale 1.1-2.4)
+// boyuna uyar: kabuk yarıçapı 0.46*0.6 = 0.28, parıltı sprite'ı 2.1*0.6 = 1.3.
+export const PIRIL_SCALE = 0.6, PIRIL_CY = 1.18;
 export const piril = new THREE.Group();
 piril.visible = false;
-export const pirilCore = mk(new THREE.IcosahedronGeometry(0.12, 0), BMAT(0xd8fff4));
-export const pirilOrbit = new THREE.Group();
-for (let i = 0; i < 3; i++) {
-  const s = glowSprite(0xa8ffe8, 0.35, 0.9), a = (i / 3) * 6.283;
-  s.position.set(Math.cos(a) * 0.3, Math.sin(a * 2) * 0.08, Math.sin(a) * 0.3);
-  pirilOrbit.add(s);
-}
-piril.add(pirilCore, glowSprite(0xa8ffe8, 1.1, 0.9), glowSprite(0x7fffd8, 2.4, 0.3), pirilOrbit);
+export const pirilVis = createPiril({ scale: PIRIL_SCALE, color: 0xffd98c });
+pirilVis.group.position.y = -PIRIL_CY * PIRIL_SCALE;
+piril.add(pirilVis.group);
 scene.add(piril);
 export const pirilTrail = Array.from({ length: 6 }, (_, i) => {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xa8ffe8, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.5 * (1 - i / 6) }));
@@ -264,12 +263,13 @@ export const pirilTrail = Array.from({ length: 6 }, (_, i) => {
   scene.add(s);
   return s;
 });
+let pvx = wizard.position.x, pvz = wizard.position.z;
 export function animatePiril(dt, t) {
   const zz = t % 8 < 0.7 ? Math.sin((t % 8) * 18) * 0.7 : 0; // 8 saniyede bir kısa zikzak
   piril.position.set(wizard.position.x + Math.cos(t * 1.8) * 1.1 + zz, 2.4 + Math.sin(t * 3) * 0.2, wizard.position.z + Math.sin(t * 1.8) * 1.1 + zz * 0.5);
-  pirilOrbit.rotation.y = t * 3;
-  pirilCore.rotation.y = t * 2;
-  pirilCore.scale.setScalar(1 + Math.sin(t * 5) * 0.12);
+  const moving = dt > 0 && Math.hypot(wizard.position.x - pvx, wizard.position.z - pvz) / dt > 0.5; // büyücü yürüyorsa "walk"
+  pvx = wizard.position.x; pvz = wizard.position.z;
+  if (piril.visible) pirilVis.update(t, dt, moving ? "walk" : "idle");
   pirilTrail.forEach((s, i) => {
     s.visible = piril.visible;
     if (s.position.y < -50) s.position.copy(piril.position);

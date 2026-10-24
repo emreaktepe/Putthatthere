@@ -10,6 +10,7 @@ import { gameOver, levelClear } from "./flow.js";
 import { isTouch, keys, mouse, ray } from "./input.js";
 import { cast, fireSpell, nearestEnemies } from "./weapons.js";
 import { liveCount, placePickup, spawnCrystal, spawnEnemy } from "./world.js";
+import { tickDying } from "../render/enemies.js";
 import { addCloud, addFx, burst, dropHazard, emit, removeObj, updateSparks } from "../render/fx.js";
 import { camera, renderer, ring, scene, updateWeather, wand } from "../render/scene.js";
 import { rig, updateCamera } from "../render/camera.js";
@@ -252,6 +253,7 @@ export function startLoop() {
   // Pırıl: ilk bölüm bittikten sonra büyücüyü çevreler
   piril.visible = S.level >= 1;
   animatePiril(dt, t);
+  tickDying(dt, t); // ölen 3B model düşmanların ~0.35 sn'lik görsel ölümü (oynanış ölümü çoktan işlendi)
 
   if (RT.running) {
     update(dt, t);

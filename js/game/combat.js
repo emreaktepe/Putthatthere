@@ -4,7 +4,7 @@ import { RT, S, enemies } from "../core/state.js";
 import { flatDist } from "../core/util.js";
 import { gameOver, levelClear } from "./flow.js";
 import { placePickup } from "./world.js";
-import { disposeEnemy } from "../render/enemies.js";
+import { retireEnemy } from "../render/enemies.js";
 import { addFx, burst } from "../render/fx.js";
 import { scene } from "../render/scene.js";
 import { wizard } from "../render/wizard.js";
@@ -18,6 +18,7 @@ export function hurt(e, dmg, slow, bypassShield = false) {
   if (e.d.ai === "boss" && e.bp < 3) e.hp = Math.max(e.hp, e.maxHp * (e.bp === 1 ? 0.66 : 0.33) - 0.001); // faz atlanmasın
   if (slow) e.slow = 3;
   burst(e.mesh.position, e.d.emissive === 0 ? 0xffffff : e.d.color, 5);
+  e.hurtT = 0.28; // 3B model "hurt" modu
   e.flash = 0.1; // vuruş geri bildirimi: beyaz parlama + hafif geri itme
   if (!e.d.static && e.d.ai !== "boss" && e.d.ai !== "knight") {
     const dx = e.mesh.position.x - wizard.position.x, dz = e.mesh.position.z - wizard.position.z, l = Math.hypot(dx, dz) || 1;
@@ -44,9 +45,8 @@ export function killEnemy(e) {
   if (i < 0) return;
   e.dead = true;
   enemies.splice(i, 1);
-  scene.remove(e.mesh);
   if (e.blob) scene.remove(e.blob);
-  disposeEnemy(e);
+  retireEnemy(e); // 3B modeller ~0.35 sn "dead" animasyonu oynar; oynanış (hedefleme, çarpışma, puan, drop) yukarıda/aşağıda anında işlenir
   burst(e.mesh.position, e.d.color, 14);
   if (e.d.ai === "boss" || e.d.ai === "knight") { RT.shake = Math.max(RT.shake, 0.6); burst(e.mesh.position, 0xffffff, 30); }
   sfx("kill:" + e.d.model);

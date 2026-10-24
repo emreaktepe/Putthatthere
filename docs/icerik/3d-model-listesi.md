@@ -1,10 +1,10 @@
 # 3B model listesi (kodla üretilen karakterler)
 
-Durum: ÖNERİ. Hiçbir model henüz üretilmedi. Aldemir için gelen paket (`createAldemir`) örnek alındı. Düşman değerleri `data/game.config.json`'dan, davranışlar `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md` §3'ten alındı. Poligon bütçeleri VARSAYIMDIR, gerçek telefonda ölçülmedi.
+Durum: Aldemir, Pırıl, Ruh, Yarasa, Taş Bekçi ve Gölge Kral HAZIR ve oyuna bağlı (aşağıdaki tablo). Okçu, Kurt, Kor Hortlak, Rahip, Totem ve Şövalye henüz üretilmedi (mevcut prosedürel modellerde). Aldemir için gelen paket (`createAldemir`) örnek alındı. Düşman değerleri `data/game.config.json`'dan, davranışlar `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md` §3'ten alındı. Poligon bütçeleri VARSAYIMDIR, gerçek telefonda ölçülmedi.
 
 ## 1. Neden bütçe önemli
 
-Aldemir paketi ~79 bin üçgen ve ~250 mesh. Tek oyuncu için kabul edilebilir, ama düşmanlar aynı anda 10–14 tane ekranda olabilir. Aynı bütçeyle düşman yapılırsa mobil takılır. Bu yüzden düşman modelleri çok daha hafif olmalı. Hepsi `Düşük` kalite modunda eski basit modele düşecek şekilde, oyunun kalite ayarına bağlanır (`js/core/quality.js`).
+Aldemir paketi ~79 bin üçgen ve ~250 mesh. Tek oyuncu için kabul edilebilir, ama düşmanlar aynı anda 10–14 tane ekranda olabilir. Aynı bütçeyle düşman yapılırsa mobil takılır. Bu yüzden düşman modelleri çok daha hafif olmalı. Karar güncellemesi: hafif düşman modelleri kalite ayarından bağımsız her zaman çizilir; yalnızca Aldemir kaliteye bağlıdır (`js/core/quality.js`).
 
 Varsayım bütçeler (üçgen / mesh, tek örnek):
 
@@ -47,6 +47,19 @@ Kurallar:
 - `mode`: `idle` bekleme/nefes, `walk` hareket, `windup` saldırı öncesi uyarı (oyuncunun kaçması için 0.5–1.2 sn, belirgin siluet/parlama değişimi), `attack` saldırı anı, `hurt` kısa vuruş tepkisi, `dead` düşüş/dağılma (oyun şimdilik anında kaldırıyor, ama hazır olsun).
 
 ## 3. Model listesi ve öncelik
+
+**Bağlı modeller (durum):**
+
+| Karakter | Durum | Dosya / bağlantı | Ölçek ve yerleşim |
+|---|---|---|---|
+| Aldemir | HAZIR, bağlı (kaliteye bağlı: Yüksek=pro) | `js/render/aldemir.js`, `aldemir-pro.js` | ölçek 0.8 |
+| Pırıl | HAZIR, bağlı | `js/render/models/piril.js` -> `wizard.js` (`pirilVis`) | ölçek 0.6; büyücü yürürken `walk`, durunca `idle` |
+| Ruh | HAZIR, bağlı (kaliteden bağımsız) | `models/ghost.js` -> `enemyvis.js` | ölçek 1, merkez 1.1 |
+| Yarasa | HAZIR, bağlı (kaliteden bağımsız) | `models/bat.js` | ölçek 1, merkez 0.06 |
+| Taş Bekçi | HAZIR, bağlı (kaliteden bağımsız) | `models/golem.js` | ölçek 1, merkez 1.2, yere basar |
+| Gölge Kral | HAZIR, bağlı (kaliteden bağımsız) | `models/boss.js` | ölçek 1.3, merkez 1.77, yere basar; faz 3 kalkanı modelin kendi küresi |
+
+Mod eşlemesi (oyun durumu -> `update` modu): hareket `walk`/durağan `idle`; temas hasarından hemen önce (`dist < r + 1.2`) ve Gölge Kral yer halkası uyarısı süresince `windup`; temas hasarı anı, boss halka patlaması ve boss çağrısı `attack`; hasar alınca 0.28 sn `hurt`; ölümde ~0.35 sn `dead` (oynanış ölümü anında işlenir, yalnız görsel gecikmeli silinir). Donma/vuruş flaşı `setTint` ile. Bağlantı mantığı: `js/render/enemyvis.js`.
 
 Oyundaki mevcut durum: hepsi şimdilik `js/render/enemies.js` içindeki basit prosedürel modellerle çiziliyor.
 
@@ -107,11 +120,11 @@ Provide a short comment header with triangle/mesh counts you measured.
 
 1. Dosyayı bana ver (`js/render/models/<dosya>.js` altına koyarım). Betik/çalıştırılabilir paket yerine yalnızca `.js` modülü ver.
 2. Ben: sözleşmeye uyumu, ışık/ağ/dinamik kod yokluğunu, üçgen ve mesh sayısını Node'da ölçerim; `dispose` sızıntısını ve malzeme paylaşımını incelerim.
-3. Bağlama: `enemies.js` içindeki `buildEnemy` kalite moduna göre (`high` → yeni model, `low` → mevcut basit model) seçer. Geçişte oynanış değişmez.
+3. Bağlama: `enemies.js` içindeki `buildEnemy` modeli `js/render/enemyvis.js` tablosundan (`ENEMY_VIS`) seçer. Karar: hafif düşman modelleri (Ruh, Yarasa, Taş Bekçi, Gölge Kral) kaliteden bağımsız her zaman yeni modelle çizilir. Oynanış değişmez.
 4. Telefonda kare hızı sende kontrol edilir; takılırsa o modelin bütçesi düşürülür.
 
 ## 6. Açık sorular
 
 1. Önce hangi sıradan başlayalım? Öneri: Pırıl, Ruh, Yarasa, Taş Bekçi, sonra Gölge Kral.
-2. Düşman modelleri de `Düşük`te eski modele mi düşsün, yoksa düşmanlar her zaman yeni (hafif) modelle mi çizilsin? (Önerim: hafif oldukları için her zaman yeni model; yalnızca Aldemir ve boss kaliteye bağlı.)
+2. (Karara bağlandı) Düşman modelleri `Düşük`te de yeni modelle çizilir; yalnızca Aldemir kaliteye bağlıdır.
 3. Dekor için ayrı bir 3B listesi ister misin?

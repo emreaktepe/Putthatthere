@@ -53,16 +53,16 @@ export function bossLogic(e, dt, es) {
   const edt = dt * es;
   if (e.bp === 1) {
     RT.bossSummon -= edt;
-    if (RT.bossSummon <= 0) { RT.bossSummon = 6; for (const id of e.d.summons1 || []) spawnEnemy(id); }
+    if (RT.bossSummon <= 0) { RT.bossSummon = 6; e.atkT = 0.5; for (const id of e.d.summons1 || []) spawnEnemy(id); }
   } else if (e.bp === 2) {
     RT.bossSummon -= edt;
     if (RT.bossSummon <= 0) {
-      RT.bossSummon = 6;
+      RT.bossSummon = 6; e.atkT = 0.5;
       for (const id of e.d.summons2 || []) if (liveCount() < LEVELS[S.level].cap) spawnEnemy(id);
     }
     e.waveT -= edt;
     if (e.waveT <= 0) {
-      e.waveT = 8;
+      e.waveT = 8; e.windT = 1.2; // yer halkası uyarısı süresince model "windup", patlama anında "attack" (ai.js updateEnemies)
       addHazard(wizard.position.x, wizard.position.z, 2.6, 1.2, 1, 0xff3355);
       addHazard(THREE.MathUtils.clamp(wizard.position.x + rand(7), -ARENA, ARENA), THREE.MathUtils.clamp(wizard.position.z + rand(7), -ARENA, ARENA), 2.6, 1.2, 1, 0xff3355);
     }
@@ -86,12 +86,17 @@ export function bossLogic(e, dt, es) {
 
 export function applyLook(e) {
   const slowed = e.slow > 0, fl = e.flash > 0;
-  e.mat.color.setHex(fl ? 0xffffff : slowed ? 0x9fdcff : e.fuse > 0 ? 0xffffff : e.d.color);
-  e.mat.emissiveIntensity = fl ? 4 : slowed ? 0.2 : 1 + e.glow * 3;
+  if (e.vis) { // 3B model: renk karışımı setTint ile (vuruş flaşı beyaz, yavaşlama buz mavisi); yalnız durum değişince
+    const key = fl ? 2 : slowed ? 1 : 0;
+    if (key !== e.tintKey) { e.tintKey = key; e.vis.setTint(key === 2 ? 0xffffff : 0x9fdcff, key === 2 ? 0.75 : key === 1 ? 0.5 : 0); }
+  } else {
+    e.mat.color.setHex(fl ? 0xffffff : slowed ? 0x9fdcff : e.fuse > 0 ? 0xffffff : e.d.color);
+    e.mat.emissiveIntensity = fl ? 4 : slowed ? 0.2 : 1 + e.glow * 3;
+  }
   const k = Math.min(e.age / 0.35, 1), gk = 1 - (1 - k) * (1 - k); // belirme: yumuşak büyüme
   e.mesh.scale.set(e.base.x * gk, e.base.y * e.sq * gk, e.base.z * gk);
   const sh = e.shield > 0 || !!e.shielded;
-  setShieldVis(e, sh, e.shielded ? 0xbfe0ff : 0x6bff9a);
+  setShieldVis(e, sh && !(e.vis && e.vis.setPhase), e.shielded ? 0xbfe0ff : 0x6bff9a); // Gölge Kral modelin kendi faz-3 kalkanını çizer: çift görüntü yok
   setIce(e, slowed);
 }
 export const turnTo = (cur, target, k) => cur + ((((target - cur + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) - Math.PI) * Math.min(1, k);
@@ -103,8 +108,12 @@ export function updateEnemies(dt, t, es) {
     e.slow = Math.max(e.slow - dt, 0);
     e.age += dt;
     e.flash = Math.max(e.flash - dt, 0);
+    e.hurtT = Math.max(e.hurtT - dt, 0);
+    e.atkT = Math.max(e.atkT - dt, 0);
+    if (e.windT > 0) { e.windT = Math.max(e.windT - dt, 0); if (e.windT === 0 && d.ai === "boss") e.atkT = 0.4; } // uyarı bitti = saldırı anı
     if (e.shield > 0) e.shield = Math.max(e.shield - dt, 0);
-    const edt = dt * es * (e.slow > 0 ? 0.35 : 1);
+    e.ts = es * (e.slow > 0 ? 0.35 : 1); // model animasyon hız çarpanı
+    const edt = dt * e.ts;
     const dx = wizard.position.x - p.x, dz = wizard.position.z - p.z;
     const dist = Math.hypot(dx, dz) || 0.0001;
     const ux = dx / dist, uz = dz / dist;
@@ -185,6 +194,8 @@ export function updateEnemies(dt, t, es) {
       }
     }
 
+    e.moving = mx * mx + mz * mz > 0.01;
+    if (d.ai === "chase") e.windT = d.dmg > 0 && RT.invuln <= 0 && dist < d.r + 1.2 ? 0.1 : 0; // temas hasarından hemen önce uyarı pozu
     p.x = THREE.MathUtils.clamp(p.x + mx * edt + e.kx * dt, -ARENA - 1, ARENA + 1);
     p.z = THREE.MathUtils.clamp(p.z + mz * edt + e.kz * dt, -ARENA - 1, ARENA + 1);
     const kd = Math.exp(-dt * 10); // vuruş geri itmesi hızla söner
@@ -196,6 +207,7 @@ export function updateEnemies(dt, t, es) {
     if (e.blob) e.blob.position.set(p.x, 0.04, p.z);
 
     if (d.dmg > 0 && RT.invuln <= 0 && dist < d.r + 0.5) {
+      e.atkT = 0.4;
       damagePlayer(d.dmg);
       if (!RT.running) return;
     }
