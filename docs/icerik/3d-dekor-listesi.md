@@ -143,7 +143,7 @@ Parantez içi: bugünkü yapı (`scenery.js`). Tema renkleri `data/game.config.j
 | **P2** | `grass-tuft`, `log`, `puddle`, `rune-banner`, `snow-mound`, `charred-stump`, `crystal-pillar` | 7 |
 | **P3** | `taskin-statue`, `crypt`, `frozen-bridge`, `throne` | 4 |
 
-Toplam 37 dosya. Önerim: önce **P0'daki 8 dosya**, çünkü bunlar her bölümün siluetini belirler.
+Toplam 37 dekor dosyası + 9 zemin dokusu (bölüm 9). Önerim: önce **P0 dekorların 8 dosyası**, çünkü bunlar her bölümün siluetini belirler.
 
 ## 7. Üreticiye verilecek istem şablonu
 
@@ -169,8 +169,85 @@ Add a short comment header with the measured triangle count per variant.
 4. Düşük kalite: dekor çok hafif olduğu için kaliteden bağımsız yeni modellerle çizilir; yalnızca `high`'da ek süs (çim tutamı, küçük mantar) açılabilir.
 5. Telefonda kare hızı sende kontrol edilir; takılırsa örnek sayıları (`scenery.js`) ve üçgenler düşürülür.
 
-## 9. Açık sorular
+## 9. Zemin dokuları (bu listeye dahil)
 
-1. Önce P0'daki 8 dosyayla mı başlayalım?
-2. Çim tutamı, küçük mantar gibi süs dekorları yalnız Yüksek kalitede mi açılsın? (Önerim: evet.)
-3. Zemin dokularını (9 tür, şu an canvas ile üretiliyor) de ayrı bir listeye almak ister misin?
+### 9.1 Şimdiki durum (koddan)
+
+- Zemin tek bir düzlem: **28 × 28 m** (`ARENA*2`), `js/render/scene.js`. Doku **döşenmiyor**, tüm arenaya bir kez gerilir. Bu yüzden dikişsizlik (seamless) gerekmez; ama kenarlar sis ve arena dışı zeminle birleşir, kenarda keskin desen olmamalı.
+- Doku `js/render/themes.js` içindeki `drawFloor()` ile canvas'a çiziliyor: **1024×1024** (masaüstü), **512×512** (dokunmatik). Orta gri (`#bdbdbd`) zemin üzerine lekeler, noktalar, çizgiler, çatlaklar.
+- Doku **gri tonlamalıdır** ve malzeme rengiyle çarpılır (`floorMat.color = tema floor rengi × 2`, `map: floorTex`). Renk bilgisi dokuda DEĞİL temadadır. Bu sayede 9 bölüm aynı yöntemle farklı renk alır.
+- Işık: `roughness: 1`, normal/yükseklik haritası yok. Zemin gölge alır (`receiveShadow`).
+- Dokunun yoğunluğu 28 m için ~36 piksel/metre (masaüstü), ~18 piksel/metre (dokunmatik). Küçük detay (çim teli) bu yüzden okunmaz; **orta ölçekli lekeler, taş derzleri, çatlaklar** okunur.
+
+### 9.2 Zemin türleri (9 adet, `floorKind`)
+
+| Tür | Bölüm | Şimdiki görünüm | Yeni dokuda istenen |
+|---|---|---|---|
+| `grass` | Fısıldayan Orman | gri leke + açık/koyu çim çizgileri | çim yamaları, ot yönü, çıplak toprak lekeleri, düşmüş yaprak |
+| `wet` | Yarasa Mağarası | leke + çatlak | ıslak taş, su parlaması izi (açık leke), çatlak, çamur |
+| `flag` | Taş Bekçiler | 64 px karolu döşeme + çatlak | düzensiz kaldırım taşları, derzler, yosun, kırık karolar |
+| `dirt` | Hortlak Mezarlığı | noktalı toprak | çiğnenmiş toprak, ot kırıntısı, taş parçası, ayak izi çukurları |
+| `snow` | Donmuş Geçit | yumuşak leke + açık çizgiler | kar yüzeyi, rüzgâr dalgaları, buz çatlakları, buzlu lekeler |
+| `ash` | Yanık Köy | çok çatlak + koyu leke | kül ve kömür, çatlak toprak, kor çizgisi izleri (açık küçük çizgiler) |
+| `facet` | Kristal Yatağı | rastgele üçgen yüzeyler | kristal zemin yüzeyleri, sivri parçalar, açık kenar çizgileri |
+| `bone` | Kemik Kule | çatlak + noktalar | kemik/kum zemin, çatlak, küçük kemik parçacıkları |
+| `tile` | Gölge Kalesi | 128 px satranç karo | cilalı koyu mermer/karo, ince derz, hafif çatlak, parlaklık çeşitliliği |
+
+### 9.3 Sözleşme (iki seçenek; hangisini üretici yapabiliyorsa)
+
+**Seçenek A (önerim): canvas çizim fonksiyonu**, mevcut `drawFloor` ile aynı yapı. Harici dosya yok, depoya hafif girer, mobil/masaüstü çözünürlüğü kodla ayarlanır.
+
+```js
+// js/render/floors/<tür>.js
+export function paintFloor(ctx, size, rand) {
+  // ctx: CanvasRenderingContext2D (size × size)
+  // rand: [0,1) döndüren deterministik üretici (aynı seed → aynı zemin)
+  // Çıktı: GRİ TONLAMALI (R=G=B), ortalama parlaklık ~#bdbdbd (190), aralık ~[90, 255].
+}
+```
+
+**Seçenek B: hazır görsel**, `assets/art/zemin-<tür>.webp`, gri tonlamalı, **1024×1024** (+ isteğe bağlı 512×512 `-512` sürümü), ≤ 250 KB, dikişsiz olması gerekmez. Config'e `themes.<id>.floorImage` alanı eklenir, kod görseli tema rengiyle çarpar.
+
+Ortak kurallar:
+- **Gri tonlamalı ve orta parlaklık.** Çok koyu veya çok açık bir doku, tema renginin ×2 çarpımıyla patlar ya da kararır. Ortalama ~190, en koyu ~90, en açık ~255.
+- **Renk yok.** Renk temadan gelir. (Çok hafif ton farkı (R≈G≈B) yeterli.)
+- **Kenarda sade.** Arena kenarı ince parlak çerçeve ve sisle birleşir; kenar 40 pikselde ani koyu/açık bant olmasın.
+- **Merkez sade.** Oyuncu ve düşmanlar merkezde; merkezde yoğun kontrast, savaşı okumayı zorlaştırır. Detay yoğunluğu kenarlara doğru artabilir.
+- **Kontrast ölçülü.** Düşman, kristal ve mermi okunmalı. Kenar çizgi kalınlığı 1–3 px (1024'te), lekeler yumuşak.
+- 512 px (dokunmatik) sürümü için aynı fonksiyon `size=512` ile çağrılır; çizim `size`'a göre ölçeklenmeli (`k = size/512`, mevcut kodun yaptığı gibi).
+- `rand` dışında `Math.random()` kullanma (her açılışta aynı görünüm).
+- Işık, ağ, harici dosya yok.
+
+### 9.4 Öncelik
+
+| Öncelik | Tür | Neden |
+|---|---|---|
+| P0 | `grass`, `dirt`, `flag` | ilk üç bölüm ve en çok görülen zemin |
+| P1 | `wet`, `snow`, `ash`, `tile` | belirgin tema farkı |
+| P2 | `facet`, `bone` | zaten sade; küçük kazanç |
+
+İstersen önce **bir tür** (örn. `grass`) üretip oyunda denenir, sonra kalanı yapılır. Not: şimdiki canvas dokuları çalışıyor, bu iş kalite artırma işi; telefonda ek maliyet (çizim süresi) oluşabilir: Seçenek A'da çizim her bölüm başında bir kez yapılır (bugünkü gibi), Seçenek B'de görsel yüklenir ve bellekte ~4 MB tutar (1024×1024×4 bayt).
+
+### 9.5 Zemin için üreticiye istem şablonu
+
+```
+Write a standalone ES module `<tür>.js` exporting `paintFloor(ctx, size, rand)`
+that paints a GRAYSCALE floor texture (R=G=B) for a top-down game arena,
+floor kind "<tür>" (<bölüm adı>): <tablodaki "yeni dokuda istenen">.
+Average luminance ~190/255, range ~90..255. It will be multiplied by a theme colour.
+Calm center, richer detail toward the edges, soft edge fade. Scales with `size`
+(design for 512, use k = size / 512). Use only `rand()` for randomness, no Math.random.
+Single sheet covering 28x28 m (no tiling needed). No lights, no network, no external files.
+Add a short comment with the render time you measured for size 1024.
+```
+
+## 10. Açık sorular ve kararlar
+
+Karar verildi (Emre):
+1. P0 dekorlarını **Emre dışarıda ürettirip `.js` olarak verecek**; ben başlamıyorum. Dosyalar gelince sözleşme uyumunu ölçüp bağlarım.
+2. Çim tutamı, küçük mantar gibi **süs dekorları yalnız Yüksek kalitede açılır**.
+3. **Zemin dokuları bu listeye dahil** (bölüm 9).
+
+Hâlâ açık:
+- Zemin için Seçenek A (canvas fonksiyonu) mı B (WebP görsel) mı? Önerim A.
+- Dekor için `js/render/decor/`, zemin için `js/render/floors/` klasörleri uygun mu?
