@@ -2,7 +2,7 @@ name: Deploy Pages
 
 on:
   push:
-    branches: [main]
+    branches: [claude/put-that-there-game-ls1oln, main]
   workflow_dispatch:
 
 permissions:
