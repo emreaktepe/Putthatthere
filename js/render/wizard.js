@@ -1,27 +1,36 @@
 // ---------- Büyücü (Aldemir) ----------
 // wizard grubu, orbTip ve wand ışığı dışarıdan kullanılır; gövde parçaları wiz.* altında animasyon için tutulur.
+// İki görsel kalite: "basic" (aşağıdaki prosedürel büyücü, basicRoot altında) ve "pro" (aldemir-pro.js, tek kez kurulur).
+// Dış sözleşme her ikisinde aynı: wizard (konum/dönüş/görünürlük), orbTip (asa ucu: dünya konumu ve renk), setWandColor, wiz.kick.
 import * as THREE from "three";
 import { PLAYER } from "../core/data.js";
 import { BMAT, BOX, CONE, CYL, OCT, SMAT, SPH, TOR, bakeNode, glowSprite, glowTex, mat, mk, rippleLathe } from "./gfx.js";
 import { scene, wand } from "./scene.js";
+import { createProWizard, TIP_Y } from "./aldemir-pro.js";
+import { detectEnv, readQuality, resolveQuality } from "../core/quality.js";
 
 export const wizard = new THREE.Group();
 export const orbTip = new THREE.Mesh(new THREE.OctahedronGeometry(0.15), new THREE.MeshBasicMaterial({ color: 0xe0b3ff }));
 export const orbGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xe0b3ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.85 }));
 orbGlow.scale.setScalar(1.3);
 orbTip.add(orbGlow);
+const basicRoot = new THREE.Group();
+wizard.add(basicRoot);
+let pro = null, basicBuilt = false, look = null, lastColor = 0xe0b3ff;
 export const wiz = { vx: 0, vz: 0, kick: 0, px: 0, pz: 0, lf: 0, lr: 0 };
 export function setWandColor(hex) {
   orbTip.material.color.setHex(hex);
   orbGlow.material.color.setHex(hex);
   wand.color.setHex(hex);
+  lastColor = hex;
+  if (pro) pro.setSpellColor(hex);
 }
 export function buildWizard() {
   const look = lookColors();
   const skin = SMAT(look.skin, { flatShading: false }), purple = SMAT(0x4a2a9c, { flatShading: true }), gold = SMAT(look.gold, { metalness: 0.6, roughness: 0.4 });
   const body = new THREE.Group();
   wiz.body = body;
-  wizard.add(body);
+  basicRoot.add(body);
   // cüppe: lathe + etek kıvrımı + dikey renk gradyanı
   const prof = [[0.8, 0], [0.77, 0.12], [0.66, 0.45], [0.5, 0.8], [0.4, 1.0], [0.34, 1.2], [0.36, 1.42], [0.28, 1.58], [0.16, 1.68], [0.001, 1.7]];
   const robeGeo = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 24);
@@ -146,20 +155,45 @@ export function buildWizard() {
   wiz.staff = staff;
 }
 
-// config yüklendikten sonra çağrılır (görünüm paleti player.look'tan gelir)
+// config yüklendikten sonra çağrılır (basic görünüm paleti player.look'tan gelir; pro modelde yalnız wandGlow kullanılır)
 export function initWizard() {
-  buildWizard();
-  bakeNode(wizard, []);
   wizard.scale.setScalar(PLAYER.scale);
   const glow = lookColors().wandGlow;
   orbTip.material.color.setHex(glow);
   orbGlow.material.color.setHex(glow);
+  lastColor = glow;
   scene.add(wizard);
+  setWizardQuality(readQuality(globalThis.localStorage));
 }
+
+// kalite tercihi (auto|high|low) -> görünüm ("pro"|"basic"); değişmediyse bir şey yapmaz. Her görünüm gerektiğinde bir kez kurulur.
+export function setWizardQuality(pref) {
+  const want = resolveQuality(pref, detectEnv());
+  if (want === look) return want;
+  if (want === "pro") {
+    if (!pro) { pro = createProWizard({ spellColor: lastColor }); wizard.add(pro.group); }
+    pro.group.visible = true;
+    basicRoot.visible = false;
+    pro.staff.add(orbTip); // asa ucu efektleri kristal merkezini izler; orbTip'in kendi görseli gizli, pro modelin kristali görünür
+    orbTip.position.set(0, TIP_Y, 0);
+    orbTip.visible = false;
+  } else {
+    if (!basicBuilt) { buildWizard(); bakeNode(basicRoot, []); basicBuilt = true; }
+    wiz.staff.add(orbTip);
+    orbTip.position.set(0, 2.38, 0);
+    orbTip.visible = true;
+    basicRoot.visible = true;
+    if (pro) { pro.dispose(); pro = null; } // orbTip artık pro ağacında değil; bellek serbest
+  }
+  look = want;
+  return want;
+}
+export const wizardLook = () => look;
 export const lookColors = () => Object.fromEntries(Object.entries(PLAYER.look).map(([k, v]) => [k, parseInt(v.slice(1), 16)]));
 
+const CAST_HOLD = 0.4; // pro modelde "cast" pozu ateş anından sonra kısa süre korunur
+let castT = 0, lastKick = 0;
 export function animateWizard(dt, t) {
-  const b = wiz.body;
   if (dt > 0) {
     const vx = (wizard.position.x - wiz.px) / dt, vz = (wizard.position.z - wiz.pz) / dt;
     const sp = Math.hypot(vx, vz), k = sp > 14 ? 14 / sp : 1; // ışınlanma sıçramasını yut
@@ -167,6 +201,15 @@ export function animateWizard(dt, t) {
     wiz.vz += (vz * k - wiz.vz) * Math.min(1, dt * 10);
   }
   wiz.px = wizard.position.x; wiz.pz = wizard.position.z;
+  if (pro) { // pro: moda mevcut durumdan türetilir (durma -> idle, hareket -> walk, ateş -> cast)
+    wiz.kick = Math.max(wiz.kick - dt, 0);
+    if (wiz.kick > lastKick) castT = CAST_HOLD;
+    lastKick = wiz.kick;
+    castT = Math.max(castT - dt, 0);
+    pro.update(t, dt, castT > 0 ? "cast" : Math.hypot(wiz.vx, wiz.vz) > 1.2 ? "walk" : "idle");
+    return;
+  }
+  const b = wiz.body;
   const ry = wizard.rotation.y, sn = Math.sin(ry), cs = Math.cos(ry);
   const lf = THREE.MathUtils.clamp((wiz.vx * sn + wiz.vz * cs) / 8, -1, 1);
   const lr = THREE.MathUtils.clamp((wiz.vx * cs - wiz.vz * sn) / 8, -1, 1);

@@ -5,3 +5,7 @@ assets/art/*.png
 # Geçici dosyalar (deneme betikleri, ara çıktılar)
 .ofis-tmp/
 node_modules/
+
+# Emre'nin 3B model paketi (referans PNG ~3,4 MB + kopya three içerir): yalnızca yerelde kalır.
+# Oyunun kullandığı tek dosya js/render/aldemir.js olarak kopyalandı; paketin betikleri/sunucusu repoda yok.
+Aldemir_3D_Pro_v02/

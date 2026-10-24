@@ -20,6 +20,10 @@ Telefondan denemek için sunucunun yazdığı "Network" adresini (aynı Wi-Fi) k
 - **Kamera:** V (veya 📷) açıyı değiştirir (Yukarıdan / Eğik / Omuz-alçak) · Z / C döndürür · fare tekerleği yakınlaştırır · sağ tuşla sürükleme döndürür. Yürüme kamera-görelidir; seçim `buyucu_kamera` anahtarında saklanır.
 - **Akış:** Menü → (giriş) → Harita → bölüm kartı → savaş → ödül/perk → Harita. Kayıt `buyucu_save`; tamamlanan bölümler haritadan "alıştırma" olarak tekrar oynanır (ilerleme değişmez).
 
+## Grafik kalitesi
+
+Ana menüdeki **Grafik: Otomatik / Yüksek / Düşük** düğmesi oyuncu görselini seçer (değişiklik hemen uygulanır; `buyucu_kalite` anahtarında saklanır, admin ayarı değildir). **Yüksek** = ayrıntılı "pro" Aldemir modeli (`js/render/aldemir.js`, ~250 mesh; oyunda birleştirilip ~115 mesh / ~105 çizim çağrısına indirilir), **Düşük** = hafif prosedürel büyücü. **Otomatik**: dokunmatik işaretçi (`pointer: coarse`), `hardwareConcurrency <= 4` ya da `deviceMemory <= 4` ise Düşük, aksi halde Yüksek. Karar mantığı `js/core/quality.js`'te (testli). Pro modelde `player.look` içinden yalnızca `wandGlow` kullanılır; diğer renkler Düşük görünüm içindir.
+
 ## Proje yapısı
 
 - `index.html` — tüm oyun (sahne, düşmanlar, bölümler, hikâye, arayüz, ses); tek dosya

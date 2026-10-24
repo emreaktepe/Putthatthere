@@ -2,6 +2,8 @@
 import { GAME, MAP, STRINGS } from "../core/data.js";
 import { h, svg } from "../core/dom.js";
 import { $ } from "../core/util.js";
+import { QUALITY_LABELS, nextQuality, readQuality, writeQuality } from "../core/quality.js";
+import { setWizardQuality } from "../render/wizard.js";
 import { artBg, warmArt } from "./art.js";
 import { icon, iconIfArt } from "./icons.js";
 import { storyLines } from "./models.js";
@@ -33,10 +35,14 @@ export function showMenu({ hasSave, saveInfo, notice, onContinue, onNew }) {
   const sc = scope();
   const soundOff = () => $("mute").getAttribute("aria-pressed") === "true";
   const sound = button(`${UI.menu.sound}: ${soundOff() ? "Kapalı" : "Açık"}`, () => { $("mute").click(); sound.querySelector(".gbtn-l").textContent = `${UI.menu.sound}: ${soundOff() ? "Kapalı" : "Açık"}`; }, { kind: "ghost", ic: "sound" });
+  // Grafik: Otomatik / Yüksek / Düşük (oyuncu tercihi, localStorage); büyücü görseli hemen değişir
+  let q = readQuality(globalThis.localStorage);
+  const qLabel = () => `${UI.menu.graphics}: ${QUALITY_LABELS[q]}`;
+  const gfx = button(qLabel(), () => { q = nextQuality(q); writeQuality(globalThis.localStorage, q); setWizardQuality(q); gfx.querySelector(".gbtn-l").textContent = qLabel(); }, { kind: "ghost", aria: "Grafik kalitesi, değiştirmek için seç" });
   const list = [];
   if (hasSave) list.push(button(UI.menu.continue, onContinue, { ic: "play", small: saveInfo || "", autofocus: true }));
   list.push(hasSave ? confirmButton(UI.menu.newGame, UI.menu.confirmNew, onNew, sc, { kind: "ghost" }) : button(UI.menu.newGame, onNew, { ic: "play", autofocus: true }));
-  list.push(sound);
+  list.push(sound, gfx);
   const bg = artBg(GAME.menuBackground, "menu-art");
   const node = h("section", { class: "menu" + (bg ? " has-art" : ""), "aria-label": STRINGS.title },
     bg, bg ? h("div", { class: "art-shade", "aria-hidden": "true" }) : null,
