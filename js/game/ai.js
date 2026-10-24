@@ -53,16 +53,16 @@ export function bossLogic(e, dt, es) {
   const edt = dt * es;
   if (e.bp === 1) {
     RT.bossSummon -= edt;
-    if (RT.bossSummon <= 0) { RT.bossSummon = 6; for (const id of e.d.summons1 || []) spawnEnemy(id); }
+    if (RT.bossSummon <= 0) { RT.bossSummon = 6; e.atkT = 0.5; for (const id of e.d.summons1 || []) spawnEnemy(id); }
   } else if (e.bp === 2) {
     RT.bossSummon -= edt;
     if (RT.bossSummon <= 0) {
-      RT.bossSummon = 6;
+      RT.bossSummon = 6; e.atkT = 0.5;
       for (const id of e.d.summons2 || []) if (liveCount() < LEVELS[S.level].cap) spawnEnemy(id);
     }
     e.waveT -= edt;
     if (e.waveT <= 0) {
-      e.waveT = 8;
+      e.waveT = 8; e.windT = 1.2; // yer halkası uyarısı süresince model "windup", patlama anında "attack" (ai.js updateEnemies)
       addHazard(wizard.position.x, wizard.position.z, 2.6, 1.2, 1, 0xff3355);
       addHazard(THREE.MathUtils.clamp(wizard.position.x + rand(7), -ARENA, ARENA), THREE.MathUtils.clamp(wizard.position.z + rand(7), -ARENA, ARENA), 2.6, 1.2, 1, 0xff3355);
     }
@@ -86,12 +86,14 @@ export function bossLogic(e, dt, es) {
 
 export function applyLook(e) {
   const slowed = e.slow > 0, fl = e.flash > 0;
-  e.mat.color.setHex(fl ? 0xffffff : slowed ? 0x9fdcff : e.fuse > 0 ? 0xffffff : e.d.color);
-  e.mat.emissiveIntensity = fl ? 4 : slowed ? 0.2 : 1 + e.glow * 3;
+  { // 3B model: renk karışımı setTint ile (vuruş flaşı beyaz, yavaşlama buz mavisi); yalnız durum değişince
+    const key = fl ? 2 : slowed ? 1 : 0;
+    if (key !== e.tintKey) { e.tintKey = key; e.vis.setTint(key === 2 ? 0xffffff : 0x9fdcff, key === 2 ? 0.75 : key === 1 ? 0.5 : 0); }
+  }
   const k = Math.min(e.age / 0.35, 1), gk = 1 - (1 - k) * (1 - k); // belirme: yumuşak büyüme
-  e.mesh.scale.set(e.base.x * gk, e.base.y * e.sq * gk, e.base.z * gk);
+  e.mesh.scale.set(e.base.x * gk, e.base.y * gk, e.base.z * gk);
   const sh = e.shield > 0 || !!e.shielded;
-  setShieldVis(e, sh, e.shielded ? 0xbfe0ff : 0x6bff9a);
+  setShieldVis(e, sh && !(e.vis && e.vis.setPhase), e.shielded ? 0xbfe0ff : 0x6bff9a); // Gölge Kral modelin kendi faz-3 kalkanını çizer: çift görüntü yok
   setIce(e, slowed);
 }
 export const turnTo = (cur, target, k) => cur + ((((target - cur + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) - Math.PI) * Math.min(1, k);
@@ -103,12 +105,15 @@ export function updateEnemies(dt, t, es) {
     e.slow = Math.max(e.slow - dt, 0);
     e.age += dt;
     e.flash = Math.max(e.flash - dt, 0);
+    e.hurtT = Math.max(e.hurtT - dt, 0);
+    e.atkT = Math.max(e.atkT - dt, 0);
+    if (e.windT > 0) { e.windT = Math.max(e.windT - dt, 0); if (e.windT === 0 && d.ai === "boss") e.atkT = 0.4; } // uyarı bitti = saldırı anı
     if (e.shield > 0) e.shield = Math.max(e.shield - dt, 0);
-    const edt = dt * es * (e.slow > 0 ? 0.35 : 1);
+    e.ts = es * (e.slow > 0 ? 0.35 : 1); // model animasyon hız çarpanı
+    const edt = dt * e.ts;
     const dx = wizard.position.x - p.x, dz = wizard.position.z - p.z;
     const dist = Math.hypot(dx, dz) || 0.0001;
     const ux = dx / dist, uz = dz / dist;
-    e.glow = 0; e.sq = 1;
     let mx = 0, mz = 0; // hareket (birim/sn)
 
     switch (d.ai) {
@@ -122,8 +127,8 @@ export function updateEnemies(dt, t, es) {
         const want = dist > 9 ? 1 : dist < 7 ? -1 : 0;
         mx = ux * e.spd * want; mz = uz * e.spd * want;
         e.cd -= edt;
-        if (e.cd < 0.5) e.glow = 1;
-        if (e.cd <= 0) { e.cd = 2.5; enemyShoot(e, ux, uz); }
+        e.windT = e.cd > 0 && e.cd < 0.5 ? 0.1 : 0; // ateş öncesi son 0,5 sn: silah parlaması (model "windup")
+        if (e.cd <= 0) { e.cd = 2.5; enemyShoot(e, ux, uz); e.atkT = 0.3; } // atış anı ("attack")
         break;
       }
       case "charge": { // Kurt Ruhu: yaklaş -> çömel -> hücum -> yorgun
@@ -131,10 +136,11 @@ export function updateEnemies(dt, t, es) {
           mx = ux * e.spd; mz = uz * e.spd;
           if (dist < 6) { e.st = "crouch"; e.tm = 0.7; }
         } else if (e.st === "crouch") {
-          e.tm -= edt; e.glow = 1; e.sq = 0.6;
+          e.tm -= edt; e.windT = 0.1; // çömelme 0,7 sn ("windup")
           if (e.tm <= 0) { e.st = "charge"; e.tm = 0.6; e.cx = ux; e.cz = uz; }
         } else if (e.st === "charge") {
           mx = e.cx * 10; mz = e.cz * 10;
+          e.atkT = 0.1; // hücum süresince "attack"; sonra yorgunlukta yavaş yürüyüş
           e.tm -= edt;
           if (e.tm <= 0) { e.st = "tired"; e.tm = 1; }
         } else {
@@ -146,7 +152,7 @@ export function updateEnemies(dt, t, es) {
       }
       case "bomber": { // Kor Hortlak: yaklaşınca 0.5 sn kızarıp patlar
         if (e.fuse > 0) {
-          e.fuse -= edt; e.glow = 1;
+          e.fuse -= edt; e.windT = 0.1; // patlama öncesi kızarma 0,5 sn ("windup"); patlama anında düşman ölür ("dead")
           if (e.fuse <= 0) { e.suicide = true; killEnemy(e); continue; }
         } else {
           mx = ux * e.spd; mz = uz * e.spd;
@@ -158,18 +164,21 @@ export function updateEnemies(dt, t, es) {
         const want = dist < 8 ? -1 : dist > 12 ? 1 : 0;
         mx = ux * e.spd * want; mz = uz * e.spd * want;
         e.cd -= edt;
-        if (e.cd <= 0) { e.cd = 4; priestSupport(e); }
+        e.windT = e.cd > 0 && e.cd < 0.5 ? 0.1 : 0; // kalkan/iyileştirme öncesi son 0,5 sn ("windup")
+        if (e.cd <= 0) { e.cd = 4; priestSupport(e); e.atkT = 0.6; } // verme anı ("attack")
         break;
       }
       case "static": { // Lanet Totemi: 12 sn'de bir Ruh doğurur
-        e.cd -= edt; e.glow = 0.5 + 0.5 * Math.sin(t * 4);
-        if (e.cd <= 0) { e.cd = 12; if (d.summon && liveCount() < LEVELS[S.level].cap + 3) spawnEnemy(d.summon, { x: p.x + rand(1.5), z: p.z + rand(1.5) }); }
+        e.cd -= edt;
+        e.windT = e.cd > 0 && e.cd < 1 ? 0.1 : 0; // doğurmadan önceki son 1 sn ("windup"); sonra "attack"
+        if (e.cd <= 0) { e.cd = 12; e.atkT = 0.8; if (d.summon && liveCount() < LEVELS[S.level].cap + 3) spawnEnemy(d.summon, { x: p.x + rand(1.5), z: p.z + rand(1.5) }); }
         break;
       }
       case "knight": { // Kemik Şövalye: yürür, 5 sn'de bir yere vurur (yarıçap 4 şok), %50 hp'de hızlanır
         if (!e.enraged && e.hp <= e.maxHp * 0.5) { e.enraged = true; e.spd = 1.6; e.cd = 0; toast(STRINGS.toasts.knightEnrage, 2000); }
         if (e.wind > 0) {
-          e.wind -= edt; e.glow = 1;
+          e.wind -= edt; e.windT = 0.1; // yere vurma hazırlığı 1 sn ("windup"); biterken şok dalgası patlar ("attack")
+          if (e.wind <= 0) e.atkT = 0.4;
         } else {
           mx = ux * e.spd; mz = uz * e.spd;
           e.cd -= edt;
@@ -185,6 +194,8 @@ export function updateEnemies(dt, t, es) {
       }
     }
 
+    e.moving = mx * mx + mz * mz > 0.01;
+    if (d.ai === "chase") e.windT = d.dmg > 0 && RT.invuln <= 0 && dist < d.r + 1.2 ? 0.1 : 0; // temas hasarından hemen önce uyarı pozu
     p.x = THREE.MathUtils.clamp(p.x + mx * edt + e.kx * dt, -ARENA - 1, ARENA + 1);
     p.z = THREE.MathUtils.clamp(p.z + mz * edt + e.kz * dt, -ARENA - 1, ARENA + 1);
     const kd = Math.exp(-dt * 10); // vuruş geri itmesi hızla söner
@@ -196,6 +207,7 @@ export function updateEnemies(dt, t, es) {
     if (e.blob) e.blob.position.set(p.x, 0.04, p.z);
 
     if (d.dmg > 0 && RT.invuln <= 0 && dist < d.r + 0.5) {
+      e.atkT = 0.4;
       damagePlayer(d.dmg);
       if (!RT.running) return;
     }

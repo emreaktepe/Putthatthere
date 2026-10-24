@@ -5,6 +5,7 @@
   "description": "Statik oyun; build yok. package.json yalnızca Node testlerini (bağımlılıksız) çalıştırmak içindir.",
   "scripts": {
     "test": "node --test \"tests/**/*.test.js\"",
-    "validate": "node tools/validate-config.mjs data/game.config.json"
+    "validate": "node tools/validate-config.mjs data/game.config.json",
+    "art": "node tools/check-art.mjs"
   }
 }

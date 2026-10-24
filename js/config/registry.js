@@ -11,7 +11,7 @@ export const ARENA = 14; // geometriye bağlı; konfigürasyondan değişmez
 
 // düşman yapay zekâ durum makineleri (js/game/ai.js)
 export const AI_KINDS = ["chase", "ranged", "charge", "bomber", "support", "static", "knight", "boss"];
-// düşman geometri üreticileri (js/render/enemies.js BUILD) ve ses etiketi (kill:<model>)
+// düşman 3B modelleri (js/render/enemyvis.js ENEMY_VIS) ve ses etiketi (kill:<model>)
 export const MODEL_KINDS = ["ghost", "bat", "golem", "archer", "wolf", "ember", "priest", "totem", "knight", "boss"];
 // zemin doku türleri (js/render/themes.js drawFloor)
 export const FLOOR_KINDS = ["grass", "wet", "flag", "dirt", "snow", "ash", "facet", "bone", "tile"];
@@ -22,6 +22,13 @@ export const ROLES = ["player", "ally", "villain", "npc"];
 export const WAVES = ["sine", "triangle", "square", "sawtooth"];
 export const LABEL_POS = ["below", "above", "left", "right"];
 export const MAP_PRESETS = ["night"];
+
+// görsel yolu: yalnızca assets/art/ altındaki .webp (harici URL, "..", data:, javascript: biçimleri eşleşmez)
+export const ART_RE = /^assets\/art\/[a-z0-9-]+\.webp$/;
+
+// arayüz ikonu geçersiz kılmaları (config ui.icons anahtarı -> beklenen görsel dosya adı gövdesi: assets/art/ui-<ad>.webp)
+export const UI_ICON_FILES = { hourglass: "sure", crystal: "kristal", star: "puan", target: "hedef", lock: "kilit", check: "onay", heartFull: "kalp-dolu", heartEmpty: "kalp-bos", shield: "kalkan", sound: "ses-acik", mute: "ses-kapali", camera: "kamera", fire: "ates", admin: "yonetim" };
+export const UI_ICON_KEYS = Object.keys(UI_ICON_FILES);
 
 // yetenekler: kimlik = davranış (js/game/abilities.js). params: ad -> [min, max, varsayılan]
 export const ABILITY_KINDS = {

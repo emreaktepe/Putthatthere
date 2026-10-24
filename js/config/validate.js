@@ -112,6 +112,10 @@ function walk(value, spec, path, ctx, key) {
         err("E_LENGTH", path, `${name} uzunluğu ${out.length}: ${spec.min}–${spec.max} karakter olmalı`, { value: out.length > 60 ? out.slice(0, 60) + "…" : out, expect: `str ${spec.min}..${spec.max}` });
         if (out.length > spec.max) out = out.slice(0, spec.max);
       }
+      if (spec.pattern && !spec.pattern.test(out)) {
+        err("E_FORMAT", path, `${name} geçersiz: ${spec.patHint || "izin verilen biçim"} biçiminde olmalı`, { value: out.length > 60 ? out.slice(0, 60) + "…" : out, expect: spec.patHint || String(spec.pattern) });
+        return spec.req ? out : undefined;
+      }
       for (const m of out.matchAll(/\{([^{}]*)\}/g)) {
         if (!spec.ph.includes(m[1])) {
           err("E_FORMAT", path, `${name} içinde izinsiz yer tutucu {${m[1]}}` + (spec.ph.length ? ` (izinli: ${spec.ph.map((p) => "{" + p + "}").join(", ")})` : " (bu alanda yer tutucu yok)"), { value: m[0], expect: spec.ph.length ? spec.ph.join("|") : "yer tutucu yok" });
@@ -257,6 +261,11 @@ function semantic(c, raw, err, warn) {
 
   // oyun
   if (isObj(c.game) && c.game.startHp > c.game.maxHpCap) err("E_RANGE", ["game", "maxHpCap"], `maxHpCap (${c.game.maxHpCap}) startHp (${c.game.startHp}) değerinden küçük olamaz`, { value: c.game.maxHpCap, expect: `int ${c.game.startHp}..12` });
+
+  // arayüz ikonları: kalp görseli çift olarak verilir (biri yoksa SVG kalpler kullanılır)
+  if (isObj(c.ui) && isObj(c.ui.icons) && Boolean(c.ui.icons.heartFull) !== Boolean(c.ui.icons.heartEmpty)) {
+    warn("W_ART_PAIR", ["ui", "icons", c.ui.icons.heartFull ? "heartEmpty" : "heartFull"], "Kalp görseli için heartFull ve heartEmpty birlikte verilmeli; biri eksik olduğundan SVG kalpler kullanılır");
+  }
 
   // oyuncu
   if (isObj(c.player) && isObj(c.characters) && has(c.characters, c.player.character) && c.characters[c.player.character].role !== "player") {

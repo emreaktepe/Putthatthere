@@ -5,10 +5,10 @@
 export let META = {}, GAME = {}, PLAYER = {}, STRINGS = {}, CHARACTERS = {};
 export let LEVELS = [], LEVEL_IDS = [], WEAPONS = {}, WEAPON_ORDER = [], ABILITIES = {}, ABILITY_ORDER = [];
 export let ENEMIES = {}, ENEMY_NAMES = {}, TOTEM_ID = null, PERKS = [], THEMES = [], VIS = [], MUSIC = [], MUSIC_P3 = {};
-export let CAMPAIGN = {}, MAP = null;
+export let CAMPAIGN = {}, MAP = null, UI_ICONS = {};
 export let CONFIG_INFO = { source: "", baseHash: "", notices: [], warnings: [] };
 
 export function setData(d) {
-  ({ META, GAME, PLAYER, STRINGS, CHARACTERS, LEVELS, LEVEL_IDS, WEAPONS, WEAPON_ORDER, ABILITIES, ABILITY_ORDER, ENEMIES, ENEMY_NAMES, TOTEM_ID, PERKS, THEMES, VIS, MUSIC, MUSIC_P3, CAMPAIGN, MAP } = d);
+  ({ META, GAME, PLAYER, STRINGS, CHARACTERS, LEVELS, LEVEL_IDS, WEAPONS, WEAPON_ORDER, ABILITIES, ABILITY_ORDER, ENEMIES, ENEMY_NAMES, TOTEM_ID, PERKS, THEMES, VIS, MUSIC, MUSIC_P3, CAMPAIGN, MAP, UI_ICONS } = d);
 }
 export function setConfigInfo(info) { CONFIG_INFO = info; }

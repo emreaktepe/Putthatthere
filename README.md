@@ -20,9 +20,14 @@ Telefondan denemek için sunucunun yazdığı "Network" adresini (aynı Wi-Fi) k
 - **Kamera:** V (veya 📷) açıyı değiştirir (Yukarıdan / Eğik / Omuz-alçak) · Z / C döndürür · fare tekerleği yakınlaştırır · sağ tuşla sürükleme döndürür. Yürüme kamera-görelidir; seçim `buyucu_kamera` anahtarında saklanır.
 - **Akış:** Menü → (giriş) → Harita → bölüm kartı → savaş → ödül/perk → Harita. Kayıt `buyucu_save`; tamamlanan bölümler haritadan "alıştırma" olarak tekrar oynanır (ilerleme değişmez).
 
+## Grafik kalitesi
+
+Ana menüdeki **Grafik: Otomatik / Yüksek / Düşük** düğmesi oyuncu görselini seçer (değişiklik hemen uygulanır; `buyucu_kalite` anahtarında saklanır, admin ayarı değildir). **Yüksek** = ayrıntılı "pro" Aldemir modeli (`js/render/aldemir.js`, ~250 mesh; oyunda birleştirilip ~115 mesh / ~105 çizim çağrısına indirilir), **Düşük** = hafif prosedürel büyücü. **Otomatik**: dokunmatik işaretçi (`pointer: coarse`), `hardwareConcurrency <= 4` ya da `deviceMemory <= 4` ise Düşük, aksi halde Yüksek. Karar mantığı `js/core/quality.js`'te (testli). Pro modelde `player.look` içinden yalnızca `wandGlow` kullanılır; diğer renkler Düşük görünüm içindir.
+
 ## Proje yapısı
 
 - `index.html` — tüm oyun (sahne, düşmanlar, bölümler, hikâye, arayüz, ses); tek dosya
+- `js/render/models/` — kodla üretilen 3B karakter modelleri (Core6 Pro + Full12 v2 paketleri: Pırıl, Ruh, Yarasa, Taş Bekçi, Gölge Kral, Kemik Okçu, Kurt Ruhu, Kor Hortlak, Karanlık Rahip, Lanet Totemi, Kemik Şövalye + ortak `common.js`); oyuna bağlantı `js/render/enemyvis.js` + `enemies.js` (düşmanlar) ve `wizard.js` (Pırıl). 10 düşmanın hepsi grafik kalitesinden bağımsız her zaman bu modellerle çizilir. Aldemir: `js/render/aldemir.js`. Sahne figürleri (Zerrin baykuş, Taşkın, Veyis'in insan hali; savaşa katılmayan, çarpışmasız) `models/zerrin.js`, `taskin.js`, `veyis-insan.js` + saf mantık `js/render/propsvis.js` + sahne yapıştırıcısı `js/render/props3d.js` (flow.js aşamayı bildirir, loop.js tick eder); Düşük kalitede yalnız finaldeki Veyis gösterilir
 - `vendor/` — Three.js r185 (MIT, yerel kopya; CDN bağımlılığı yok)
 - `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md` — hikâye, bölüm, düşman, büyü, görsel ve müzik tasarım belgesi
 - `.github/workflows/deploy-pages.yml` — `main`'e push'ta GitHub Pages'e dağıtım

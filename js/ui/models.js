@@ -52,9 +52,11 @@ export function storyLines(text) {
 export const easeOutCubic = (t) => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
 export const countValue = (from, to, t) => Math.round(from + (to - from) * easeOutCubic(t));
 
-// konuşmacı portresi: simge yoksa baş harf
+// konuşmacı portresi: simge yoksa baş harf; `portrait` (görsel yolu) yalnızca karakterde varsa eklenir
 export function portraitOf(characters, speakerName) {
   const c = Object.values(characters || {}).find((x) => x && x.name === speakerName);
   const initial = String(speakerName || "?").trim().charAt(0).toLocaleUpperCase("tr");
-  return { icon: (c && c.icon) || initial, color: (c && c.color) || null };
+  const out = { icon: (c && c.icon) || initial, color: (c && c.color) || null };
+  if (c && c.portrait) out.portrait = c.portrait;
+  return out;
 }

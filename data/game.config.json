@@ -7,7 +7,8 @@
     "perkChoices": 3,
     "clearHeal": 1,
     "scoreLevelBonus": 100,
-    "scoreTimeMul": 2
+    "scoreTimeMul": 2,
+    "menuBackground": "assets/art/menu-arkaplan.webp"
   },
   "strings": {
     "title": "Büyücünün Gecesi",
@@ -77,35 +78,40 @@
       "role": "player",
       "icon": "🧙",
       "color": "#d9b3ff",
-      "bio": "O gece uyuyakalan büyücü; Gece Kalbi'ni onarabilecek tek kişi."
+      "bio": "O gece uyuyakalan büyücü; Gece Kalbi'ni onarabilecek tek kişi.",
+      "portrait": "assets/art/portre-aldemir.webp"
     },
     "zerrin": {
       "name": "Zerrin",
       "role": "ally",
       "icon": "🦉",
       "color": "#ffe9a8",
-      "bio": "Kulenin yaşlı baş büyücüsü; baykuşa dönüşmüş mentor."
+      "bio": "Kulenin yaşlı baş büyücüsü; baykuşa dönüşmüş mentor.",
+      "portrait": "assets/art/portre-zerrin.webp"
     },
     "piril": {
       "name": "Pırıl",
       "role": "ally",
       "icon": "✨",
       "color": "#ffe9a8",
-      "bio": "Gün ışığına varamayan küçük bir ışık; Aldemir'in yoldaşı."
+      "bio": "Gün ışığına varamayan küçük bir ışık; Aldemir'in yoldaşı.",
+      "portrait": "assets/art/portre-piril.webp"
     },
     "veyis": {
       "name": "Veyis",
       "role": "villain",
       "icon": "👑",
       "color": "#ffe9a8",
-      "bio": "Vadinin son kralı; kızını geri isteyen Gölge Kral."
+      "bio": "Vadinin son kralı; kızını geri isteyen Gölge Kral.",
+      "portrait": "assets/art/portre-veyis.webp"
     },
     "taskin": {
       "name": "Taşkın",
       "role": "npc",
       "icon": "🗿",
       "color": "#ffe9a8",
-      "bio": "Lanetten kurtulan tek Taş Bekçi; az konuşur."
+      "bio": "Lanetten kurtulan tek Taş Bekçi; az konuşur.",
+      "portrait": "assets/art/portre-taskin.webp"
     }
   },
   "player": {
@@ -125,6 +131,7 @@
   },
   "enemies": {
     "ghost": {
+      "image": "assets/art/dusman-ghost.webp",
       "name": "Ruh",
       "hp": 1,
       "speed": 2.2,
@@ -138,6 +145,7 @@
       "ai": "chase"
     },
     "bat": {
+      "image": "assets/art/dusman-bat.webp",
       "name": "Yarasa",
       "hp": 1,
       "speed": 4.6,
@@ -152,6 +160,7 @@
       "zig": true
     },
     "golem": {
+      "image": "assets/art/dusman-golem.webp",
       "name": "Taş Bekçi",
       "hp": 4,
       "speed": 1.3,
@@ -166,6 +175,7 @@
       "spin": true
     },
     "archer": {
+      "image": "assets/art/dusman-archer.webp",
       "name": "Kemik Okçu",
       "hp": 2,
       "speed": 1.6,
@@ -180,6 +190,7 @@
       "ai": "ranged"
     },
     "wolf": {
+      "image": "assets/art/dusman-wolf.webp",
       "name": "Kurt Ruhu",
       "hp": 2,
       "speed": 2.4,
@@ -194,6 +205,7 @@
       "ai": "charge"
     },
     "ember": {
+      "image": "assets/art/dusman-ember.webp",
       "name": "Kor Hortlak",
       "hp": 2,
       "speed": 3.2,
@@ -207,6 +219,7 @@
       "ai": "bomber"
     },
     "priest": {
+      "image": "assets/art/dusman-priest.webp",
       "name": "Karanlık Rahip",
       "hp": 5,
       "speed": 1.2,
@@ -221,6 +234,7 @@
       "ai": "support"
     },
     "totem": {
+      "image": "assets/art/dusman-totem.webp",
       "name": "Lanet Totemi",
       "hp": 10,
       "speed": 0,
@@ -238,6 +252,7 @@
       "summon": "ghost"
     },
     "knight": {
+      "image": "assets/art/dusman-knight.webp",
       "name": "Kemik Şövalye",
       "shortName": "Şövalye",
       "hp": 24,
@@ -255,6 +270,8 @@
       "noCap": true
     },
     "boss": {
+      "image": "assets/art/dusman-boss.webp",
+      "character": "veyis",
       "name": "Gölge Kral",
       "shortName": "Kral",
       "hp": 45,
@@ -277,6 +294,8 @@
     "fire": {
       "name": "Ateş Topu",
       "icon": "🔥",
+      "image": "assets/art/ikon-buyu-fire.webp",
+      "imageSmall": "assets/art/ikon-buyu-fire-128.webp",
       "color": "#ffa03a",
       "cd": 0.35,
       "dmg": 1,
@@ -286,6 +305,8 @@
     "frost": {
       "name": "Buz Oku",
       "icon": "❄️",
+      "image": "assets/art/ikon-buyu-frost.webp",
+      "imageSmall": "assets/art/ikon-buyu-frost-128.webp",
       "color": "#7fd6ff",
       "cd": 0.5,
       "dmg": 1,
@@ -296,6 +317,8 @@
     "arcane": {
       "name": "Üçlü Büyü",
       "icon": "✨",
+      "image": "assets/art/ikon-buyu-arcane.webp",
+      "imageSmall": "assets/art/ikon-buyu-arcane-128.webp",
       "color": "#d27bff",
       "cd": 0.65,
       "dmg": 1,
@@ -306,6 +329,8 @@
     "lightning": {
       "name": "Yıldırım",
       "icon": "⚡",
+      "image": "assets/art/ikon-buyu-lightning.webp",
+      "imageSmall": "assets/art/ikon-buyu-lightning-128.webp",
       "color": "#fff27a",
       "cd": 0.9,
       "dmg": 2,
@@ -314,6 +339,8 @@
     "poison": {
       "name": "Zehir Bulutu",
       "icon": "🧪",
+      "image": "assets/art/ikon-buyu-poison.webp",
+      "imageSmall": "assets/art/ikon-buyu-poison-128.webp",
       "color": "#6bff6b",
       "cd": 1.4,
       "dmg": 1,
@@ -323,6 +350,8 @@
     "meteor": {
       "name": "Meteor",
       "icon": "☄️",
+      "image": "assets/art/ikon-buyu-meteor.webp",
+      "imageSmall": "assets/art/ikon-buyu-meteor-128.webp",
       "color": "#ff7a2a",
       "cd": 2.8,
       "dmg": 3,
@@ -331,6 +360,8 @@
     "nova": {
       "name": "Ay Işığı Halkası",
       "icon": "🌙",
+      "image": "assets/art/ikon-buyu-nova.webp",
+      "imageSmall": "assets/art/ikon-buyu-nova-128.webp",
       "color": "#cfe4ff",
       "cd": 4.5,
       "dmg": 1,
@@ -339,57 +370,66 @@
   },
   "weaponOrder": ["fire", "frost", "arcane", "lightning", "poison", "meteor", "nova"],
   "abilities": {
-    "shield": { "name": "Mana Kalkanı", "icon": "🛡️", "cd": 14, "params": { "duration": 8 } },
-    "blink": { "name": "Işınlan", "icon": "💨", "cd": 5, "params": { "dist": 5, "iframes": 0.4 } },
-    "timeslow": { "name": "Zaman Çatlağı", "icon": "⏳", "cd": 18, "params": { "duration": 3, "factor": 0.4 } }
+    "shield": { "name": "Mana Kalkanı", "icon": "🛡️", "image": "assets/art/ikon-yetenek-shield.webp", "imageSmall": "assets/art/ikon-yetenek-shield-128.webp", "cd": 14, "params": { "duration": 8 } },
+    "blink": { "name": "Işınlan", "icon": "💨", "image": "assets/art/ikon-yetenek-blink.webp", "imageSmall": "assets/art/ikon-yetenek-blink-128.webp", "cd": 5, "params": { "dist": 5, "iframes": 0.4 } },
+    "timeslow": { "name": "Zaman Çatlağı", "icon": "⏳", "image": "assets/art/ikon-yetenek-timeslow.webp", "imageSmall": "assets/art/ikon-yetenek-timeslow-128.webp", "cd": 18, "params": { "duration": 3, "factor": 0.4 } }
   },
   "abilityOrder": ["shield", "blink", "timeslow"],
   "perks": {
     "hp": {
+      "image": "assets/art/ikon-perk-hp.webp",
       "name": "Yaşam Özü",
       "desc": "Azami can +1 ve 1 can yenilenir",
       "maxStacks": 3,
       "effect": { "kind": "add", "stat": "maxHp", "value": 1 }
     },
     "speed": {
+      "image": "assets/art/ikon-perk-speed.webp",
       "name": "Rüzgâr Ayakkabıları",
       "desc": "Hareket hızı +15%",
       "effect": { "kind": "mul", "stat": "speedMul", "value": 1.15 }
     },
     "power": {
+      "image": "assets/art/ikon-perk-power.webp",
       "name": "Güç Tılsımı",
       "desc": "Tüm büyülerin hasarı +25%",
       "effect": { "kind": "mul", "stat": "dmgMul", "value": 1.25 }
     },
     "haste": {
+      "image": "assets/art/ikon-perk-haste.webp",
       "name": "Hızlı Parmaklar",
       "desc": "Büyü bekleme süresi -20%",
       "effect": { "kind": "mul", "stat": "cdMul", "value": 0.8 }
     },
     "magnet": {
+      "image": "assets/art/ikon-perk-magnet.webp",
       "name": "Mana Mıknatısı",
       "desc": "Kristaller ve kalpler sana çekilir",
       "effect": { "kind": "add", "stat": "magnet", "value": 3.5 }
     },
     "vampire": {
+      "image": "assets/art/ikon-perk-vampire.webp",
       "name": "Vampir Dokunuş",
       "desc": "Her 12 öldürmede 1 can",
       "maxStacks": 1,
       "effect": { "kind": "flag", "stat": "vampire", "value": 1 }
     },
     "pierce": {
+      "image": "assets/art/ikon-perk-pierce.webp",
       "name": "Delici Büyü",
       "desc": "Ateş, Buz ve Üçlü mermiler 1 düşmanı delip geçer",
       "maxStacks": 1,
       "effect": { "kind": "flag", "stat": "pierce", "value": 1 }
     },
     "echo": {
+      "image": "assets/art/ikon-perk-echo.webp",
       "name": "Yankı",
       "desc": "%20 ihtimalle büyü iki kez atılır",
       "maxStacks": 3,
       "effect": { "kind": "add", "stat": "echo", "value": 0.2 }
     },
     "piril": {
+      "image": "assets/art/ikon-perk-piril.webp",
       "name": "Pırıl'ın Işığı",
       "desc": "Pırıl en yakın kristali gösterir, toplama yarıçapı +0.5",
       "maxStacks": 1,
@@ -397,11 +437,13 @@
       "effect": { "kind": "flag", "stat": "piril", "value": 1 }
     },
     "stone": {
+      "image": "assets/art/ikon-perk-stone.webp",
       "name": "Taş Deri",
       "desc": "Sonraki 2 bölümde alınan ilk hasar %50 azalır",
       "effect": { "kind": "flag", "stat": "stoneLevels", "value": 2 }
     },
     "rain": {
+      "image": "assets/art/ikon-perk-rain.webp",
       "name": "Mana Yağmuru",
       "desc": "Kristal toplayınca %10 ihtimalle ekstra 1 kristal",
       "maxStacks": 3,
@@ -678,12 +720,14 @@
   },
   "levels": {
     "forest": {
+      "image": "assets/art/bolum-forest.webp",
+      "nodeImage": "assets/art/dugum-forest.webp",
       "name": "Fısıldayan Orman",
       "objective": "crystal",
       "goal": 6,
       "time": 50,
       "theme": "forest",
-      "map": { "x": 110, "y": 590, "icon": "🌲", "label": "above" },
+      "map": { "x": 577, "y": 547, "icon": "🌲", "label": "above" },
       "start": { "ghost": 3 },
       "spawn": [{ "ghost": 1 }],
       "every": 8,
@@ -701,12 +745,14 @@
       ]
     },
     "cave": {
+      "image": "assets/art/bolum-cave.webp",
+      "nodeImage": "assets/art/dugum-cave.webp",
       "name": "Yarasa Mağarası",
       "objective": "crystal",
       "goal": 8,
       "time": 55,
       "theme": "cave",
-      "map": { "x": 300, "y": 480, "icon": "🦇", "label": "above" },
+      "map": { "x": 201, "y": 520, "icon": "🦇", "label": "below" },
       "start": { "ghost": 2, "bat": 3 },
       "spawn": [{ "bat": 1, "ghost": 1 }],
       "every": 7,
@@ -723,12 +769,14 @@
       ]
     },
     "golems": {
+      "image": "assets/art/bolum-golems.webp",
+      "nodeImage": "assets/art/dugum-golems.webp",
       "name": "Taş Bekçiler",
       "objective": "crystal",
       "goal": 10,
       "time": 60,
       "theme": "golems",
-      "map": { "x": 500, "y": 590, "icon": "🗿", "label": "below" },
+      "map": { "x": 201, "y": 243, "icon": "🗿", "label": "right" },
       "start": { "ghost": 2, "bat": 2, "golem": 2 },
       "spawn": [{ "golem": 1, "bat": 1 }],
       "every": 7,
@@ -746,12 +794,14 @@
       ]
     },
     "graveyard": {
+      "image": "assets/art/bolum-graveyard.webp",
+      "nodeImage": "assets/art/dugum-graveyard.webp",
       "name": "Hortlak Mezarlığı",
       "objective": "crystal",
       "goal": 12,
       "time": 65,
       "theme": "graveyard",
-      "map": { "x": 700, "y": 480, "icon": "🪦", "label": "above" },
+      "map": { "x": 331, "y": 393, "icon": "🪦", "label": "right" },
       "start": { "ghost": 3, "bat": 2, "golem": 2, "archer": 2 },
       "spawn": [{ "ghost": 1, "archer": 1 }],
       "every": 6,
@@ -770,12 +820,14 @@
       ]
     },
     "pass": {
+      "image": "assets/art/bolum-pass.webp",
+      "nodeImage": "assets/art/dugum-pass.webp",
       "name": "Donmuş Geçit",
       "objective": "survive",
       "goal": 45,
       "time": 45,
       "theme": "pass",
-      "map": { "x": 900, "y": 570, "icon": "❄️", "label": "below" },
+      "map": { "x": 884, "y": 167, "icon": "❄️", "label": "below" },
       "crystals": 2,
       "start": { "ghost": 3, "bat": 3, "wolf": 2 },
       "spawn": [{ "wolf": 2, "bat": 1 }],
@@ -792,12 +844,14 @@
       ]
     },
     "village": {
+      "image": "assets/art/bolum-village.webp",
+      "nodeImage": "assets/art/dugum-village.webp",
       "name": "Yanık Köy",
       "objective": "totem",
       "goal": 3,
       "time": 75,
       "theme": "village",
-      "map": { "x": 830, "y": 340, "icon": "🔥", "label": "above" },
+      "map": { "x": 563, "y": 311, "icon": "🔥", "label": "below" },
       "crystals": 3,
       "start": { "ghost": 3, "golem": 2, "ember": 3 },
       "spawn": [{ "ember": 1, "ghost": 1 }],
@@ -815,12 +869,14 @@
       ]
     },
     "crystals": {
+      "image": "assets/art/bolum-crystals.webp",
+      "nodeImage": "assets/art/dugum-crystals.webp",
       "name": "Kristal Yatağı",
       "objective": "crystal",
       "goal": 14,
       "time": 80,
       "theme": "crystals",
-      "map": { "x": 610, "y": 330, "icon": "💎", "label": "below" },
+      "map": { "x": 829, "y": 342, "icon": "💎", "label": "below" },
       "start": { "ghost": 3, "bat": 3, "golem": 2, "archer": 2, "priest": 2 },
       "spawn": [{ "priest": 1, "bat": 1 }, { "archer": 1, "bat": 1 }],
       "every": 6,
@@ -839,12 +895,14 @@
       ]
     },
     "tower": {
+      "image": "assets/art/bolum-tower.webp",
+      "nodeImage": "assets/art/dugum-tower.webp",
       "name": "Kemik Kule",
       "objective": "miniboss",
       "goal": 1,
       "time": 85,
       "theme": "tower",
-      "map": { "x": 370, "y": 215, "icon": "🏰", "label": "below" },
+      "map": { "x": 242, "y": 147, "icon": "🏰", "label": "right" },
       "start": { "knight": 1, "archer": 2, "wolf": 2 },
       "spawn": [{ "archer": 1, "ghost": 1 }],
       "every": 6,
@@ -863,12 +921,14 @@
       ]
     },
     "castle": {
+      "image": "assets/art/bolum-castle.webp",
+      "nodeImage": "assets/art/dugum-castle.webp",
       "name": "Gölge Kalesi",
       "objective": "boss",
       "goal": 1,
       "time": 100,
       "theme": "castle",
-      "map": { "x": 150, "y": 110, "icon": "👑", "label": "right" },
+      "map": { "x": 645, "y": 109, "icon": "👑", "label": "right" },
       "start": { "boss": 1 },
       "spawn": [],
       "every": 6,
@@ -888,19 +948,37 @@
     "order": ["forest", "cave", "golems", "graveyard", "pass", "village", "crystals", "tower", "castle"],
     "start": "forest",
     "edges": [
-      { "from": "forest", "to": "cave", "via": [[190,560]], "style": "dotted" },
-      { "from": "cave", "to": "golems", "via": [[390,570]], "style": "dotted" },
-      { "from": "golems", "to": "graveyard", "via": [[600,520]], "style": "dotted" },
-      { "from": "graveyard", "to": "pass", "via": [[800,540]], "style": "dotted" },
-      { "from": "pass", "to": "village", "via": [[900,440]], "style": "dotted" },
-      { "from": "village", "to": "crystals", "via": [[720,350]], "style": "dotted" },
-      { "from": "crystals", "to": "tower", "via": [[490,250]], "style": "dotted" },
-      { "from": "tower", "to": "castle", "via": [[250,150]], "style": "dotted" }
+      { "from": "forest", "to": "cave", "via": [[400,570]], "style": "dotted" },
+      { "from": "cave", "to": "golems", "via": [[110,390]], "style": "dotted" },
+      { "from": "golems", "to": "graveyard", "via": [[290,310]], "style": "dotted" },
+      { "from": "graveyard", "to": "pass", "via": [[450,450],[700,420],[800,250]], "style": "dotted" },
+      { "from": "pass", "to": "village", "via": [[760,150],[640,250]], "style": "dotted" },
+      { "from": "village", "to": "crystals", "via": [[700,330]], "style": "dotted" },
+      { "from": "crystals", "to": "tower", "via": [[780,240],[520,215],[360,190]], "style": "dotted" },
+      { "from": "tower", "to": "castle", "via": [[420,120]], "style": "dotted" }
     ]
+  },
+  "ui": {
+    "icons": {
+      "hourglass": "assets/art/ui-sure.webp",
+      "crystal": "assets/art/ui-kristal.webp",
+      "star": "assets/art/ui-puan.webp",
+      "target": "assets/art/ui-hedef.webp",
+      "lock": "assets/art/ui-kilit.webp",
+      "check": "assets/art/ui-onay.webp",
+      "heartFull": "assets/art/ui-kalp-dolu.webp",
+      "heartEmpty": "assets/art/ui-kalp-bos.webp",
+      "shield": "assets/art/ui-kalkan.webp",
+      "sound": "assets/art/ui-ses-acik.webp",
+      "mute": "assets/art/ui-ses-kapali.webp",
+      "camera": "assets/art/ui-kamera.webp",
+      "fire": "assets/art/ui-ates.webp",
+      "admin": "assets/art/ui-yonetim.webp"
+    }
   },
   "map": {
     "viewBox": [1000, 700],
-    "background": { "preset": "night", "tint": "#1d1040" },
+    "background": { "preset": "night", "tint": "#1d1040", "image": "assets/art/harita-arkaplan.webp" },
     "nodeRadius": 38
   }
 }

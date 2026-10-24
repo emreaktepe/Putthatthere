@@ -2,6 +2,7 @@
 import * as THREE from "three";
 import { ARENA, rand } from "../core/util.js";
 import { BMAT, BOX, CONE, CYL, MM, SPH, TR, glowSprite, glowTex, mk } from "./gfx.js";
+import { reservedHit } from "./propsvis.js";
 import { cloudGroup, fireCfg, fireLight, mistTex, mists, scene, skyState, skyU, starGroups } from "./scene.js";
 
 export const sceneryGroup = new THREE.Group();
@@ -30,7 +31,7 @@ export function addObj(o, ...own) { sceneryGroup.add(o); sc.disp.push(...own); r
 export function ringPos(rmin = ARENA + 1, rmax = ARENA + 9) {
   for (;;) {
     const x = rand(rmax), z = rand(rmax), d = Math.max(Math.abs(x), Math.abs(z));
-    if (d >= rmin && d <= rmax) return [x, z];
+    if (d >= rmin && d <= rmax && !reservedHit(x, z)) return [x, z]; // Zerrin/Taşkın figürlerinin yerine ağaç/kaya konmaz
   }
 }
 export const jc = (hex, v = 0.08) => new THREE.Color(hex).offsetHSL(rand(0.02), rand(v), rand(v));
@@ -81,15 +82,7 @@ export const SCENERY = {
     const l = [];
     for (let i = 0; i < 6; i++) { const [x, z] = ringPos(12, ARENA + 6); l.push(TR(x, 0.4, z, 0, Math.random() * 3, 1.5708, 1, 1.6 + Math.random() * 1.2, 1)); }
     addInst(new THREE.CylinderGeometry(0.42, 0.5, 1, 7), smat(0x3a2418), l);
-    // baykuşlu dal
-    const bark = smat(0x3a2418), owlM = smat(0x6b5035), g = new THREE.Group();
-    g.add(mk(CYL(0.4, 0.45, 3, 7), bark, 0, 0.4, 0));
-    g.children[0].rotation.z = 1.5708;
-    const body = mk(SPH(0.3), owlM, 0, 1.15, 0); body.scale.set(1, 1.3, 1);
-    g.add(body, mk(SPH(0.22), owlM, 0, 1.68, 0.02), mk(CONE(0.06, 0.18, 4), owlM, -0.12, 1.9, 0), mk(CONE(0.06, 0.18, 4), owlM, 0.12, 1.9, 0));
-    for (const sx of [-1, 1]) { g.add(mk(SPH(0.06), BMAT(0xffd84a), sx * 0.1, 1.7, 0.2)); const gs = glowSprite(0xffd84a, 0.5, 0.8); gs.position.set(sx * 0.1, 1.7, 0.22); g.add(gs); }
-    g.position.set(-16.5, 0, -6); g.rotation.y = 0.9;
-    addObj(g, bark, owlM);
+    // baykuşlu dal artık 3B Zerrin figürüdür (props3d.js); düşük kalitede gösterilmez
   },
   // 1 · Yarasa Mağarası
   cave() {

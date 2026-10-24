@@ -1,14 +1,15 @@
 // HUD: üst şerit (bölüm, süre halkası, puan), can kalpleri, hedef çubuğu, boss çubuğu; alt büyü slotları ve yetenek düğmeleri;
 // bildirim (toast) ve hasar parlaması. Tüm metinler DOM düğümü olarak basılır; sık çağrılan güncellemeler önbellekle yalnız değişince yazar.
 import { sfx } from "../audio/engine.js";
-import { ABILITIES, ABILITY_ORDER, LEVELS, STRINGS, WEAPONS, WEAPON_ORDER } from "../core/data.js";
+import { ABILITIES, ABILITY_ORDER, CHARACTERS, LEVELS, STRINGS, WEAPONS, WEAPON_ORDER } from "../core/data.js";
 import { fmt, h, svg } from "../core/dom.js";
 import { RT, S, abilCd } from "../core/state.js";
 import { $ } from "../core/util.js";
 import { useAbility } from "../game/abilities.js";
 import { cyclePreset, setCamListener } from "../render/camera.js";
 import { setWandColor } from "../render/wizard.js";
-import { icon } from "./icons.js";
+import { artOr, fillMedallion, pickArt } from "./art.js";
+import { heartCell, icon } from "./icons.js";
 import { cooldownFrac, goalFrac, heartStates, timerModel } from "./models.js";
 import { UI } from "./text.js";
 
@@ -37,10 +38,11 @@ function buildHud() {
   el.goalText = h("span", { class: "goal-text" });
   el.goalIc = h("span", { class: "goal-ic" });
   el.goal = h("div", { class: "hud-goal" }, el.goalIc, h("div", { class: "goal-body" }, el.goalText, h("div", { class: "bar" }, el.goalFill)));
+  el.bossMed = h("div", { class: "boss-medal", hidden: true });
   el.bossName = h("b", { class: "boss-name" });
   el.bossFill = h("i", { class: "bar-fill" });
   el.bossShield = h("span", { class: "boss-shield", hidden: true }, icon("shield"));
-  el.boss = h("div", { class: "hud-boss", hidden: true }, el.bossName, h("div", { class: "bar boss-bar" }, el.bossFill), el.bossShield);
+  el.boss = h("div", { class: "hud-boss", hidden: true }, el.bossMed, el.bossName, h("div", { class: "bar boss-bar" }, el.bossFill), el.bossShield);
   hud.replaceChildren(
     h("div", { class: "hud-strip glass" },
       h("div", { class: "hud-level" }, el.lvNum, el.lvName), el.timer,
@@ -77,7 +79,7 @@ export function renderHud() {
   // can
   const states = heartStates(S.hp, S.maxHp), key = states.join(",");
   if (changed("hearts", key)) {
-    el.hearts.replaceChildren(...states.map((st) => h("span", { class: "heart " + st }, icon("heart", "bg"), icon("heart", "fg"))));
+    el.hearts.replaceChildren(...states.map(heartCell));
     el.hearts.setAttribute("aria-label", `Can: ${Math.max(S.hp, 0)} / ${S.maxHp}`);
     el.hearts.classList.toggle("low", S.hp > 0 && S.hp <= 1);
   }
@@ -99,6 +101,8 @@ export function renderHud() {
   if (RT.bossRef) {
     const d = RT.bossRef.d;
     if (changed("bossName", d.shortName || d.name)) el.bossName.textContent = d.shortName || d.name;
+    const bp = d.image || (d.character && CHARACTERS[d.character] ? CHARACTERS[d.character].portrait : null);
+    if (changed("bossPortrait", bp || "")) { el.bossMed.hidden = !bp; if (bp) fillMedallion(el.bossMed, bp, d.name, document.createTextNode("")); }
     const bf = Math.round(Math.max(bossFrac, 0) * 1000) / 10;
     if (changed("bossFill", bf)) el.bossFill.style.width = bf + "%";
     if (changed("bossShield", !!RT.bossRef.shielded)) { el.bossShield.hidden = !RT.bossRef.shielded; el.boss.classList.toggle("shielded", !!RT.bossRef.shielded); }
@@ -128,7 +132,7 @@ export function renderWeapons() {
       class: "slot" + (active ? " active" : "") + (open ? "" : " locked"), type: "button",
       style: { "--c": "#" + w.color.toString(16).padStart(6, "0") },
       "aria-label": open ? `${w.name} (${w.key})` : `Büyü ${w.key}: kilitli`, "aria-pressed": open ? String(active) : null, "aria-disabled": open ? null : "true",
-    }, h("span", { class: "slot-ic" + (open ? "" : " sil") }, w.icon), h("span", { class: "slot-key" }, w.key), open ? h("span", { class: "slot-name" }, w.name) : icon("lock", "slot-lock"), cd);
+    }, h("span", { class: "slot-ic" + (open ? "" : " sil") }, artOr(pickArt(w, true), document.createTextNode(w.icon), { cls: "slot-img", size: 48, lazy: false })), h("span", { class: "slot-key" }, w.key), open ? h("span", { class: "slot-name" }, w.name) : icon("lock", "slot-lock"), cd);
     b.addEventListener("click", () => { selectWeapon(id); b.blur(); });
     bar.appendChild(b);
     weaponEls[id] = { b, cd, last: -1 };
@@ -147,7 +151,7 @@ export function renderAbilities() {
     if (!S.abilities.includes(id)) continue;
     const a = ABILITIES[id];
     const cd = h("span", { class: "slot-cd" }), num = h("span", { class: "acd" });
-    const b = h("button", { class: "slot aslot", type: "button", "aria-label": `${a.name} (${a.key})` }, h("span", { class: "slot-ic" }, a.icon), h("span", { class: "slot-key" }, a.key), cd, num);
+    const b = h("button", { class: "slot aslot", type: "button", "aria-label": `${a.name} (${a.key})` }, h("span", { class: "slot-ic" }, artOr(pickArt(a, true), document.createTextNode(a.icon), { cls: "slot-img", size: 44, lazy: false })), h("span", { class: "slot-key" }, a.key), cd, num);
     b.addEventListener("pointerdown", (e) => { e.preventDefault(); useAbility(id); });
     box.appendChild(b);
     abilEls[id] = { b, cd, num, last: -1, f: -1 };

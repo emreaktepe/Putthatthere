@@ -1,0 +1,22 @@
+# Görsel orijinalleri (ChatGPT çıktısı PNG, 1,4-3 MB) yalnızca yerelde kalır: siteye ve repoya girmez.
+# Oyun ve siteye yalnızca küçültülmüş .webp sürümleri (~220-330 KB) girer; yol kuralı: assets/art/<ad>.webp
+assets/art/*.png
+
+# Geçici dosyalar (deneme betikleri, ara çıktılar)
+.ofis-tmp/
+node_modules/
+
+# Emre'nin 3B model paketi (referans PNG ~3,4 MB + kopya three içerir): yalnızca yerelde kalır.
+# Oyunun kullandığı tek dosya js/render/aldemir.js olarak kopyalandı; paketin betikleri/sunucusu repoda yok.
+Aldemir_3D_Pro_v02/
+
+# Emre'nin Core6 Pro v1 model paketi (kopya three + ~3,4 MB referans PNG + sunucu/betikler): yalnızca yerelde kalır, repoya girmez.
+# Oyunun kullandığı dosyalar js/render/models/ altına kopyalandı (common, ghost, bat, golem, boss, piril).
+Buyucunun_Gecesi_3D_Core6_Pro_v1/
+
+# Üçüncü taraf/indirme paketi (içinde three kopyası ve büyük referans PNG var); yalnızca js/render/models/ içine kopyalananlar repoya girer
+Buyucunun_Gecesi_3D_Full12_Pro_v2/
+
+# Emre'nin "son 3" sahne figürü klasörü (zerrin, taskin, veyis-insan): yalnızca yerelde kalır, repoya girmez.
+# Oyunun kullandığı dosyalar js/render/models/ altına kopyalandı (başlarında köken notu var).
+son 3/

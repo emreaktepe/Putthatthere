@@ -10,11 +10,13 @@ import { gameOver, levelClear } from "./flow.js";
 import { isTouch, keys, mouse, ray } from "./input.js";
 import { cast, fireSpell, nearestEnemies } from "./weapons.js";
 import { liveCount, placePickup, spawnCrystal, spawnEnemy } from "./world.js";
+import { tickDying } from "../render/enemies.js";
 import { addCloud, addFx, burst, dropHazard, emit, removeObj, updateSparks } from "../render/fx.js";
 import { camera, renderer, ring, scene, updateWeather, wand } from "../render/scene.js";
 import { rig, updateCamera } from "../render/camera.js";
 import { rotateMove } from "./cameramath.js";
 import { sceneryTick } from "../render/scenery.js";
+import { tickProps } from "../render/props3d.js";
 import { animatePiril, animateWizard, guide, guideGeo, orbTip, piril, shieldBall, wizard } from "../render/wizard.js";
 import { renderHud, updateAbilityUi } from "../ui/hud.js";
 
@@ -232,6 +234,7 @@ export function startLoop() {
   animateWizard(dt, t);
   updateWeather(dt, t, wizard.position.x, wizard.position.z);
   sceneryTick(dt, t);
+  tickProps(t, dt);
   wand.intensity = 30 + Math.sin(t * 13) * 3 + Math.random() * 2; // asa ışığı titremesi
   pickups.forEach((p, i) => { p.mesh.position.y = 0.9 + Math.sin(t * 2.5 + i) * 0.2; p.mesh.rotation.y += dt * 1.5; });
   updateSparks(dt);
@@ -252,6 +255,7 @@ export function startLoop() {
   // Pırıl: ilk bölüm bittikten sonra büyücüyü çevreler
   piril.visible = S.level >= 1;
   animatePiril(dt, t);
+  tickDying(dt, t); // ölen 3B model düşmanların ~0.35 sn'lik görsel ölümü (oynanış ölümü çoktan işlendi)
 
   if (RT.running) {
     update(dt, t);

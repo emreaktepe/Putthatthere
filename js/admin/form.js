@@ -19,6 +19,7 @@ export function hintText(spec) {
   if (spec.t === "int" || spec.t === "num") bits.push(`Aralık: ${spec.min}–${spec.max}`);
   if (spec.t === "str") bits.push(`${spec.min || 0}–${spec.max} karakter`);
   if (spec.t === "str" && spec.ph && spec.ph.length) bits.push("Yer tutucular: " + spec.ph.map((x) => `{${x}}`).join(" "));
+  if (spec.t === "str" && spec.patHint) bits.push("Biçim: " + spec.patHint);
   if (spec.t === "hex") bits.push("Biçim: #rrggbb");
   if (spec.t === "arr") bits.push(`${spec.min || 0}–${spec.max} öğe${spec.increasing ? " · artan sırada" : ""}`);
   if (spec.def !== undefined && spec.t !== "obj") bits.push(`Varsayılan: ${spec.def}`);

@@ -4,6 +4,7 @@ import { mus, sfx } from "../audio/engine.js";
 import { ABILITIES, GAME, LEVELS, LEVEL_IDS, META, PERKS, STRINGS, TOTEM_ID, WEAPONS } from "../core/data.js";
 import { fmt } from "../core/dom.js";
 import { RT, S, resetAbilityCooldowns, restoreSnapshot, takeSnapshot } from "../core/state.js";
+import { setPropsPhase } from "../render/props3d.js";
 import { applyTheme } from "../render/themes.js";
 import { setWandColor, wizard } from "../render/wizard.js";
 import { renderAbilities, renderHud, renderWeapons } from "../ui/hud.js";
@@ -17,9 +18,15 @@ import { clearWorld, spawnCrystal, spawnEnemy } from "./world.js";
 
 let levelStartScore = 0;
 
+// sahne figürleri (Zerrin/Taşkın/Veyis): akış aşamasını bildirir; görünürlük kuralı render/propsvis.js'te
+function props(phase) {
+  setPropsPhase({ phase, levelId: LEVEL_IDS[S.level], levelIds: LEVEL_IDS, completed: camp.completed });
+}
+
 // ---------- Menü ve harita ----------
 export function showMainMenu() {
   endPractice();
+  props("none");
   if (!camp.booted) { camp.booted = true; initCampaign(); }
   const sv = camp.pending;
   const notice = camp.status === "corrupt" ? UI.menu.noSave : camp.status === "newer" ? UI.menu.newer : "";
@@ -37,6 +44,7 @@ export function showMainMenu() {
 // focusId: haritada ön seçili düğüm; freshId: yeni açılan düğüm (animasyon)
 export function openMap(focusId = null, freshId = null) {
   endPractice();
+  props("none");
   const st = statuses();
   const focus = focusId || LEVEL_IDS.find((id) => st[id] === "available") || LEVEL_IDS[LEVEL_IDS.length - 1];
   showMap({
@@ -69,6 +77,7 @@ export function introLevel() {
   clearWorld();
   applyTheme(L.theme);
   wizard.position.set(0, 0, 0);
+  props("intro");
   if (!inPractice()) persist(); // "Devam et" ölüm/yenileme sonrası da çalışsın
   renderHud();
   renderWeapons();
@@ -91,6 +100,7 @@ export function startLevel() {
   setWandColor(WEAPONS[S.weapon].color);
   mus.set(L.objective === "boss" ? "boss" : "play", L.theme);
   levelStartScore = S.score;
+  props("play");
   unmount();
   document.body.classList.add("playing");
   RT.running = true;
@@ -140,6 +150,7 @@ export function levelClear() {
   if (idx === LEVELS.length - 1) {
     camp.completed.add(id);
     persist();
+    props("final");
     finalScreen({ outro: L.outro, score: S.score, onMap: () => openMap(id), onReplay: () => { newGame(); openMap(); } });
     return;
   }
@@ -147,6 +158,7 @@ export function levelClear() {
   if (L.reward && !S.unlocked.includes(L.reward)) { S.unlocked.push(L.reward); rewards.push({ kind: "weapon", id: L.reward }); }
   if (L.ability && !S.abilities.includes(L.ability) && ABILITIES[L.ability]) { S.abilities.push(L.ability); rewards.push({ kind: "ability", id: L.ability }); }
   if (S.hp < S.maxHp) S.hp = Math.min(S.hp + GAME.clearHeal, S.maxHp);
+  props("clear");
   levelClearScreen({
     idx, bonus, levelBonus, total: S.score, prevTotal, rewards, practice: false, choices: pickPerks(),
     onPick: (p) => {
