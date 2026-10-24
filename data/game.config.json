@@ -1,0 +1,882 @@
+{
+  "meta": { "schemaVersion": 1, "name": "Büyücünün Gecesi varsayılan", "notes": "" },
+  "game": {
+    "startHp": 3,
+    "maxHpCap": 6,
+    "baseSpeed": 8,
+    "perkChoices": 3,
+    "clearHeal": 1,
+    "scoreLevelBonus": 100,
+    "scoreTimeMul": 2
+  },
+  "strings": {
+    "title": "Büyücünün Gecesi",
+    "opening": "Şafak yüzyıldır doğmadı. Gece Kalbi çatladı. Bunu düzeltebilecek tek kişi, o gece uyuyakalan büyücü: sensin.",
+    "tagline": "{levelCount} lanetli bölümden geç. Mana kristallerini topla, totemleri yık, düşmanları büyüyle durdur, yeni büyüler ve yetenekler kazan.",
+    "controlsHelp": "WASD / ok tuşları: yürü · Fare: nişan · Boşluk / tık: büyü · 1-7: büyü seç · Q / E / R: yetenekler",
+    "mobileHelp": "Mobilde: ekranda parmağını sürükleyerek yürü, sağ alttaki ✦ butonuna basılı tutarak ateş et (nişan otomatik). Alttaki çubuğu kaydırarak büyü değiştir; yetenek düğmeleri ✦'nın üstünde belirir.",
+    "startButton": "Büyüyü Başlat",
+    "finalTitle": "Şafak doğdu!",
+    "finalLine": "Gölge Kral yenildi. Lanet kalktı.",
+    "finalScore": "Toplam puan: **{score}**",
+    "replay": "Yeniden oyna",
+    "deathLines": [
+      { "text": "Karanlık kazandı… bu gece." },
+      { "speaker": "zerrin", "text": "Kalk. Bir yanlış daha yap, ama başka bir yanlış." },
+      { "text": "Pırıl solgunlaştı. Tekrar dene." }
+    ],
+    "objective": {
+      "crystal": "{goal} mana kristali topla.",
+      "survive": "{goal} saniye hayatta kal.",
+      "totem": "{goal} Lanet Totemi'ni yık.",
+      "miniboss": "Kemik Şövalye'yi yen!",
+      "boss": "Gölge Kral'ı yen!"
+    },
+    "hud": {
+      "level": "Bölüm {n}/{total}",
+      "goalCrystal": "Mana: {n}/{goal}",
+      "goalSurvive": "Hedef: Hayatta kal",
+      "goalTotem": "Totem: {n}/{goal}",
+      "goalMiniboss": "Hedef: Kemik Şövalye",
+      "goalBoss": "Hedef: Gölge Kral",
+      "goalPhase": " · Faz {phase}",
+      "time": "Süre: {n}",
+      "score": "Puan: {n}"
+    },
+    "level": {
+      "title": "Bölüm {n}: {name}",
+      "foes": "Düşmanlar: **{foes}**",
+      "stats": "Süre: {time} sn · Can: {hp}/{maxHp}",
+      "hint": "Düşenlerden kalp çıkabilir. Yeni büyü ve yetenekler bölüm sonunda açılır.",
+      "enter": "Savaşa gir"
+    },
+    "gameOver": {
+      "stats": "Bölüm {n} · Puan: {score}",
+      "retry": "Bu bölümü tekrar dene",
+      "retryNote": "Açılan büyüler ve yetenekler korunur",
+      "restart": "Baştan başla"
+    },
+    "clear": {
+      "title": "Bölüm {n} tamam!",
+      "bonus": "Süre bonusu: +{bonus}",
+      "newWeapon": "Yeni büyü: **{name}** ({key} tuşu)",
+      "newAbility": "Yeni yetenek: **{name}** ({key} tuşu / düğme)",
+      "pickPerk": "Bir yetenek seç:"
+    },
+    "toasts": {
+      "bossPhase2": "Faz 2 · Gölge Dalgası — yerdeki kırmızı halkalardan kaç! (+10 sn)",
+      "bossPhase3": "Faz 3 · Kızın Işığı — Pırıl'ın 3 ışık kristalini topla; kalkan kırılınca vur! (+10 sn)",
+      "shieldBreak": "Kalkan kırıldı! Şimdi vur!",
+      "shieldUp": "Kalkan geri döndü — Pırıl yeni ışık kristalleri bıraktı.",
+      "knightEnrage": "Şövalye öfkelendi!"
+    }
+  },
+  "characters": {
+    "aldemir": {
+      "name": "Aldemir",
+      "role": "player",
+      "icon": "🧙",
+      "color": "#d9b3ff",
+      "bio": "O gece uyuyakalan büyücü; Gece Kalbi'ni onarabilecek tek kişi."
+    },
+    "zerrin": {
+      "name": "Zerrin",
+      "role": "ally",
+      "icon": "🦉",
+      "color": "#ffe9a8",
+      "bio": "Kulenin yaşlı baş büyücüsü; baykuşa dönüşmüş mentor."
+    },
+    "piril": {
+      "name": "Pırıl",
+      "role": "ally",
+      "icon": "✨",
+      "color": "#ffe9a8",
+      "bio": "Gün ışığına varamayan küçük bir ışık; Aldemir'in yoldaşı."
+    },
+    "veyis": {
+      "name": "Veyis",
+      "role": "villain",
+      "icon": "👑",
+      "color": "#ffe9a8",
+      "bio": "Vadinin son kralı; kızını geri isteyen Gölge Kral."
+    },
+    "taskin": {
+      "name": "Taşkın",
+      "role": "npc",
+      "icon": "🗿",
+      "color": "#ffe9a8",
+      "bio": "Lanetten kurtulan tek Taş Bekçi; az konuşur."
+    }
+  },
+  "player": {
+    "character": "aldemir",
+    "speedMul": 1,
+    "scale": 1,
+    "look": {
+      "robeTop": "#6a40d0",
+      "robeBottom": "#30166a",
+      "skin": "#f2c9a0",
+      "gold": "#c8a24a",
+      "hat": "#2a1566",
+      "beard": "#e8e4f2",
+      "eye": "#ffe9a8",
+      "wandGlow": "#e0b3ff"
+    }
+  },
+  "enemies": {
+    "ghost": {
+      "name": "Ruh",
+      "hp": 1,
+      "speed": 2.2,
+      "r": 0.7,
+      "y": 1.2,
+      "score": 20,
+      "drop": 0.12,
+      "dmg": 1,
+      "color": "#c9ffd9",
+      "emissive": "#2f9e5a",
+      "ai": "chase"
+    },
+    "bat": {
+      "name": "Yarasa",
+      "hp": 1,
+      "speed": 4.6,
+      "r": 0.5,
+      "y": 1.6,
+      "score": 25,
+      "drop": 0.12,
+      "dmg": 1,
+      "color": "#b98bff",
+      "emissive": "#5a2fa0",
+      "ai": "chase",
+      "zig": true
+    },
+    "golem": {
+      "name": "Taş Bekçi",
+      "hp": 4,
+      "speed": 1.3,
+      "r": 1.2,
+      "y": 1.2,
+      "score": 60,
+      "drop": 0.4,
+      "dmg": 1,
+      "color": "#8a8a96",
+      "emissive": "#2a2a35",
+      "ai": "chase",
+      "spin": true
+    },
+    "archer": {
+      "name": "Kemik Okçu",
+      "hp": 2,
+      "speed": 1.6,
+      "r": 0.6,
+      "y": 1,
+      "bob": 0.05,
+      "score": 40,
+      "drop": 0.2,
+      "dmg": 1,
+      "color": "#e8e4d0",
+      "emissive": "#1a2744",
+      "ai": "ranged"
+    },
+    "wolf": {
+      "name": "Kurt Ruhu",
+      "hp": 2,
+      "speed": 2.4,
+      "r": 0.7,
+      "y": 0.7,
+      "bob": 0.05,
+      "score": 45,
+      "drop": 0.15,
+      "dmg": 1,
+      "color": "#bfe9ff",
+      "emissive": "#3a7aa8",
+      "ai": "charge"
+    },
+    "ember": {
+      "name": "Kor Hortlak",
+      "hp": 2,
+      "speed": 3.2,
+      "r": 0.7,
+      "y": 1,
+      "score": 50,
+      "drop": 0.1,
+      "dmg": 0,
+      "color": "#ff8a3a",
+      "emissive": "#c04a00",
+      "ai": "bomber"
+    },
+    "priest": {
+      "name": "Karanlık Rahip",
+      "hp": 5,
+      "speed": 1.2,
+      "r": 0.9,
+      "y": 1,
+      "bob": 0.1,
+      "score": 80,
+      "drop": 0.5,
+      "dmg": 0,
+      "color": "#4a2a6a",
+      "emissive": "#2a8a4a",
+      "ai": "support"
+    },
+    "totem": {
+      "name": "Lanet Totemi",
+      "hp": 10,
+      "speed": 0,
+      "r": 1,
+      "y": 1.6,
+      "bob": 0,
+      "score": 150,
+      "drop": 0.5,
+      "dmg": 0,
+      "color": "#ff7a2a",
+      "emissive": "#a03000",
+      "ai": "static",
+      "noCap": true,
+      "static": true,
+      "summon": "ghost"
+    },
+    "knight": {
+      "name": "Kemik Şövalye",
+      "shortName": "Şövalye",
+      "hp": 24,
+      "speed": 1.1,
+      "r": 1.5,
+      "y": 1.2,
+      "bob": 0.05,
+      "score": 300,
+      "drop": 0,
+      "dmg": 2,
+      "color": "#cfd0dc",
+      "emissive": "#303050",
+      "ai": "knight",
+      "spin": true,
+      "noCap": true
+    },
+    "boss": {
+      "name": "Gölge Kral",
+      "shortName": "Kral",
+      "hp": 45,
+      "speed": 1.5,
+      "r": 2.2,
+      "y": 2.4,
+      "score": 500,
+      "drop": 0,
+      "dmg": 2,
+      "color": "#7a2038",
+      "emissive": "#3a0614",
+      "ai": "boss",
+      "spin": true,
+      "noCap": true,
+      "summons1": ["ghost", "ghost"],
+      "summons2": ["archer", "bat"]
+    }
+  },
+  "weapons": {
+    "fire": {
+      "name": "Ateş Topu",
+      "icon": "🔥",
+      "color": "#ffa03a",
+      "cd": 0.35,
+      "dmg": 1,
+      "speed": 16,
+      "pierceable": true
+    },
+    "frost": {
+      "name": "Buz Oku",
+      "icon": "❄️",
+      "color": "#7fd6ff",
+      "cd": 0.5,
+      "dmg": 1,
+      "speed": 15,
+      "pierceable": true,
+      "slow": true
+    },
+    "arcane": {
+      "name": "Üçlü Büyü",
+      "icon": "✨",
+      "color": "#d27bff",
+      "cd": 0.65,
+      "dmg": 1,
+      "speed": 15,
+      "pierceable": true,
+      "spread": { "n": 3 }
+    },
+    "lightning": {
+      "name": "Yıldırım",
+      "icon": "⚡",
+      "color": "#fff27a",
+      "cd": 0.9,
+      "dmg": 2,
+      "chain": { "n": 3, "range": 13 }
+    },
+    "poison": {
+      "name": "Zehir Bulutu",
+      "icon": "🧪",
+      "color": "#6bff6b",
+      "cd": 1.4,
+      "dmg": 1,
+      "speed": 12,
+      "cloud": { "dist": 8, "r": 2.2, "life": 4 }
+    },
+    "meteor": {
+      "name": "Meteor",
+      "icon": "☄️",
+      "color": "#ff7a2a",
+      "cd": 2.8,
+      "dmg": 3,
+      "meteor": { "r": 3, "delay": 0.8 }
+    },
+    "nova": {
+      "name": "Ay Işığı Halkası",
+      "icon": "🌙",
+      "color": "#cfe4ff",
+      "cd": 4.5,
+      "dmg": 1,
+      "nova": { "r": 4, "push": 2 }
+    }
+  },
+  "weaponOrder": ["fire", "frost", "arcane", "lightning", "poison", "meteor", "nova"],
+  "abilities": {
+    "shield": { "name": "Mana Kalkanı", "icon": "🛡️", "cd": 14, "params": { "duration": 8 } },
+    "blink": { "name": "Işınlan", "icon": "💨", "cd": 5, "params": { "dist": 5, "iframes": 0.4 } },
+    "timeslow": { "name": "Zaman Çatlağı", "icon": "⏳", "cd": 18, "params": { "duration": 3, "factor": 0.4 } }
+  },
+  "abilityOrder": ["shield", "blink", "timeslow"],
+  "perks": {
+    "hp": {
+      "name": "Yaşam Özü",
+      "desc": "Azami can +1 ve 1 can yenilenir",
+      "maxStacks": 3,
+      "effect": { "kind": "add", "stat": "maxHp", "value": 1 }
+    },
+    "speed": {
+      "name": "Rüzgâr Ayakkabıları",
+      "desc": "Hareket hızı +15%",
+      "effect": { "kind": "mul", "stat": "speedMul", "value": 1.15 }
+    },
+    "power": {
+      "name": "Güç Tılsımı",
+      "desc": "Tüm büyülerin hasarı +25%",
+      "effect": { "kind": "mul", "stat": "dmgMul", "value": 1.25 }
+    },
+    "haste": {
+      "name": "Hızlı Parmaklar",
+      "desc": "Büyü bekleme süresi -20%",
+      "effect": { "kind": "mul", "stat": "cdMul", "value": 0.8 }
+    },
+    "magnet": {
+      "name": "Mana Mıknatısı",
+      "desc": "Kristaller ve kalpler sana çekilir",
+      "effect": { "kind": "add", "stat": "magnet", "value": 3.5 }
+    },
+    "vampire": {
+      "name": "Vampir Dokunuş",
+      "desc": "Her 12 öldürmede 1 can",
+      "maxStacks": 1,
+      "effect": { "kind": "flag", "stat": "vampire", "value": 1 }
+    },
+    "pierce": {
+      "name": "Delici Büyü",
+      "desc": "Ateş, Buz ve Üçlü mermiler 1 düşmanı delip geçer",
+      "maxStacks": 1,
+      "effect": { "kind": "flag", "stat": "pierce", "value": 1 }
+    },
+    "echo": {
+      "name": "Yankı",
+      "desc": "%20 ihtimalle büyü iki kez atılır",
+      "maxStacks": 3,
+      "effect": { "kind": "add", "stat": "echo", "value": 0.2 }
+    },
+    "piril": {
+      "name": "Pırıl'ın Işığı",
+      "desc": "Pırıl en yakın kristali gösterir, toplama yarıçapı +0.5",
+      "maxStacks": 1,
+      "minLevel": 1,
+      "effect": { "kind": "flag", "stat": "piril", "value": 1 }
+    },
+    "stone": {
+      "name": "Taş Deri",
+      "desc": "Sonraki 2 bölümde alınan ilk hasar %50 azalır",
+      "effect": { "kind": "flag", "stat": "stoneLevels", "value": 2 }
+    },
+    "rain": {
+      "name": "Mana Yağmuru",
+      "desc": "Kristal toplayınca %10 ihtimalle ekstra 1 kristal",
+      "maxStacks": 3,
+      "effect": { "kind": "add", "stat": "rain", "value": 0.1 }
+    }
+  },
+  "perkOrder": ["hp", "speed", "power", "haste", "magnet", "vampire", "pierce", "echo", "piril", "stone", "rain"],
+  "themes": {
+    "forest": {
+      "name": "Fısıldayan Orman",
+      "bg": "#0a0714",
+      "floor": "#1a1030",
+      "ring": "#8e44ff",
+      "hemi": "#6a5acd",
+      "moon": "#b9c7ff",
+      "fog": 0.035,
+      "floorKind": "grass",
+      "scenery": "forest",
+      "seed": 0,
+      "weather": { "n": 70, "col": "#c8ff9a", "vy": 0.15, "dx": 0.1, "size": 0.22, "add": true, "op": 0.8 },
+      "mist": 0.2,
+      "music": {
+        "root": 50,
+        "scale": [0, 2, 3, 5, 7, 9, 10],
+        "bpm": 66,
+        "chords": [0, 3, 0, 6],
+        "cut": 700,
+        "arpP": 0.5,
+        "arpWave": "triangle",
+        "bellP": 0.45,
+        "wind": 0.5,
+        "motif": true
+      }
+    },
+    "cave": {
+      "name": "Yarasa Mağarası",
+      "bg": "#08101a",
+      "floor": "#14202e",
+      "ring": "#44a0ff",
+      "hemi": "#4a7acd",
+      "moon": "#a9c7ff",
+      "fog": 0.035,
+      "floorKind": "wet",
+      "scenery": "cave",
+      "seed": 1,
+      "weather": { "n": 50, "col": "#9ad0ff", "vy": -0.1, "dx": 0, "size": 0.18, "add": true, "op": 0.6 },
+      "mist": 0.25,
+      "music": {
+        "root": 52,
+        "scale": [0, 1, 3, 5, 7, 8, 10],
+        "bpm": 60,
+        "chords": [0, 1, 0, 6],
+        "cut": 520,
+        "arpP": 0.3,
+        "arpWave": "sine",
+        "arpDec": 0.5,
+        "bellP": 0.6,
+        "wind": 0.3,
+        "padVol": 0.08
+      }
+    },
+    "golems": {
+      "name": "Taş Bekçiler",
+      "bg": "#140c08",
+      "floor": "#2a1c14",
+      "ring": "#ffa044",
+      "hemi": "#cd8a5a",
+      "moon": "#ffd9a9",
+      "fog": 0.035,
+      "floorKind": "flag",
+      "scenery": "ruins",
+      "seed": 2,
+      "weather": { "n": 90, "col": "#e0b070", "vy": 0.05, "dx": 0.3, "size": 0.2, "add": false, "op": 0.5 },
+      "mist": 0.15,
+      "music": {
+        "root": 48,
+        "scale": [0, 3, 5, 7, 10],
+        "bpm": 72,
+        "chords": [0, 0, 2, 4],
+        "cut": 640,
+        "arpP": 0.15,
+        "arpWave": "triangle",
+        "bellP": 0.4,
+        "wind": 0.35,
+        "drumThr": 0.3,
+        "kick": [0, 10],
+        "tomLow": true,
+        "noHat": true,
+        "fifth": true
+      }
+    },
+    "graveyard": {
+      "name": "Hortlak Mezarlığı",
+      "bg": "#0a1410",
+      "floor": "#142a20",
+      "ring": "#44ff9a",
+      "hemi": "#5acd8a",
+      "moon": "#b9ffd0",
+      "fog": 0.04,
+      "floorKind": "dirt",
+      "scenery": "graveyard",
+      "seed": 3,
+      "weather": { "n": 40, "col": "#aaffcc", "vy": 0.25, "dx": 0.05, "size": 0.5, "add": true, "op": 0.25 },
+      "mist": 0.5,
+      "music": {
+        "root": 45,
+        "scale": [0, 2, 3, 5, 7, 8, 11],
+        "bpm": 76,
+        "chords": [0, 3, 4, 0],
+        "cut": 650,
+        "arpP": 0.28,
+        "arpWave": "triangle",
+        "arpOct": 12,
+        "bellP": 0.55,
+        "wind": 0.4,
+        "detune": 13
+      }
+    },
+    "pass": {
+      "name": "Donmuş Geçit",
+      "bg": "#0b1a28",
+      "floor": "#1a2a3a",
+      "ring": "#9ee8ff",
+      "hemi": "#8ab8ff",
+      "moon": "#d0ecff",
+      "fog": 0.03,
+      "floorKind": "snow",
+      "scenery": "ice",
+      "seed": 4,
+      "weather": { "n": 200, "col": "#ffffff", "vy": -1.6, "dx": -0.6, "size": 0.22, "add": false, "op": 0.9 },
+      "mist": 0.15,
+      "music": {
+        "root": 52,
+        "scale": [0, 2, 4, 6, 7, 9, 11],
+        "bpm": 84,
+        "chords": [0, 1, 4, 1],
+        "cut": 1400,
+        "arpP": 0.8,
+        "arpWave": "triangle",
+        "arpOct": 12,
+        "arpDec": 0.18,
+        "bellP": 0.75,
+        "bellOct": 36,
+        "wind": 0.9
+      }
+    },
+    "village": {
+      "name": "Yanık Köy",
+      "bg": "#1a0a08",
+      "floor": "#2e1810",
+      "ring": "#ff7a2a",
+      "hemi": "#cd6a3a",
+      "moon": "#ffb98a",
+      "fog": 0.04,
+      "floorKind": "ash",
+      "scenery": "village",
+      "seed": 5,
+      "weather": { "n": 140, "col": "#ff8a3a", "vy": 1.3, "dx": 0.4, "size": 0.2, "add": true, "op": 0.9 },
+      "mist": 0.3,
+      "music": {
+        "root": 50,
+        "scale": [0, 1, 4, 5, 7, 8, 10],
+        "bpm": 96,
+        "chords": [0, 1, 0, 6],
+        "cut": 900,
+        "arpP": 0.7,
+        "arpWave": "square",
+        "arpVol": 0.07,
+        "bellP": 0.3,
+        "wind": 0.4,
+        "drumThr": 0.1,
+        "kick": [0, 6, 8, 12],
+        "burst": true
+      }
+    },
+    "crystals": {
+      "name": "Kristal Yatağı",
+      "bg": "#100c2a",
+      "floor": "#1b1838",
+      "ring": "#c58cff",
+      "hemi": "#9a6aff",
+      "moon": "#e0c0ff",
+      "fog": 0.03,
+      "floorKind": "facet",
+      "scenery": "crystals",
+      "seed": 6,
+      "weather": { "n": 110, "col": "#e8c0ff", "vy": 0.12, "dx": 0.1, "size": 0.24, "add": true, "op": 0.8 },
+      "mist": 0.1,
+      "music": {
+        "root": 55,
+        "scale": [0, 2, 4, 6, 7, 9, 11],
+        "bpm": 88,
+        "chords": [0, 1, 4, 0],
+        "cut": 1800,
+        "arpP": 0.8,
+        "arpWave": "triangle",
+        "arpOct": 12,
+        "bellP": 0.85,
+        "wind": 0.3,
+        "detune": 10,
+        "padVol": 0.1
+      }
+    },
+    "tower": {
+      "name": "Kemik Kule",
+      "bg": "#0c0c12",
+      "floor": "#1a1a22",
+      "ring": "#d8d8ff",
+      "hemi": "#8a8aa8",
+      "moon": "#d0d0ff",
+      "fog": 0.04,
+      "floorKind": "bone",
+      "scenery": "tower",
+      "seed": 7,
+      "weather": { "n": 90, "col": "#cfcfe0", "vy": -0.35, "dx": 0.2, "size": 0.2, "add": false, "op": 0.5 },
+      "mist": 0.5,
+      "music": {
+        "root": 49,
+        "scale": [0, 2, 3, 5, 6, 8, 9, 11],
+        "bpm": 80,
+        "chords": [0, 3, 6, 4],
+        "cut": 600,
+        "arpP": 0.25,
+        "arpWave": "triangle",
+        "arpRepeat": true,
+        "bellP": 0.35,
+        "wind": 0.5,
+        "detune": 18,
+        "drumThr": 0.35,
+        "kick": [0, 10],
+        "tomLow": true,
+        "noHat": true
+      }
+    },
+    "castle": {
+      "name": "Gölge Kalesi",
+      "bg": "#1a0508",
+      "floor": "#2e1018",
+      "ring": "#ff4466",
+      "hemi": "#cd4a6a",
+      "moon": "#ffa0b0",
+      "fog": 0.035,
+      "floorKind": "tile",
+      "scenery": "castle",
+      "seed": 8,
+      "weather": { "n": 120, "col": "#ff5a70", "vy": 0.35, "dx": 0.15, "size": 0.2, "add": true, "op": 0.7 },
+      "mist": 0.2,
+      "music": {
+        "root": 50,
+        "scale": [0, 2, 3, 5, 7, 8, 11],
+        "bpm": 108,
+        "chords": [0, 5, 0, 4],
+        "chordBars": 1,
+        "cut": 2200,
+        "arpP": 0.6,
+        "arpWave": "square",
+        "arpVol": 0.07,
+        "bellP": 0.2,
+        "wind": 0.3,
+        "pad4": true,
+        "padAtt": 0.25,
+        "kick": [0, 4, 8, 12],
+        "detune": 9,
+        "phase3": {
+          "scale": [0, 2, 4, 7, 9],
+          "chords": [3, 0, 1, 3],
+          "cut": 1200,
+          "padAtt": 1.2,
+          "pad4": false,
+          "chordBars": 1
+        }
+      }
+    }
+  },
+  "levels": {
+    "forest": {
+      "name": "Fısıldayan Orman",
+      "objective": "crystal",
+      "goal": 6,
+      "time": 50,
+      "theme": "forest",
+      "start": { "ghost": 3 },
+      "spawn": [{ "ghost": 1 }],
+      "every": 8,
+      "cap": 5,
+      "reward": "frost",
+      "intro": [
+        {
+          "speaker": "zerrin",
+          "text": "Kule sustu, orman konuşuyor. Kristalleri topla; mana olmadan büyü olmaz."
+        }
+      ],
+      "outro": [
+        { "speaker": "zerrin", "text": "Fena değil. Ormanın fısıltısı seni tanıdı." },
+        { "text": "Küçük bir ışık yolunu aydınlattı." }
+      ]
+    },
+    "cave": {
+      "name": "Yarasa Mağarası",
+      "objective": "crystal",
+      "goal": 8,
+      "time": 55,
+      "theme": "cave",
+      "start": { "ghost": 2, "bat": 3 },
+      "spawn": [{ "bat": 1, "ghost": 1 }],
+      "every": 7,
+      "cap": 7,
+      "reward": "arcane",
+      "intro": [
+        { "speaker": "piril", "text": "Vızıltıyı duyuyor musun? Mağara canlı." }
+      ],
+      "outro": [
+        {
+          "speaker": "zerrin",
+          "text": "Yarasalar korkudan değil, lanetten çıldırıyor. Üçlü büyü bunu halleder."
+        }
+      ]
+    },
+    "golems": {
+      "name": "Taş Bekçiler",
+      "objective": "crystal",
+      "goal": 10,
+      "time": 60,
+      "theme": "golems",
+      "start": { "ghost": 2, "bat": 2, "golem": 2 },
+      "spawn": [{ "golem": 1, "bat": 1 }],
+      "every": 7,
+      "cap": 8,
+      "reward": "lightning",
+      "intro": [
+        {
+          "text": "Bu harabe bir zamanlar kralın nöbetçilerinin evi. Şimdi lanet, onları taşa gömdü."
+        }
+      ],
+      "outro": [
+        {
+          "text": "Taşkın taşlaşmış kabuğunu çatlattı: 'Ben… yürüyebiliyorum. Peşindeyim.' Yıldırım çarptığında lanet bir an titredi."
+        }
+      ]
+    },
+    "graveyard": {
+      "name": "Hortlak Mezarlığı",
+      "objective": "crystal",
+      "goal": 12,
+      "time": 65,
+      "theme": "graveyard",
+      "start": { "ghost": 3, "bat": 2, "golem": 2, "archer": 2 },
+      "spawn": [{ "ghost": 1, "archer": 1 }],
+      "every": 6,
+      "cap": 10,
+      "ability": "shield",
+      "intro": [
+        {
+          "text": "Mezarlar açık, mezarcı yok. Kemik Okçuları menzilden vurur; hareket etmeyi bırakma."
+        }
+      ],
+      "outro": [
+        {
+          "speaker": "zerrin",
+          "text": "Kralın askerleri bile huzur bulamıyor. Gece Kalbi'nin çatlağı büyüyor."
+        }
+      ]
+    },
+    "pass": {
+      "name": "Donmuş Geçit",
+      "objective": "survive",
+      "goal": 45,
+      "time": 45,
+      "theme": "pass",
+      "crystals": 2,
+      "start": { "ghost": 3, "bat": 3, "wolf": 2 },
+      "spawn": [{ "wolf": 2, "bat": 1 }],
+      "every": 5,
+      "cap": 9,
+      "ability": "blink",
+      "intro": [
+        { "text": "Rüzgâr kemiğe işliyor. Kurt ruhları sürü halinde geliyor; sadece ayakta kal." }
+      ],
+      "outro": [
+        {
+          "text": "Şafağa daha çok var, ama Pırıl'ın ışığı ilk kez gerçek bir sıcaklık gibi hissettirdi."
+        }
+      ]
+    },
+    "village": {
+      "name": "Yanık Köy",
+      "objective": "totem",
+      "goal": 3,
+      "time": 75,
+      "theme": "village",
+      "crystals": 3,
+      "start": { "ghost": 3, "golem": 2, "ember": 3 },
+      "spawn": [{ "ember": 1, "ghost": 1 }],
+      "every": 6,
+      "cap": 10,
+      "reward": "poison",
+      "totems": [[-9, -8], [9, -8], [0, 9]],
+      "intro": [
+        {
+          "text": "Köy yanmadı, lanet onu hatırlatıyor. Totemleri yık; kor hortlaklar yakınında patlıyor."
+        }
+      ],
+      "outro": [
+        { "text": "Totem parçalanınca Pırıl titredi: 'Bu ses… babamın sesi.' Zerrin sustu." }
+      ]
+    },
+    "crystals": {
+      "name": "Kristal Yatağı",
+      "objective": "crystal",
+      "goal": 14,
+      "time": 80,
+      "theme": "crystals",
+      "start": { "ghost": 3, "bat": 3, "golem": 2, "archer": 2, "priest": 2 },
+      "spawn": [{ "priest": 1, "bat": 1 }, { "archer": 1, "bat": 1 }],
+      "every": 6,
+      "cap": 11,
+      "reward": "meteor",
+      "intro": [
+        {
+          "text": "Gece Kalbi'nin kırıkları burada parlıyor. Rahipler düşmanları iyileştirir; önce onları bul."
+        }
+      ],
+      "outro": [
+        {
+          "speaker": "zerrin",
+          "text": "Kalbin son kırığı kalede. Dikkat et Aldemir, o kısım artık Veyis'in kendisi."
+        }
+      ]
+    },
+    "tower": {
+      "name": "Kemik Kule",
+      "objective": "miniboss",
+      "goal": 1,
+      "time": 85,
+      "theme": "tower",
+      "start": { "knight": 1, "archer": 2, "wolf": 2 },
+      "spawn": [{ "archer": 1, "ghost": 1 }],
+      "every": 6,
+      "cap": 9,
+      "reward": "nova",
+      "ability": "timeslow",
+      "intro": [
+        {
+          "text": "Kralın baş nöbetçisi kuleyi bırakmadı. Şövalye ağır ama bir vuruşu seni gönderir."
+        }
+      ],
+      "outro": [
+        {
+          "text": "Şövalye toza döndü. Kale kapısı açıldı ve yukarıdan bir ses duyuldu: 'Kızım… neredesin?'"
+        }
+      ]
+    },
+    "castle": {
+      "name": "Gölge Kalesi",
+      "objective": "boss",
+      "goal": 1,
+      "time": 100,
+      "theme": "castle",
+      "start": { "boss": 1 },
+      "spawn": [],
+      "every": 6,
+      "cap": 8,
+      "intro": [
+        { "speaker": "veyis", "text": "Kızımı geri verin. Şafak gelirse onu bir daha göremem." },
+        { "speaker": "zerrin", "text": "Aldemir, ona acıma ama unutma da." }
+      ],
+      "outro": [
+        {
+          "text": "Gölge dağıldı. Pırıl babasının elini tuttu ve ilk şafak sökerken ikisi de ışığa karıştı. Vadi uyandı. Aldemir ilk kez rahat uyudu."
+        }
+      ]
+    }
+  },
+  "campaign": {
+    "order": ["forest", "cave", "golems", "graveyard", "pass", "village", "crystals", "tower", "castle"],
+    "start": "forest"
+  }
+}

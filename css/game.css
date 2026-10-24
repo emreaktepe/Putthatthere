@@ -1,0 +1,58 @@
+/* Oyun arayüzü stilleri (eski index.html içindeki <style> bloğunun birebir taşınmış hali). Tasarım belirteçleri (tokens.css) 2. aşamada ayrılacak. */
+html, body { margin: 0; height: 100%; height: 100dvh; overflow: hidden; touch-action: none; overscroll-behavior: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; background: #0a0714; font-family: Georgia, "Times New Roman", serif; color: #f1e6ff; user-select: none; }
+canvas { display: block; width: 100%; height: 100%; }
+#hud { position: fixed; top: 12px; left: 0; right: 0; padding: 0 56px; box-sizing: border-box; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 26px; font-size: 19px; pointer-events: none; text-shadow: 0 0 8px #8e44ff, 0 2px 6px #000; }
+#hearts { letter-spacing: 3px; color: #ff7a93; }
+#hearts .half { opacity: .4; }
+#boss { color: #ff9a9a; }
+#weapons { position: fixed; bottom: 14px; left: 0; right: 0; display: flex; justify-content: safe center; gap: 8px; overflow-x: auto; padding: 4px 10px; box-sizing: border-box; touch-action: pan-x; scrollbar-width: none; }
+#weapons::-webkit-scrollbar { display: none; }
+.wbtn { flex: 0 0 auto; white-space: nowrap; font-family: inherit; font-size: 15px; padding: 8px 14px; border: 1px solid #6b4fb0; border-radius: 8px; background: rgba(30,15,60,.8); color: #cdb8ff; cursor: pointer; }
+.wbtn.active { border-color: #fff; background: #5128a8; color: #fff; box-shadow: 0 0 12px #8e44ff; }
+.wbtn.locked { opacity: .35; cursor: default; }
+#abil { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: 70px; display: flex; gap: 8px; }
+.abtn { position: relative; width: 52px; height: 52px; border-radius: 50%; border: 2px solid #9ad7ff; background: rgba(20,50,110,.7); color: #fff; font-size: 22px; padding: 0; cursor: pointer; touch-action: none; box-shadow: 0 0 10px #3a8cff; }
+.abtn .ak { position: absolute; left: 3px; top: 0; font-size: 11px; opacity: .85; font-family: inherit; }
+.abtn .acd { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 19px; font-family: inherit; border-radius: 50%; }
+.abtn.cd { opacity: .55; box-shadow: none; }
+.abtn.cd .acd { background: rgba(0,0,0,.55); }
+body:not(.playing) #abil { display: none; }
+#toast { position: fixed; top: 14%; left: 0; right: 0; text-align: center; padding: 0 16px; font-size: 22px; pointer-events: none; text-shadow: 0 0 10px #8e44ff, 0 2px 6px #000; opacity: 0; transition: opacity .4s; }
+#toast.show { opacity: 1; }
+#tint { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, rgba(90,160,255,0) 40%, rgba(90,160,255,.35)); opacity: 0; transition: opacity .2s; }
+body.slowtime #tint { opacity: 1; }
+#msg { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(40,15,80,.82), rgba(5,3,12,.94)); text-align: center; gap: 12px; padding: 0 20px; }
+#msg[hidden] { display: none; }
+#btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+h1 { font-size: 42px; margin: 0; color: #d9b3ff; text-shadow: 0 0 18px #8e44ff; max-width: 92vw; }
+p { margin: 0; max-width: 560px; line-height: 1.5; }
+p b { color: #ffe9a8; }
+.gbtn { font-family: inherit; font-size: 17px; padding: 10px 24px; border: 1px solid #d9b3ff; border-radius: 8px; background: #3a1d7a; color: #fff; cursor: pointer; box-shadow: 0 0 14px #8e44ff; }
+.gbtn:hover { background: #5128a8; }
+#joy { position: fixed; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid rgba(217,179,255,.5); background: rgba(80,40,160,.2); pointer-events: none; display: none; }
+#joy i { position: absolute; left: 40px; top: 40px; width: 40px; height: 40px; border-radius: 50%; background: rgba(217,179,255,.75); box-shadow: 0 0 12px #8e44ff; }
+#fire { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: 74px; width: 92px; height: 92px; border-radius: 50%; border: 2px solid #fff; background: rgba(120,50,220,.6); color: #fff; font-size: 34px; box-shadow: 0 0 18px #8e44ff; display: none; touch-action: none; }
+#fire:active { background: rgba(160,90,255,.85); }
+body.touch #fire { display: block; }
+body.touch.playing #fire { display: block; }
+body.touch #abil { bottom: 176px; }
+body:not(.playing) #fire, body:not(.playing) #joy { display: none !important; }
+.wbtn .k { opacity: .7; }
+@media (max-width: 700px), (pointer: coarse) {
+  #hud { font-size: 14px; gap: 4px 14px; top: max(6px, env(safe-area-inset-top)); }
+  h1 { font-size: 30px; }
+  p { font-size: 15px; }
+  #toast { font-size: 17px; }
+  #msg { overflow-y: auto; justify-content: flex-start; padding-top: 8vh; padding-bottom: 20px; }
+  .wbtn { font-size: 18px; padding: 8px 10px; }
+  .wbtn .wn, .wbtn .k { display: none; }
+  #weapons { bottom: max(12px, env(safe-area-inset-bottom)); gap: 6px; }
+  .gbtn { font-size: 16px; padding: 12px 18px; }
+}
+.gbtn small { display: block; font-size: 13px; color: #cdb8ff; margin-top: 3px; }
+#mute { position: fixed; top: max(8px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); z-index: 6; width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 1px solid #6b4fb0; background: rgba(30,15,60,.75); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; touch-action: manipulation; }
+#mute:hover { background: rgba(81,40,168,.85); }
+#hurt { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, rgba(255,40,70,0) 45%, rgba(255,40,70,.55)); opacity: 0; }
+#hurt.on { animation: hurtflash .35s ease-out; }
+@keyframes hurtflash { from { opacity: 1; } to { opacity: 0; } }
+#haze { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse 70% 40% at 18% 0%, var(--moon, #b9c7ff), rgba(0,0,0,0) 70%); opacity: .16; mix-blend-mode: screen; }
