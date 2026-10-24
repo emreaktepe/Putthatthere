@@ -214,12 +214,10 @@ test("görsel yolu: lenient modda geçersiz yol atılır, oyun açılır", () =>
   assert.equal(r.ok, true);
   assert.equal(r.config.characters.aldemir.portrait, undefined);
 });
-test("varsayılan konfigürasyon: üç portre, menü ve harita görseli bağlı; Zerrin/Taşkın portresiz", () => {
-  for (const k of ["aldemir", "piril", "veyis"]) assert.match(base.characters[k].portrait, /^assets\/art\/portre-[a-z]+\.webp$/);
-  assert.equal(base.characters.zerrin.portrait, undefined);
-  assert.equal(base.characters.taskin.portrait, undefined);
+test("varsayılan konfigürasyon: beş karakter portresi, menü ve harita görseli bağlı ve dosyaları var", () => {
+  for (const k of ["aldemir", "piril", "veyis", "zerrin", "taskin"]) assert.match(base.characters[k].portrait, /^assets\/art\/portre-[a-z]+\.webp$/);
   assert.ok(base.game.menuBackground && base.map.background.image);
-  for (const p of [base.game.menuBackground, base.map.background.image, ...["aldemir", "piril", "veyis"].map((k) => base.characters[k].portrait)]) {
+  for (const p of [base.game.menuBackground, base.map.background.image, ...["aldemir", "piril", "veyis", "zerrin", "taskin"].map((k) => base.characters[k].portrait)]) {
     assert.ok(fs.existsSync(new URL("../" + p, import.meta.url)), p + " dosyası var");
   }
 });

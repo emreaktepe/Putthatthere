@@ -86,7 +86,8 @@
       "role": "ally",
       "icon": "🦉",
       "color": "#ffe9a8",
-      "bio": "Kulenin yaşlı baş büyücüsü; baykuşa dönüşmüş mentor."
+      "bio": "Kulenin yaşlı baş büyücüsü; baykuşa dönüşmüş mentor.",
+      "portrait": "assets/art/portre-zerrin.webp"
     },
     "piril": {
       "name": "Pırıl",
@@ -109,7 +110,8 @@
       "role": "npc",
       "icon": "🗿",
       "color": "#ffe9a8",
-      "bio": "Lanetten kurtulan tek Taş Bekçi; az konuşur."
+      "bio": "Lanetten kurtulan tek Taş Bekçi; az konuşur.",
+      "portrait": "assets/art/portre-taskin.webp"
     }
   },
   "player": {
