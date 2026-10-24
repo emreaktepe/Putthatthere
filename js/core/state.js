@@ -5,12 +5,19 @@ import { ABILITY_ORDER, GAME, PLAYER, WEAPON_ORDER } from "./data.js";
 
 export const S = {};
 let snapshot = null;
-export function newRun() {
+// yeni koşunun başlangıç durumu (kayıt doğrulayıcısı da tür/varsayılan kaynağı olarak bunu kullanır)
+export function defaultRun() {
   const hp = PLAYER.startHp ?? GAME.startHp;
-  Object.assign(S, {
+  return {
     level: 0, hp, maxHp: hp, speedMul: 1, dmgMul: 1, cdMul: 1, magnet: 0, unlocked: [WEAPON_ORDER[0]], weapon: WEAPON_ORDER[0], score: 0,
     abilities: [], kills: 0, echo: 0, rain: 0, pierce: false, vampire: false, piril: false, stoneLevels: 0, perkCount: {}, lastPerk: "",
-  });
+  };
+}
+export function newRun() { Object.assign(S, defaultRun()); }
+// S'yi bütünüyle verilen koşu nesnesiyle değiştirir (kayıttan devam / alıştırmadan dönüş)
+export function setRun(run) {
+  for (const k of Object.keys(S)) delete S[k];
+  Object.assign(S, JSON.parse(JSON.stringify(run)));
 }
 export const takeSnapshot = () => { snapshot = JSON.parse(JSON.stringify(S)); };
 export const restoreSnapshot = () => { Object.assign(S, JSON.parse(JSON.stringify(snapshot))); };

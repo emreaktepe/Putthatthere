@@ -85,6 +85,7 @@ export function adapt(cfg) {
     const maxStacks = p.maxStacks, minLevel = p.minLevel || 0;
     return {
       id, name: p.name, desc: p.desc,
+      effect: { kind, stat, value }, maxStacks, // EK (yalnızca arayüz: simge/nadirlik); oyun mantığı kullanmaz
       ok: (S) => (maxStacks === undefined || ((S.perkCount && S.perkCount[id]) || 0) < maxStacks) && S.level >= minLevel,
       apply: (S) => {
         if (kind === "mul") S[stat] *= value;

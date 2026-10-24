@@ -53,6 +53,19 @@ export function h(tag, attrs, ...children) {
   return append(el, children);
 }
 
+// SVG düğümü kurucusu (h ile aynı kalıp; öznitelikler setAttribute ile, metin textContent ile — ham işaretleme yok)
+const SVG_NS = "http://www.w3.org/2000/svg";
+export function svg(tag, attrs, ...children) {
+  const el = document.createElementNS(SVG_NS, tag);
+  if (attrs) {
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v === null || v === undefined || v === false) continue;
+      if (k.startsWith("on")) { if (typeof v === "function") el.addEventListener(k.slice(2), v); } else el.setAttribute(k, v === true ? "" : String(v));
+    }
+  }
+  return append(el, children);
+}
+
 export const br = () => document.createElement("br");
 
 // güvenli işaretlemeli metin -> DocumentFragment
