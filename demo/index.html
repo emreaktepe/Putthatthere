@@ -10,7 +10,7 @@
 <style>
   html, body { margin: 0; height: 100%; height: 100dvh; overflow: hidden; touch-action: none; overscroll-behavior: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; background: #0a0714; font-family: Georgia, "Times New Roman", serif; color: #f1e6ff; user-select: none; }
   canvas { display: block; width: 100%; height: 100%; }
-  #hud { position: fixed; top: 12px; left: 0; right: 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 26px; font-size: 19px; pointer-events: none; text-shadow: 0 0 8px #8e44ff, 0 2px 6px #000; }
+  #hud { position: fixed; top: 12px; left: 0; right: 0; padding: 0 56px; box-sizing: border-box; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 26px; font-size: 19px; pointer-events: none; text-shadow: 0 0 8px #8e44ff, 0 2px 6px #000; }
   #hearts { letter-spacing: 3px; color: #ff7a93; }
   #hearts .half { opacity: .4; }
   #boss { color: #ff9a9a; }
@@ -59,6 +59,12 @@
     .gbtn { font-size: 16px; padding: 12px 18px; }
   }
   .gbtn small { display: block; font-size: 13px; color: #cdb8ff; margin-top: 3px; }
+  #mute { position: fixed; top: max(8px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); z-index: 6; width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 1px solid #6b4fb0; background: rgba(30,15,60,.75); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; touch-action: manipulation; }
+  #mute:hover { background: rgba(81,40,168,.85); }
+  #hurt { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, rgba(255,40,70,0) 45%, rgba(255,40,70,.55)); opacity: 0; }
+  #hurt.on { animation: hurtflash .35s ease-out; }
+  @keyframes hurtflash { from { opacity: 1; } to { opacity: 0; } }
+  #haze { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse 70% 40% at 18% 0%, var(--moon, #b9c7ff), rgba(0,0,0,0) 70%); opacity: .16; mix-blend-mode: screen; }
 </style>
 </head>
 <body>
@@ -70,8 +76,11 @@
 <div id="joy"><i></i></div>
 <button id="fire" aria-label="Büyü yap">✦</button>
 <div id="tint"></div>
+<div id="haze"></div>
+<div id="hurt"></div>
 <div id="toast"></div>
 <div id="msg"><h1 id="title"></h1><p id="sub"></p><div id="btns"></div></div>
+<button id="mute" aria-label="Sesi kapat" title="Sesi kapat">🔊</button>
 <script type="module">
 import * as THREE from "three";
 
@@ -83,11 +92,469 @@ const $ = (id) => document.getElementById(id);
 const rand = (r) => (Math.random() * 2 - 1) * r;
 const mat = (o) => new THREE.MeshStandardMaterial(o);
 
-// Ses kancası (P4): ses geliştiricisi bunu gerçek motorla değiştirir. Çağrılan adlar:
-// cast:<büyü id>, hit, kill:<düşman tipi>, hurt, shield_block, shield_break, pickup:<crystal|heart|light>,
+// ---------- Ses motoru (P4): Web Audio ile sentez, harici dosya yok ----------
+// Olay adları: cast:<büyü id>, hit, kill:<düşman tipi>, hurt, shield_block, shield_break, pickup:<crystal|heart|light>,
 // ability:<id>, level_clear, game_over, phase:<n>, boss_shield_break, boss_shield_up, telegraph, slam, explode,
-// enemy_shot, totem_down, meteor_hit, nova, toast
-let sfx = (name) => {};
+// enemy_shot, totem_down, meteor_hit, nova, toast, click. Müzik: mus.set("menu"|"play"|"boss", tema), mus.intensity(0-1).
+const SOUND_KEY = "buyucu_ses";
+const AUDIO = (() => {
+  // root: MIDI kök; scale: yarım ton dizisi; chords: gam derecesi (üçlü: d, d+2, d+4); bpm; cut: pad filtresi (Hz)
+  const MUSIC = [
+    { root: 50, scale: [0, 2, 3, 5, 7, 9, 10], bpm: 66, chords: [0, 3, 0, 6], cut: 700, arpP: 0.5, arpWave: "triangle", bellP: 0.45, wind: 0.5, motif: true },
+    { root: 52, scale: [0, 1, 3, 5, 7, 8, 10], bpm: 60, chords: [0, 1, 0, 6], cut: 520, arpP: 0.3, arpWave: "sine", arpDec: 0.5, bellP: 0.6, wind: 0.3, padVol: 0.08 },
+    { root: 48, scale: [0, 3, 5, 7, 10], bpm: 72, chords: [0, 0, 2, 4], cut: 640, arpP: 0.15, arpWave: "triangle", bellP: 0.4, wind: 0.35, drumThr: 0.3, kick: [0, 10], tomLow: true, noHat: true },
+    { root: 45, scale: [0, 2, 3, 5, 7, 8, 11], bpm: 76, chords: [0, 3, 4, 0], cut: 650, arpP: 0.28, arpWave: "triangle", arpOct: 12, bellP: 0.55, wind: 0.4, detune: 13 },
+    { root: 52, scale: [0, 2, 4, 6, 7, 9, 11], bpm: 84, chords: [0, 1, 4, 1], cut: 1400, arpP: 0.8, arpWave: "triangle", arpOct: 12, arpDec: 0.18, bellP: 0.75, bellOct: 36, wind: 0.9 },
+    { root: 50, scale: [0, 1, 4, 5, 7, 8, 10], bpm: 96, chords: [0, 1, 0, 6], cut: 900, arpP: 0.7, arpWave: "square", arpVol: 0.07, bellP: 0.3, wind: 0.4, drumThr: 0.1, kick: [0, 6, 8, 12], burst: true },
+    { root: 55, scale: [0, 2, 4, 6, 7, 9, 11], bpm: 88, chords: [0, 1, 4, 0], cut: 1800, arpP: 0.8, arpWave: "triangle", arpOct: 12, bellP: 0.85, wind: 0.3, detune: 10, padVol: 0.1 },
+    { root: 49, scale: [0, 2, 3, 5, 6, 8, 9, 11], bpm: 80, chords: [0, 3, 6, 4], cut: 600, arpP: 0.25, arpWave: "triangle", arpRepeat: true, bellP: 0.35, wind: 0.5, detune: 18, drumThr: 0.35, kick: [0, 10], tomLow: true, noHat: true },
+    { root: 50, scale: [0, 2, 3, 5, 7, 8, 11], bpm: 108, chords: [0, 5, 0, 4], chordBars: 1, cut: 2200, arpP: 0.6, arpWave: "square", arpVol: 0.07, bellP: 0.2, wind: 0.3, pad4: true, padAtt: 0.25, kick: [0, 4, 8, 12], detune: 9 },
+  ];
+  // Boss Faz 3 (Pırıl teması): D majör pentatonik, ritimsiz, çan melodisi
+  const P3 = { ...MUSIC[8], scale: [0, 2, 4, 7, 9], chords: [3, 0, 1, 3], cut: 1200, padAtt: 1.2, pad4: false, chordBars: 1 };
+  const MOTIF0 = [0, 2, 7, 9, 7, 2];
+  const MOTIF3 = [0, 2, 4, 7, 9, 7, 4, 2];
+
+  const touch = matchMedia("(pointer: coarse)").matches;
+  let ctx = null, master = null, musicGain = null, dry = null, revIn = null, noiseBuf = null, padFilter = null, windGain = null;
+  const buses = {};
+  let live = 0, timer = 0, hidden = document.hidden, failed = false, on = true;
+  try { on = localStorage.getItem(SOUND_KEY) !== "0"; } catch (e) { /* özel mod */ }
+  const st = { mode: "menu", theme: 0, target: 0, smooth: 0, step: 0, nextT: 0, phase: 1, burstUntil: 0, arpIdx: 5, lastArp: -1, motif: 0, crystal: 0, busT: 0 };
+  const mtof = (n) => 440 * Math.pow(2, (n - 69) / 12);
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  const cfgOf = () => (st.mode === "menu" ? MUSIC[0] : st.mode === "boss" && st.phase === 3 ? P3 : MUSIC[st.theme] || MUSIC[0]);
+  const degNote = (c, d) => { const n = c.scale.length; return c.root + c.scale[((d % n) + n) % n] + 12 * Math.floor(d / n); };
+
+  function init() {
+    if (ctx || failed) return;
+    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { failed = true; return; }
+    master = ctx.createGain();
+    master.gain.value = on ? 0.25 : 0;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -20; comp.ratio.value = 4; comp.attack.value = 0.01; comp.release.value = 0.25;
+    master.connect(comp); comp.connect(ctx.destination);
+    dry = ctx.createGain(); dry.connect(master);
+    // yankı: gürültüden üstel sönümlü impulse (mobilde daha kısa)
+    const conv = ctx.createConvolver();
+    const len = Math.floor(ctx.sampleRate * (touch ? 1.2 : 1.8));
+    const ir = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+    conv.buffer = ir;
+    revIn = ctx.createGain();
+    const wet = ctx.createGain(); wet.gain.value = 0.25;
+    revIn.connect(conv); conv.connect(wet); wet.connect(master);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const nd = noiseBuf.getChannelData(0);
+    for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    musicGain = ctx.createGain(); musicGain.connect(dry);
+    const mkBus = (name, vol, rev, music = true) => {
+      const g = ctx.createGain(); g.gain.value = vol; g.connect(music ? musicGain : dry);
+      const r = ctx.createGain(); r.gain.value = rev; g.connect(r); r.connect(revIn);
+      buses[name] = g;
+    };
+    mkBus("pad", 0.55, 0.5); mkBus("arp", 0.4, 0.9); mkBus("bell", 0.5, 0.9); mkBus("drone", 0.6, 0.2);
+    mkBus("wind", 0.6, 0.3); mkBus("drum", 0.6, 0.1); mkBus("bass", 0.6, 0.1); mkBus("sfx", 0.9, 0.35, false);
+    // kalıcı düğümler: pad filtresi + LFO, rüzgâr
+    padFilter = ctx.createBiquadFilter(); padFilter.type = "lowpass"; padFilter.frequency.value = 800; padFilter.Q.value = 0.7; padFilter.connect(buses.pad);
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.08;
+    const lg = ctx.createGain(); lg.gain.value = 250; lfo.connect(lg); lg.connect(padFilter.frequency); lfo.start();
+    const ws = ctx.createBufferSource(); ws.buffer = noiseBuf; ws.loop = true;
+    const wf = ctx.createBiquadFilter(); wf.type = "bandpass"; wf.frequency.value = 500; wf.Q.value = 0.8;
+    windGain = ctx.createGain(); windGain.gain.value = 0;
+    ws.connect(wf); wf.connect(windGain); windGain.connect(buses.wind);
+    const wl = ctx.createOscillator(); wl.frequency.value = 0.07;
+    const wlg = ctx.createGain(); wlg.gain.value = 250; wl.connect(wlg); wlg.connect(wf.frequency);
+    ws.start(); wl.start();
+    // iOS kilidini açmak için sessiz tampon
+    const sb = ctx.createBufferSource(); sb.buffer = ctx.createBuffer(1, 1, 22050); sb.connect(ctx.destination); sb.start(0);
+    ctx.onstatechange = () => { if (ctx.state === "running" && on && !hidden) startTimer(); else stopTimer(); };
+    updateBuses();
+    if (ctx.state === "running") startTimer();
+  }
+
+  // ---- çekirdek yardımcılar ----
+  function voice(type, f0, f1, t, dur, peak, dest, o = {}) {
+    if (live >= (o.cap || 28)) return null;
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, t);
+    if (f1 && f1 !== f0) osc.frequency.exponentialRampToValueAtTime(Math.max(f1, 1), t + dur);
+    if (o.det) osc.detune.value = o.det;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + (o.a || 0.004));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g); g.connect(dest);
+    live++;
+    osc.onended = () => { live--; g.disconnect(); };
+    osc.start(t); osc.stop(t + dur + 0.05);
+    return osc;
+  }
+  function noise(t, dur, peak, dest, o = {}) {
+    if (live >= 30) return;
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const f = ctx.createBiquadFilter(); f.type = o.type || "lowpass"; f.Q.value = o.q || 0.7;
+    f.frequency.setValueAtTime(o.f0 || 1000, t);
+    if (o.f1) f.frequency.exponentialRampToValueAtTime(o.f1, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(dest);
+    live++;
+    src.onended = () => { live--; g.disconnect(); };
+    src.start(t, Math.random() * 0.8, dur + 0.05);
+  }
+  function bell(f, t, vel = 1, dec = 2.5, dest = buses.bell) {
+    voice("sine", f, f, t, dec, 0.16 * vel, dest);
+    voice("sine", f * 2.76, f * 2.76, t, dec * 0.6, 0.08 * vel, dest);
+    voice("sine", f * 5.4, f * 5.4, t, dec * 0.35, 0.04 * vel, dest);
+  }
+  function padChord(cfg, notes, t, dur) {
+    const att = cfg.padAtt || 1.5, rel = 1.6, peak = cfg.padVol || 0.09, det = cfg.detune || 7;
+    for (const n of notes) for (const dt of [-det, det]) {
+      if (live >= 26) return;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sawtooth"; o.frequency.value = mtof(n); o.detune.value = dt;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(peak, t + att);
+      g.gain.setValueAtTime(peak, t + Math.max(dur - 0.1, att));
+      g.gain.linearRampToValueAtTime(0.0001, t + dur + rel);
+      o.connect(g); g.connect(padFilter);
+      live++;
+      o.onended = () => { live--; g.disconnect(); };
+      o.start(t); o.stop(t + dur + rel + 0.05);
+    }
+  }
+  function kick(t, low) {
+    voice("sine", low ? 90 : 120, low ? 38 : 50, t, low ? 0.35 : 0.22, 0.5, buses.drum);
+  }
+  function hat(t, v) { noise(t, 0.03, 0.09 * v, buses.drum, { type: "highpass", f0: 7000 }); }
+
+  function arpNote(cfg) {
+    const n = cfg.scale.length, hi = n * 2 - 1;
+    st.arpIdx = Math.min(st.arpIdx, hi);
+    if (cfg.arpRepeat) { if (Math.random() < 0.08) st.arpIdx = Math.floor(Math.random() * n); }
+    else {
+      let i = st.arpIdx + pick([-2, -1, 1, 2]);
+      if (i < 0) i = 1;
+      if (i > hi) i = hi - 1;
+      if (i === st.lastArp) i = Math.min(i + 1, hi);
+      st.arpIdx = i;
+    }
+    st.lastArp = st.arpIdx;
+    return degNote(cfg, st.arpIdx) + 12 + (cfg.arpOct || 0);
+  }
+
+  // 16'lık adım başına zamanlama
+  function stepFn(t) {
+    const cfg = cfgOf(), boss = st.mode === "boss", menu = st.mode === "menu";
+    const sd = 60 / cfg.bpm / 4, s = st.step % 16, bar = Math.floor(st.step / 16);
+    const inten = menu ? 0 : boss ? 1 : st.smooth;
+    const p3 = boss && st.phase === 3 && t > st.burstUntil; // Pırıl teması: ritim susar
+    const cb = cfg.chordBars || 2;
+    if (s === 0 && bar % cb === 0) {
+      const c = cfg.chords[(bar / cb) % cfg.chords.length];
+      const notes = [degNote(cfg, c), degNote(cfg, c + 2), degNote(cfg, c + 4)];
+      if (cfg.pad4) notes.push(notes[0] + 12);
+      padChord(cfg, notes, t, cb * sd * 16);
+    }
+    if (s === 0 && bar % 4 === 0) { // bas/drone: kök + bir oktav altı (+ beşli)
+      const dur = sd * 64, r = cfg.root - 12;
+      voice("sine", mtof(r), mtof(r), t, dur, 0.1, buses.drone, { a: 1 });
+      voice("sine", mtof(r - 12), mtof(r - 12), t, dur, 0.1, buses.drone, { a: 1 });
+      if (cfg === MUSIC[2]) voice("sine", mtof(r + 7), mtof(r + 7), t, dur, 0.05, buses.drone, { a: 1 });
+    }
+    // çan / Pırıl motifi
+    if (p3) {
+      if (s === 0 || s === 8) bell(mtof(cfg.root + 12 + MOTIF3[st.motif++ % MOTIF3.length]), t, 0.9, 2.5);
+    } else if (s === 0 && (!menu || bar % 2 === 0) && Math.random() < cfg.bellP * (menu ? 0.5 : 1)) {
+      let n;
+      if (cfg.motif) n = cfg.root + 12 + MOTIF0[st.motif++ % MOTIF0.length];
+      else n = degNote(cfg, pick([0, 2, 4])) + (cfg.bellOct || 24);
+      bell(mtof(n), t, 0.8);
+    }
+    // arp
+    if (!p3 && !menu && cfg.arpP > 0) {
+      const fast = boss ? st.phase >= 2 : inten > 0.5;
+      if (s % (fast ? 1 : 2) === 0 && Math.random() < cfg.arpP * (fast ? 0.8 : 1)) {
+        const f = mtof(arpNote(cfg));
+        voice(cfg.arpWave || "triangle", f, f, t, cfg.arpDec || 0.25, cfg.arpVol || 0.12, buses.arp, { cap: 22 });
+      }
+    }
+    // ritim + bas yürüyüşü
+    if (!menu && !p3 && (boss || inten > (cfg.drumThr || 0.5))) {
+      const strong = boss || inten > 0.8;
+      if ((cfg.kick || [0, 8]).includes(s) || (strong && !cfg.kick && (s === 4 || s === 12))) kick(t, cfg.tomLow);
+      if (!cfg.noHat) {
+        const fastHat = (boss && st.phase >= 2) || inten > 0.8;
+        if (fastHat ? true : s % 4 === 2) hat(t, fastHat && s % 2 ? 0.5 : 1);
+      }
+      if (strong && s % 4 === 0) {
+        const q = (bar * 4 + s / 4) % 4;
+        const deg = boss ? [0, 5, 0, 4][q] : [0, 0, 4, 0][q];
+        const f = mtof(degNote(cfg, deg) - 12);
+        voice("sine", f, f, t, sd * 3, 0.22, buses.bass, { cap: 24 });
+        voice("triangle", f, f, t, sd * 3, 0.1, buses.bass, { cap: 24 });
+      }
+    }
+    if (cfg.burst && !menu && inten > 0.2 && s % 4 === 2 && Math.random() < 0.25) noise(t, 0.08, 0.08, buses.drum, { type: "bandpass", f0: 3000, q: 1 });
+  }
+
+  function updateBuses() {
+    if (!ctx) return;
+    const cfg = cfgOf(), now = ctx.currentTime, menu = st.mode === "menu";
+    windGain.gain.setTargetAtTime((cfg.wind ?? 0.3) * (menu ? 0.6 : 1) * 0.3, now, 0.8);
+    padFilter.frequency.setTargetAtTime(cfg.cut * (menu ? 0.7 : 1 + st.smooth * 0.8), now, 0.6);
+  }
+  function fade() {
+    const now = ctx.currentTime, g = musicGain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(0.15, now + 0.35);
+    g.linearRampToValueAtTime(1, now + 1.9);
+  }
+  function setMode(mode, theme = 0) {
+    st.crystal = 0;
+    if (mode === st.mode && (mode === "menu" || theme === st.theme)) return;
+    st.mode = mode; st.theme = mode === "menu" ? 0 : theme;
+    st.phase = 1; st.burstUntil = 0; st.step = 0; st.arpIdx = 5; st.motif = 0;
+    if (ctx) { st.nextT = ctx.currentTime + 0.3; fade(); updateBuses(); }
+  }
+
+  function tick() {
+    if (!ctx || hidden || !on || ctx.state !== "running") { if (ctx) st.nextT = ctx.currentTime + 0.1; return; }
+    const now = ctx.currentTime;
+    st.smooth += (st.target - st.smooth) * 0.08;
+    if (now - st.busT > 0.25) { st.busT = now; updateBuses(); }
+    if (st.nextT < now - 0.3) st.nextT = now + 0.05;
+    let guard = 0;
+    while (st.nextT < now + 0.15 && guard++ < 8) { stepFn(st.nextT); st.step++; st.nextT += 60 / cfgOf().bpm / 4; }
+  }
+  function startTimer() { if (timer || !ctx) return; st.nextT = ctx.currentTime + 0.1; timer = setInterval(tick, 25); }
+  function stopTimer() { if (timer) { clearInterval(timer); timer = 0; } }
+
+  // ---- ses efektleri ----
+  const THROTTLE = { hit: 0.04, enemy_shot: 0.08, telegraph: 0.2, toast: 0.15, pickup: 0.03, kill: 0.03, cast: 0.03 };
+  const lastAt = {};
+  function sfx(name) {
+    if (name.startsWith("phase:")) st.phase = +name.slice(6);
+    else if (name === "boss_shield_break") { if (ctx) st.burstUntil = ctx.currentTime + 4; }
+    else if (name === "boss_shield_up") st.burstUntil = 0;
+    if (!ctx || !on || hidden || ctx.state !== "running") return;
+    const T = ctx.currentTime, i = name.indexOf(":"), k = i < 0 ? name : name.slice(0, i), arg = i < 0 ? "" : name.slice(i + 1);
+    const gap = THROTTLE[k];
+    if (gap) { if (T - (lastAt[k] || -9) < gap) return; lastAt[k] = T; }
+    const b = buses.sfx;
+    switch (k) {
+      case "cast":
+        if (arg === "fire") { noise(T, 0.25, 0.18, b, { type: "bandpass", f0: 900, f1: 300, q: 2 }); voice("sawtooth", 220, 110, T, 0.25, 0.07, b); }
+        else if (arg === "frost") { voice("sine", 1800, 2400, T, 0.2, 0.1, b); voice("sine", 5400, 5400, T + 0.02, 0.18, 0.025, b); }
+        else if (arg === "arcane") { [523, 659, 784].forEach((f, j) => bell(f, T + j * 0.04, 0.5, 0.7, b)); }
+        else if (arg === "lightning") { noise(T, 0.3, 0.22, b, { type: "highpass", f0: 2500, q: 0.5 }); voice("sine", 60, 40, T, 0.2, 0.25, b); noise(T + 0.05, 0.08, 0.12, b, { type: "highpass", f0: 4000 }); }
+        else if (arg === "poison") { noise(T, 0.6, 0.1, b, { f0: 500, f1: 200 }); voice("sine", 200, 150, T, 0.3, 0.08, b); voice("sine", 150, 210, T + 0.3, 0.3, 0.06, b); }
+        else if (arg === "meteor") { voice("sine", 600, 80, T, 0.8, 0.12, b); }
+        break;
+      case "nova": voice("sine", 200, 800, T, 0.5, 0.12, b); bell(880, T + 0.25, 0.6, 1.2, b); break;
+      case "click": voice("square", 900, 700, T, 0.02, 0.04, b); break;
+      case "hit": noise(T, 0.03, 0.12, b, { type: "highpass", f0: 1500 }); voice("sine", 400, 150, T, 0.06, 0.1, b); break;
+      case "kill":
+        if (arg === "ghost") voice("sine", 600, 200, T, 0.35, 0.1, b);
+        else if (arg === "bat") voice("triangle", 3000, 4500, T, 0.08, 0.08, b);
+        else if (arg === "golem" || arg === "knight") { noise(T, 0.35, 0.3, b, { f0: 800, f1: 200 }); voice("sine", 90, 40, T, 0.3, 0.3, b); }
+        else if (arg === "archer") { noise(T, 0.1, 0.12, b, { type: "bandpass", f0: 3000, q: 2 }); voice("square", 300, 180, T, 0.12, 0.05, b); }
+        else if (arg === "wolf") voice("sine", 500, 150, T, 0.3, 0.1, b);
+        else if (arg === "priest") { voice("sine", 300, 100, T, 0.5, 0.1, b); bell(660, T, 0.4, 1, b); }
+        else if (arg === "boss") { voice("sawtooth", 200, 30, T, 1.2, 0.15, b); noise(T, 0.9, 0.3, b, { f0: 1200, f1: 100 }); }
+        break;
+      case "hurt": voice("sawtooth", 200, 60, T, 0.25, 0.2, b); noise(T, 0.25, 0.15, b, { f0: 600 }); break;
+      case "shield_block": voice("triangle", 1200, 900, T, 0.12, 0.1, b); break;
+      case "shield_break": noise(T, 0.3, 0.15, b, { type: "highpass", f0: 3000 }); bell(1400, T, 0.6, 1, b); break;
+      case "pickup":
+        if (arg === "crystal") {
+          const cfg = cfgOf(), n = st.crystal++ % 8;
+          bell(mtof(degNote(cfg, n) + 24), T, 0.7, 0.9, b);
+        } else if (arg === "heart") { voice("sine", 523, 523, T, 0.15, 0.12, b); voice("sine", 784, 784, T + 0.09, 0.22, 0.12, b); }
+        else { for (let j = 0; j < 4; j++) voice("sine", 1500 + Math.random() * 1800, 0, T + j * 0.04, 0.2, 0.05, b); }
+        break;
+      case "ability":
+        if (arg === "shield") { voice("sine", 400, 1200, T, 0.4, 0.1, b); voice("triangle", 800, 1600, T, 0.4, 0.04, b); }
+        else if (arg === "blink") { noise(T, 0.25, 0.15, b, { type: "bandpass", f0: 1000, f1: 4000, q: 1 }); voice("sine", 500, 1500, T, 0.15, 0.08, b); }
+        else if (arg === "timeslow") { voice("sine", 800, 100, T, 0.9, 0.15, b); noise(T, 0.9, 0.1, b, { f0: 2000, f1: 200 }); }
+        break;
+      case "level_clear":
+        [62, 66, 69, 74].forEach((n, j) => bell(mtof(n + 12), T + j * 0.18, 0.8, 1.8, b));
+        [50, 54, 57].forEach((n) => voice("sine", mtof(n), mtof(n), T, 2.2, 0.07, b, { a: 0.6 }));
+        break;
+      case "game_over": {
+        [69, 65, 62, 57].forEach((n, j) => voice("triangle", mtof(n), mtof(n), T + j * 0.2, 0.5, 0.1, b));
+        if (live < 28) {
+          const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+          o.type = "sawtooth"; o.frequency.value = 110;
+          f.type = "lowpass"; f.frequency.setValueAtTime(1200, T); f.frequency.exponentialRampToValueAtTime(120, T + 1.2);
+          g.gain.setValueAtTime(0.12, T); g.gain.exponentialRampToValueAtTime(0.0001, T + 1.3);
+          o.connect(f); f.connect(g); g.connect(b);
+          live++; o.onended = () => { live--; g.disconnect(); };
+          o.start(T); o.stop(T + 1.35);
+        }
+        break;
+      }
+      case "phase": voice("sine", 150, 40, T, 0.6, 0.35, b); voice("sawtooth", 100, 400, T, 0.8, 0.06, b); noise(T, 0.6, 0.15, b, { f0: 2000, f1: 200 }); break;
+      case "boss_shield_break": bell(2400, T, 0.8, 1.5, b); bell(1800, T + 0.05, 0.6, 1.5, b); voice("sine", 60, 40, T, 0.4, 0.35, b); break;
+      case "boss_shield_up": voice("sine", 300, 150, T, 0.5, 0.15, b); break;
+      case "telegraph": voice("sine", 500, 700, T, 0.15, 0.07, b); voice("sine", 500, 700, T + 0.12, 0.15, 0.07, b); break;
+      case "slam": voice("sine", 90, 30, T, 0.5, 0.5, b); noise(T, 0.4, 0.25, b, { f0: 600, f1: 100 }); break;
+      case "explode": noise(T, 0.4, 0.3, b, { f0: 1500, f1: 200 }); voice("sine", 100, 40, T, 0.3, 0.3, b); break;
+      case "meteor_hit": noise(T, 0.6, 0.35, b, { f0: 400, f1: 100 }); voice("sine", 80, 35, T, 0.5, 0.4, b); break;
+      case "enemy_shot": voice("square", 700, 400, T, 0.12, 0.05, b); break;
+      case "totem_down": voice("sine", 70, 35, T, 0.6, 0.4, b); noise(T, 0.35, 0.15, b, { type: "highpass", f0: 2500 }); bell(1568, T + 0.2, 0.6, 1.5, b); break;
+      case "toast": bell(880, T, 0.25, 0.8, b); break;
+      default: break;
+    }
+  }
+
+  // ---- yaşam döngüsü ----
+  function unlock() {
+    if (!on || failed) return;
+    init();
+    if (ctx && ctx.state !== "running" && !hidden) ctx.resume().catch(() => {});
+  }
+  for (const ev of ["pointerdown", "pointerup", "touchend", "click", "keydown"]) addEventListener(ev, unlock, { capture: true, passive: true });
+  document.addEventListener("visibilitychange", () => {
+    hidden = document.hidden;
+    if (!ctx) return;
+    if (hidden) { stopTimer(); ctx.suspend().catch(() => {}); }
+    else if (on) ctx.resume().catch(() => {});
+  });
+
+  const btn = $("mute");
+  function renderBtn() {
+    btn.textContent = on ? "🔊" : "🔇";
+    btn.setAttribute("aria-pressed", on ? "false" : "true");
+    btn.setAttribute("aria-label", on ? "Sesi kapat" : "Sesi aç");
+    btn.title = on ? "Sesi kapat" : "Sesi aç";
+  }
+  function setOn(v) {
+    on = v;
+    try { localStorage.setItem(SOUND_KEY, v ? "1" : "0"); } catch (e) { /* özel mod */ }
+    if (v) {
+      unlock();
+      if (ctx) { master.gain.setTargetAtTime(0.25, ctx.currentTime, 0.05); ctx.resume().catch(() => {}); }
+    } else if (ctx) {
+      master.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+      setTimeout(() => { if (!on && ctx) ctx.suspend().catch(() => {}); }, 300);
+    }
+    renderBtn();
+  }
+  btn.addEventListener("click", () => { setOn(!on); btn.blur(); });
+  renderBtn();
+
+  return { sfx, mus: { set: setMode, intensity: (v) => { st.target = v; } }, debug: () => ({ state: ctx && ctx.state, live, step: st.step, mode: st.mode, theme: st.theme, timer: !!timer, on, gain: master && master.gain.value }) };
+})();
+const sfx = AUDIO.sfx;
+const mus = AUDIO.mus;
+
+// ---------- Görsel yardımcılar (P3) ----------
+const IS_TOUCH = matchMedia("(pointer: coarse)").matches || innerWidth < 700;
+let shake = 0; // kamera titremesi (hasar, patlama, boss ölümü)
+let trailTick = 0;
+const _tip = new THREE.Vector3();
+const hurtEl = $("hurt");
+function flashHurt() { hurtEl.classList.remove("on"); void hurtEl.offsetWidth; hurtEl.classList.add("on"); }
+function canvasTex(w, h, draw) {
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  draw(c.getContext("2d"), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+// sahte bloom: yumuşak radyal gradyan + additive sprite
+const glowTex = canvasTex(64, 64, (g, w, h) => {
+  const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+  gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.25, "rgba(255,255,255,.55)");
+  gr.addColorStop(0.6, "rgba(255,255,255,.12)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+});
+const blobTex = canvasTex(64, 64, (g, w, h) => {
+  const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+  gr.addColorStop(0, "rgba(0,0,0,.8)"); gr.addColorStop(0.6, "rgba(0,0,0,.35)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+});
+const glowMats = new Map();
+function glowSprite(color, size, opacity = 0.8) {
+  const key = color + "|" + opacity;
+  let m = glowMats.get(key);
+  if (!m) { m = new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity }); glowMats.set(key, m); }
+  const s = new THREE.Sprite(m);
+  s.scale.setScalar(size);
+  return s;
+}
+
+// paylaşımlı geometri / materyal önbelleği (düşman ve dekor parçaları için; sahne boyunca yaşar)
+const GC = new Map();
+const cg = (k, f) => { let g = GC.get(k); if (!g) { g = f(); GC.set(k, g); } return g; };
+const BOX = (w, h, d) => cg(`b${w},${h},${d}`, () => new THREE.BoxGeometry(w, h, d));
+const CYL = (a, b, h, s = 8) => cg(`c${a},${b},${h},${s}`, () => new THREE.CylinderGeometry(a, b, h, s));
+const CONE = (r, h, s = 8) => cg(`n${r},${h},${s}`, () => new THREE.ConeGeometry(r, h, s));
+const SPH = (r, w = 12, h = 8) => cg(`s${r},${w},${h}`, () => new THREE.SphereGeometry(r, w, h));
+const OCT = (r) => cg(`o${r}`, () => new THREE.OctahedronGeometry(r));
+const TOR = (r, t, rs = 6, ts = 16) => cg(`t${r},${t},${rs},${ts}`, () => new THREE.TorusGeometry(r, t, rs, ts));
+const SM = new Map();
+const SMAT = (color, o = {}) => { const k = color + JSON.stringify(o); let m = SM.get(k); if (!m) { m = new THREE.MeshStandardMaterial({ color, roughness: 0.7, ...o }); SM.set(k, m); } return m; };
+const BMAT = (color, o = {}) => { const k = "b" + color + JSON.stringify(o); let m = SM.get(k); if (!m) { m = new THREE.MeshBasicMaterial({ color, ...o }); SM.set(k, m); } return m; };
+function mk(geo, material, x = 0, y = 0, z = 0) {
+  const m = new THREE.Mesh(geo, material);
+  m.position.set(x, y, z);
+  return m;
+}
+// lathe / koni tabanlı gövdelerin alt kısmını dalgalandır (cüppe kıvrımı, ruh etek kenarı)
+function rippleLathe(geo, yTop, yBottom, a1, a2) {
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i);
+    if (y >= yTop) continue;
+    const x = p.getX(i), z = p.getZ(i), th = Math.atan2(z, x), k = Math.min((yTop - y) / (yTop - yBottom), 1);
+    const f = 1 + k * (a1 * Math.sin(7 * th) + a2 * Math.sin(13 * th));
+    p.setX(i, x * f); p.setZ(i, z * f);
+  }
+  geo.computeVertexNormals();
+}
+// aynı materyali paylaşan statik parçaları tek geometride birleştir (draw call azaltır). userData.dyn: animasyonlu parça, birleşmez.
+function bakeNode(node, store) {
+  for (const c of [...node.children]) if (c.isGroup) bakeNode(c, store);
+  const byMat = new Map();
+  for (const c of [...node.children]) {
+    if (!c.isMesh || c.isInstancedMesh || c.userData.dyn || c.children.length) continue;
+    if (!byMat.has(c.material)) byMat.set(c.material, []);
+    byMat.get(c.material).push(c);
+  }
+  for (const [material, list] of byMat) {
+    if (list.length < 2) continue;
+    const pos = [], nor = [];
+    for (const m of list) {
+      const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+      m.updateMatrix();
+      g.applyMatrix4(m.matrix);
+      pos.push(...g.attributes.position.array);
+      nor.push(...g.attributes.normal.array);
+      node.remove(m);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+    const merged = new THREE.Mesh(geo, material);
+    merged.castShadow = list.some((m) => m.castShadow);
+    node.add(merged);
+    store.push(geo);
+  }
+  return store;
+}
+const _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3();
+const TR = (x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) =>
+  new THREE.Matrix4().compose(_p.set(x, y, z), _q.setFromEuler(_e.set(rx, ry, rz)), _s.set(sx, sy, sz));
+const MM = (a, b) => a.clone().multiply(b);
+function mulberry(a) {
+  return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
 
 // HTML'e basılan metinler sabittir; yine de kaçışla basılır.
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -160,13 +627,13 @@ const ENEMIES = {
   ghost: { hp: 1, speed: 2.2, r: 0.7, y: 1.2, score: 20, drop: 0.12, color: 0xc9ffd9, emissive: 0x2f9e5a, dmg: 1, ai: "chase" },
   bat: { hp: 1, speed: 4.6, r: 0.5, y: 1.6, score: 25, drop: 0.12, color: 0xb98bff, emissive: 0x5a2fa0, dmg: 1, zig: true, ai: "chase" },
   golem: { hp: 4, speed: 1.3, r: 1.2, y: 1.2, score: 60, drop: 0.4, color: 0x8a8a96, emissive: 0x2a2a35, dmg: 1, ai: "chase", spin: true },
-  archer: { hp: 2, speed: 1.6, r: 0.6, y: 1.0, score: 40, drop: 0.2, color: 0xe8e4d0, emissive: 0x3355aa, dmg: 1, ai: "ranged", bob: 0.05 },
+  archer: { hp: 2, speed: 1.6, r: 0.6, y: 1.0, score: 40, drop: 0.2, color: 0xe8e4d0, emissive: 0x1a2744, dmg: 1, ai: "ranged", bob: 0.05 },
   wolf: { hp: 2, speed: 2.4, r: 0.7, y: 0.7, score: 45, drop: 0.15, color: 0xbfe9ff, emissive: 0x3a7aa8, dmg: 1, ai: "charge", bob: 0.05 },
   ember: { hp: 2, speed: 3.2, r: 0.7, y: 1.0, score: 50, drop: 0.1, color: 0xff8a3a, emissive: 0xc04a00, dmg: 0, ai: "bomber" },
   priest: { hp: 5, speed: 1.2, r: 0.9, y: 1.0, score: 80, drop: 0.5, color: 0x4a2a6a, emissive: 0x2a8a4a, dmg: 0, ai: "support", bob: 0.1 },
   totem: { hp: 10, speed: 0, r: 1.0, y: 1.6, score: 150, drop: 0.5, color: 0xff7a2a, emissive: 0xa03000, dmg: 0, ai: "static", static: true, noCap: true, bob: 0 },
   knight: { hp: 24, speed: 1.1, r: 1.5, y: 1.2, score: 300, drop: 0, color: 0xcfd0dc, emissive: 0x303050, dmg: 2, ai: "knight", spin: true, noCap: true, bob: 0.05 },
-  boss: { hp: 45, speed: 1.5, r: 2.2, y: 2.4, score: 500, drop: 0, color: 0xff5a6e, emissive: 0x8a1030, dmg: 2, ai: "boss", spin: true, noCap: true },
+  boss: { hp: 45, speed: 1.5, r: 2.2, y: 2.4, score: 500, drop: 0, color: 0x7a2038, emissive: 0x3a0614, dmg: 2, ai: "boss", spin: true, noCap: true },
 };
 const ENEMY_NAMES = { ghost: "Ruh", bat: "Yarasa", golem: "Taş Bekçi", archer: "Kemik Okçu", wolf: "Kurt Ruhu", ember: "Kor Hortlak", priest: "Karanlık Rahip", totem: "Lanet Totemi", knight: "Kemik Şövalye", boss: "Gölge Kral" };
 
@@ -209,7 +676,7 @@ camera.position.set(0, 17, 12);
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, IS_TOUCH ? 1.5 : 2));
 renderer.shadowMap.enabled = true;
 document.body.prepend(renderer.domElement);
 
@@ -218,28 +685,190 @@ scene.add(hemi);
 const moon = new THREE.DirectionalLight(0xb9c7ff, 1.4);
 moon.position.set(-8, 14, 6);
 moon.castShadow = true;
-Object.assign(moon.shadow.camera, { left: -ARENA, right: ARENA, top: ARENA, bottom: -ARENA });
+Object.assign(moon.shadow.camera, { left: -ARENA, right: ARENA, top: ARENA, bottom: -ARENA, near: 1, far: 45 });
+moon.shadow.mapSize.set(IS_TOUCH ? 1024 : 2048, IS_TOUCH ? 1024 : 2048);
+moon.shadow.bias = -0.0005;
+moon.shadow.normalBias = 0.03;
 scene.add(moon);
 
 const wand = new THREE.PointLight(0xc58cff, 40, 12);
 scene.add(wand);
+// bölüme özel tek sabit ışık (fener, ateş, Gece Kalbi): ışık sayısı hiç değişmez, yalnız şiddet
+const fireLight = new THREE.PointLight(0xffaa55, 0, 20);
+scene.add(fireLight);
+const fireCfg = { base: 0, mode: "flicker" };
 
-const floorMat = mat({ color: 0x1a1030, roughness: 1 });
+// zemin: canvas ile üretilen doku (tema rengiyle çarpılır)
+const floorCanvas = document.createElement("canvas");
+floorCanvas.width = floorCanvas.height = IS_TOUCH ? 512 : 1024;
+const floorCtx = floorCanvas.getContext("2d");
+const floorTex = new THREE.CanvasTexture(floorCanvas);
+floorTex.colorSpace = THREE.SRGBColorSpace;
+floorTex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+const floorMat = mat({ color: 0x1a1030, roughness: 1, map: floorTex });
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(ARENA * 2, ARENA * 2), floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
+// arena dışı zemin (sisle birleşir)
+const outerMat = mat({ color: 0x0a0714, roughness: 1 });
+const outer = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), outerMat);
+outer.rotation.x = -Math.PI / 2;
+outer.position.y = -0.04;
+scene.add(outer);
+
+const FLOOR_KIND = ["grass", "wet", "flag", "dirt", "snow", "ash", "facet", "bone", "tile"];
+function drawFloor(ti) {
+  const g = floorCtx, W = floorCanvas.width, R = mulberry(ti * 7919 + 13), k = W / 512, kind = FLOOR_KIND[ti];
+  g.globalAlpha = 1;
+  g.fillStyle = "#bdbdbd"; g.fillRect(0, 0, W, W);
+  const blot = (n, a, r0, r1) => {
+    for (let i = 0; i < n; i++) {
+      const x = R() * W, y = R() * W, r = (r0 + R() * (r1 - r0)) * k, v = R() < 0.5 ? 0 : 255;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, `rgba(${v},${v},${v},${a})`); gr.addColorStop(1, `rgba(${v},${v},${v},0)`);
+      g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+    }
+  };
+  const dots = (n, a, s) => { for (let i = 0; i < n; i++) { const v = (R() * 255) | 0; g.fillStyle = `rgba(${v},${v},${v},${a})`; g.fillRect(R() * W, R() * W, s * k, s * k); } };
+  const lines = (n, len, a, w, light) => {
+    g.lineWidth = w * k; g.strokeStyle = light ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`;
+    for (let i = 0; i < n; i++) { const x = R() * W, y = R() * W, an = R() * 6.28, l = len * k * (0.3 + R()); g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(an) * l, y + Math.sin(an) * l); g.stroke(); }
+  };
+  const cracks = (n, steps, a) => {
+    for (let i = 0; i < n; i++) {
+      let x = R() * W, y = R() * W, an = R() * 6.28;
+      g.strokeStyle = `rgba(0,0,0,${a})`; g.lineWidth = (1 + R()) * k; g.beginPath(); g.moveTo(x, y);
+      for (let s = 0; s < steps; s++) { an += (R() - 0.5) * 1.2; x += Math.cos(an) * (10 + R() * 18) * k; y += Math.sin(an) * (10 + R() * 18) * k; g.lineTo(x, y); }
+      g.stroke();
+    }
+  };
+  blot(60, 0.22, 30, 90); blot(40, 0.15, 20, 60);
+  switch (kind) {
+    case "grass": dots(2500, 0.25, 1.5); lines(900, 10, 0.35, 1, true); lines(500, 10, 0.3, 1, false); blot(10, 0.2, 15, 30); break;
+    case "wet": blot(25, 0.3, 20, 50); cracks(10, 8, 0.35); dots(1500, 0.2, 1); break;
+    case "flag": {
+      const sz = 64 * k;
+      for (let y = 0; y < W; y += sz) for (let x = 0; x < W; x += sz) { const v = (R() * 255) | 0; g.fillStyle = `rgba(${v},${v},${v},.16)`; g.fillRect(x, y, sz, sz); }
+      g.strokeStyle = "rgba(0,0,0,.5)"; g.lineWidth = 2 * k;
+      for (let p = 0; p <= W; p += sz) { g.beginPath(); g.moveTo(p, 0); g.lineTo(p, W); g.stroke(); g.beginPath(); g.moveTo(0, p); g.lineTo(W, p); g.stroke(); }
+      cracks(14, 6, 0.4); dots(1500, 0.2, 1.5); break;
+    }
+    case "dirt": dots(3000, 0.3, 2); lines(600, 8, 0.3, 1, true); cracks(8, 6, 0.3); break;
+    case "snow": blot(80, 0.2, 15, 50); dots(1800, 0.4, 1.5); lines(30, 60, 0.25, 1, true); cracks(6, 5, 0.2); break;
+    case "ash": cracks(30, 10, 0.5); dots(2500, 0.3, 2); blot(30, 0.3, 10, 30); break;
+    case "facet":
+      for (let i = 0; i < 40; i++) { const v = (R() * 255) | 0; g.fillStyle = `rgba(${v},${v},${v},.12)`; g.beginPath(); g.moveTo(R() * W, R() * W); g.lineTo(R() * W, R() * W); g.lineTo(R() * W, R() * W); g.fill(); }
+      lines(60, 70, 0.2, 1.5, true); cracks(8, 6, 0.25); break;
+    case "bone": cracks(22, 9, 0.45); dots(2000, 0.3, 2); lines(40, 14, 0.4, 2, true); break;
+    default: {
+      const sz = 128 * k;
+      for (let y = 0; y < W; y += sz) for (let x = 0; x < W; x += sz) { g.fillStyle = ((x + y) / sz) % 2 ? "rgba(0,0,0,.12)" : "rgba(255,255,255,.08)"; g.fillRect(x, y, sz, sz); }
+      g.strokeStyle = "rgba(0,0,0,.45)"; g.lineWidth = 2 * k;
+      for (let p = 0; p <= W; p += sz) { g.beginPath(); g.moveTo(p, 0); g.lineTo(p, W); g.stroke(); g.beginPath(); g.moveTo(0, p); g.lineTo(W, p); g.stroke(); }
+      cracks(10, 6, 0.4);
+    }
+  }
+  floorTex.needsUpdate = true;
+}
 
 const ring = new THREE.Mesh(new THREE.RingGeometry(3.2, 3.5, 48), new THREE.MeshBasicMaterial({ color: 0x8e44ff, side: THREE.DoubleSide, transparent: true, opacity: 0.6 }));
 ring.rotation.x = -Math.PI / 2;
 ring.position.y = 0.02;
 scene.add(ring);
+// arena sınırı: ince parlak çerçeve (oynanabilir alanı belli eder)
+const borderMat = new THREE.MeshBasicMaterial({ color: 0x8e44ff, transparent: true, opacity: 0.35, depthWrite: false });
+for (const [x, z, w, d] of [[0, -ARENA, ARENA * 2, 0.14], [0, ARENA, ARENA * 2, 0.14], [-ARENA, 0, 0.14, ARENA * 2], [ARENA, 0, 0.14, ARENA * 2]]) {
+  const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, d), borderMat);
+  b.position.set(x, 0.02, z);
+  scene.add(b);
+}
 
-scene.add(new THREE.Points(
-  new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(
-    Array.from({ length: 600 }, () => rand(40)).map((v, i) => (i % 3 === 1 ? 10 + Math.abs(v) : v)), 3)),
-  new THREE.PointsMaterial({ color: 0xffffff, size: 0.15 })
-));
+// gökyüzü: gradyan kubbe, ay, yıldızlar (kamera yukarıdan baktığı için çoğu zaman görünmez; ufuk gösteren bir açıda görünür)
+const skyU = { top: { value: new THREE.Color(0x101030) }, bot: { value: new THREE.Color(0x0a0714) } };
+const sky = new THREE.Mesh(new THREE.SphereGeometry(90, 16, 10), new THREE.ShaderMaterial({
+  uniforms: skyU, side: THREE.BackSide, depthWrite: false, fog: false,
+  vertexShader: "varying float h; void main(){ h = normalize(position).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+  fragmentShader: "uniform vec3 top; uniform vec3 bot; varying float h; void main(){ gl_FragColor = vec4(mix(bot, top, smoothstep(0.0, 0.7, h)), 1.0);\n#include <colorspace_fragment>\n}",
+}));
+sky.renderOrder = -10;
+sky.frustumCulled = false;
+scene.add(sky);
+const moonTex = canvasTex(128, 128, (g, w) => {
+  g.fillStyle = "#f4f1e4"; g.beginPath(); g.arc(w / 2, w / 2, w * 0.42, 0, 6.3); g.fill();
+  g.fillStyle = "rgba(150,150,170,.35)";
+  for (const [x, y, r] of [[0.4, 0.4, 0.09], [0.6, 0.55, 0.12], [0.45, 0.68, 0.06], [0.62, 0.3, 0.05]]) { g.beginPath(); g.arc(w * x, w * y, w * r, 0, 6.3); g.fill(); }
+});
+const moonSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: moonTex, fog: false, depthWrite: false }));
+moonSprite.scale.setScalar(12); moonSprite.position.set(-34, 40, -62);
+const moonHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xb9c7ff, fog: false, depthWrite: false, transparent: true, blending: THREE.AdditiveBlending, opacity: 0.6 }));
+moonHalo.scale.setScalar(40); moonHalo.position.copy(moonSprite.position);
+scene.add(moonSprite, moonHalo);
+const starGroups = [0, 1].map(() => {
+  const pts = [];
+  for (let i = 0; i < 110; i++) { const a = Math.random() * 6.28, e = 0.1 + Math.random() * 1.2, r = 85; pts.push(Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r); }
+  const p = new THREE.Points(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(pts, 3)), new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false, fog: false, transparent: true, depthWrite: false }));
+  p.frustumCulled = false;
+  scene.add(p);
+  return p;
+});
+
+// alçak sis katmanları (canvas gürültü dokusu, yavaş kayar)
+const mistTex = canvasTex(256, 256, (g, w) => {
+  g.clearRect(0, 0, w, w);
+  const R = mulberry(99);
+  for (let i = 0; i < 40; i++) {
+    const x = R() * w, y = R() * w, r = 30 + R() * 50;
+    for (const dx of [-w, 0, w]) for (const dy of [-w, 0, w]) {
+      const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
+      gr.addColorStop(0, "rgba(255,255,255,.35)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = gr; g.fillRect(x + dx - r, y + dy - r, 2 * r, 2 * r);
+    }
+  }
+});
+mistTex.wrapS = mistTex.wrapT = THREE.RepeatWrapping;
+mistTex.repeat.set(3, 3);
+const mistMats = [0, 1].map(() => new THREE.MeshBasicMaterial({ map: mistTex, transparent: true, depthWrite: false, opacity: 0.2, color: 0xaaaaff }));
+const mists = mistMats.map((m, i) => {
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), m);
+  p.rotation.x = -Math.PI / 2; p.position.y = 0.35 + i * 0.45; p.renderOrder = 1;
+  scene.add(p);
+  return p;
+});
+
+// hava durumu parçacıkları: tek Points (kar, kül, toz...)
+const WMAX = 240;
+const wPos = new Float32Array(WMAX * 3), wRnd = new Float32Array(WMAX);
+for (let i = 0; i < WMAX; i++) { wPos[i * 3] = rand(20); wPos[i * 3 + 1] = Math.random() * 12; wPos[i * 3 + 2] = rand(20); wRnd[i] = Math.random(); }
+const weatherGeo = new THREE.BufferGeometry();
+weatherGeo.setAttribute("position", new THREE.BufferAttribute(wPos, 3).setUsage(THREE.DynamicDrawUsage));
+const weatherMat = new THREE.PointsMaterial({ map: glowTex, size: 0.25, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.8 });
+const weather = new THREE.Points(weatherGeo, weatherMat);
+weather.frustumCulled = false;
+scene.add(weather);
+let wCfg = { n: 0, vy: 0, dx: 0 };
+function setWeather(w) {
+  wCfg = w;
+  weatherGeo.setDrawRange(0, w.n);
+  weatherMat.color.setHex(w.col);
+  weatherMat.size = w.size;
+  weatherMat.opacity = w.op || 0.8;
+  weatherMat.blending = w.add ? THREE.AdditiveBlending : THREE.NormalBlending;
+  weatherMat.needsUpdate = true;
+}
+function updateWeather(dt, t) {
+  const cx = wizard.position.x * 0.6, cz = wizard.position.z * 0.6;
+  for (let i = 0; i < wCfg.n; i++) {
+    const j = i * 3;
+    wPos[j] += (wCfg.dx + Math.sin(t * 0.7 + wRnd[i] * 20) * 0.35) * dt;
+    wPos[j + 1] += wCfg.vy * (0.6 + wRnd[i] * 0.8) * dt;
+    wPos[j + 2] += Math.cos(t * 0.5 + wRnd[i] * 20) * 0.25 * dt;
+    if (wPos[j + 1] > 12) wPos[j + 1] = 0; else if (wPos[j + 1] < 0) wPos[j + 1] = 12;
+    if (wPos[j] - cx > 20) wPos[j] -= 40; else if (wPos[j] - cx < -20) wPos[j] += 40;
+    if (wPos[j + 2] - cz > 20) wPos[j + 2] -= 40; else if (wPos[j + 2] - cz < -20) wPos[j + 2] += 40;
+  }
+  weatherGeo.attributes.position.needsUpdate = true;
+}
 
 // Bölüme göre renk teması (9 bölüm). fog: taban yoğunluk
 const THEMES = [
@@ -253,68 +882,581 @@ const THEMES = [
   { bg: 0x0c0c12, floor: 0x1a1a22, ring: 0xd8d8ff, hemi: 0x8a8aa8, moon: 0xd0d0ff, fog: 0.04 },
   { bg: 0x1a0508, floor: 0x2e1018, ring: 0xff4466, hemi: 0xcd4a6a, moon: 0xffa0b0, fog: 0.035 },
 ];
-let baseFog = 0.035, camK = 1;
+let baseFog = 0.035, camK = 1, curTheme = -1;
+
+// bölüme göre hava, sis yoğunluğu (dekor SCENERY dizisinde)
+const VIS = [
+  { w: { n: 70, col: 0xc8ff9a, vy: 0.15, dx: 0.1, size: 0.22, add: true, op: 0.8 }, mist: 0.2 },
+  { w: { n: 50, col: 0x9ad0ff, vy: -0.1, dx: 0, size: 0.18, add: true, op: 0.6 }, mist: 0.25 },
+  { w: { n: 90, col: 0xe0b070, vy: 0.05, dx: 0.3, size: 0.2, add: false, op: 0.5 }, mist: 0.15 },
+  { w: { n: 40, col: 0xaaffcc, vy: 0.25, dx: 0.05, size: 0.5, add: true, op: 0.25 }, mist: 0.5 },
+  { w: { n: 200, col: 0xffffff, vy: -1.6, dx: -0.6, size: 0.22, add: false, op: 0.9 }, mist: 0.15 },
+  { w: { n: 140, col: 0xff8a3a, vy: 1.3, dx: 0.4, size: 0.2, add: true, op: 0.9 }, mist: 0.3 },
+  { w: { n: 110, col: 0xe8c0ff, vy: 0.12, dx: 0.1, size: 0.24, add: true, op: 0.8 }, mist: 0.1 },
+  { w: { n: 90, col: 0xcfcfe0, vy: -0.35, dx: 0.2, size: 0.2, add: false, op: 0.5 }, mist: 0.5 },
+  { w: { n: 120, col: 0xff5a70, vy: 0.35, dx: 0.15, size: 0.2, add: true, op: 0.7 }, mist: 0.2 },
+];
+
 function applyTheme(i) {
-  const t = THEMES[i];
+  const t = THEMES[i], v = VIS[i];
   scene.background.setHex(t.bg);
   scene.fog.color.setHex(t.bg);
-  floorMat.color.setHex(t.floor);
+  floorMat.color.setHex(t.floor).multiplyScalar(2);
+  outerMat.color.setHex(t.floor).multiplyScalar(0.45);
+  borderMat.color.setHex(t.ring);
   ring.material.color.setHex(t.ring);
   hemi.color.setHex(t.hemi);
   moon.color.setHex(t.moon);
+  moonHalo.material.color.setHex(t.moon);
+  skyU.top.value.setHex(t.hemi).multiplyScalar(0.3);
+  skyU.bot.value.setHex(t.bg);
   baseFog = t.fog;
   scene.fog.density = baseFog / camK;
+  mistMats[0].color.setHex(t.hemi); mistMats[1].color.setHex(t.hemi);
+  mistMats[0].opacity = v.mist; mistMats[1].opacity = v.mist * 0.7;
+  setWeather(v.w);
+  document.documentElement.style.setProperty("--moon", "#" + t.moon.toString(16).padStart(6, "0"));
+  if (i !== curTheme) { // dekor yalnız tema değişince yenilenir
+    curTheme = i;
+    drawFloor(i);
+    clearScenery();
+    fireCfg.base = 0; fireLight.intensity = 0;
+    SCENERY[i]();
+  }
 }
 
-const trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, 2, 6);
-const crownGeo = new THREE.ConeGeometry(1.4, 4, 7);
-for (let i = 0; i < 28; i++) {
-  const a = (i / 28) * Math.PI * 2;
-  const r = ARENA + 1 + Math.random() * 2;
-  const g = new THREE.Group();
-  const trunk = new THREE.Mesh(trunkGeo, mat({ color: 0x2b1a12 }));
-  trunk.position.y = 1;
-  const crown = new THREE.Mesh(crownGeo, mat({ color: 0x143a2a }));
-  crown.position.y = 3.5;
-  trunk.castShadow = crown.castShadow = true;
-  g.add(trunk, crown);
-  g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
-  g.scale.setScalar(0.8 + Math.random() * 0.8);
-  scene.add(g);
+// ---------- Bölüm dekoru (InstancedMesh; tema değişince dispose edilip yeniden kurulur) ----------
+const sceneryGroup = new THREE.Group();
+scene.add(sceneryGroup);
+let sc = { disp: [], anim: [] };
+function clearScenery() {
+  for (const o of [...sceneryGroup.children]) sceneryGroup.remove(o);
+  for (const d of sc.disp) d.dispose();
+  sc = { disp: [], anim: [] };
+}
+const smat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.9, flatShading: true, ...o });
+const bmatOwn = (color, o = {}) => new THREE.MeshBasicMaterial({ color, ...o });
+function addInst(geo, material, mats, colors) {
+  if (!mats.length) return null;
+  const im = new THREE.InstancedMesh(geo, material, mats.length);
+  mats.forEach((m, i) => im.setMatrixAt(i, m));
+  if (colors) colors.forEach((c, i) => im.setColorAt(i, c));
+  im.instanceMatrix.needsUpdate = true;
+  if (im.instanceColor) im.instanceColor.needsUpdate = true;
+  im.frustumCulled = false;
+  sceneryGroup.add(im);
+  sc.disp.push(material, im, geo); // dekor geometrileri her kurulumda yeni üretilir; önbellekteki (GC) olanlar buraya verilmez
+  return im;
+}
+function addObj(o, ...own) { sceneryGroup.add(o); sc.disp.push(...own); return o; }
+function ringPos(rmin = ARENA + 1, rmax = ARENA + 9) {
+  for (;;) {
+    const x = rand(rmax), z = rand(rmax), d = Math.max(Math.abs(x), Math.abs(z));
+    if (d >= rmin && d <= rmax) return [x, z];
+  }
+}
+const jc = (hex, v = 0.08) => new THREE.Color(hex).offsetHSL(rand(0.02), rand(v), rand(v));
+function setFireLight(x, y, z, color, intensity, mode) {
+  fireLight.position.set(x, y, z); fireLight.color.setHex(color); fireCfg.base = intensity; fireCfg.mode = mode;
+}
+function pines(n, crown, trunk = 0x2b1a12) {
+  const t = [], a = [], b = [], cols = [];
+  for (let i = 0; i < n; i++) {
+    const [x, z] = ringPos(), s = 0.8 + Math.random() * 0.9, ry = Math.random() * 6.28;
+    t.push(TR(x, s, z, 0, ry, 0, s)); a.push(TR(x, s * 3.2, z, 0, ry, 0, s)); b.push(TR(x, s * 4.8, z, 0, ry, 0, s * 0.85));
+    cols.push(jc(crown, 0.06));
+  }
+  const m = smat(0xffffff);
+  addInst(new THREE.CylinderGeometry(0.2, 0.35, 2, 6), smat(trunk), t);
+  addInst(new THREE.ConeGeometry(1.5, 3, 7), m, a, cols);
+  addInst(new THREE.ConeGeometry(1.1, 2.6, 7), m, b, cols);
+}
+function deadTrees(n, hex) {
+  const tr = [], br = [];
+  for (let i = 0; i < n; i++) {
+    const [x, z] = ringPos(ARENA + 1, ARENA + 9), h = 3 + Math.random() * 3, ry = Math.random() * 6.28, base = TR(x, 0, z, 0, ry, 0);
+    tr.push(TR(x, h / 2, z, 0, ry, 0, 1, h, 1));
+    for (let j = 0; j < 3; j++) {
+      const len = 1 + Math.random() * 1.2, rz = (j % 2 ? 1 : -1) * (0.7 + Math.random() * 0.5);
+      br.push(MM(MM(base, TR(0, h * (0.45 + j * 0.18), 0, 0, j * 2.1, rz)), TR(0, len / 2, 0, 0, 0, 0, 1, len, 1)));
+    }
+  }
+  const m = smat(hex);
+  addInst(new THREE.CylinderGeometry(0.1, 0.28, 1, 5), m, tr);
+  addInst(new THREE.CylinderGeometry(0.03, 0.09, 1, 4), m, br);
+}
+function columnsAt(list, mats, caps) { // list: [x,z,h]
+  for (const [x, z, h] of list) { mats.push(TR(x, h / 2, z, 0, Math.random() * 3, 0, 1, h, 1)); if (h > 4) caps.push(TR(x, h + 0.17, z)); }
 }
 
-// ---------- Büyücü ----------
-// (P3 notu: oyuncu görseli buildWizard() içinde; wizard grubu, orbTip ve robe dışarıdan kullanılıyor.)
+const SCENERY = [
+  // 0 · Fısıldayan Orman
+  () => {
+    pines(46, 0x143a2a);
+    const s = [], c = [];
+    for (let i = 0; i < 18; i++) {
+      const [x, z] = ringPos(10.5, ARENA + 3);
+      for (let j = 0; j < 3; j++) { const px = x + rand(0.5), pz = z + rand(0.5), k = 0.6 + Math.random() * 0.8; s.push(TR(px, 0.12 * k, pz, 0, 0, 0, k)); c.push(TR(px, 0.25 * k, pz, 0, 0, 0, k)); }
+    }
+    addInst(new THREE.CylinderGeometry(0.04, 0.06, 0.25, 5), smat(0xd9d2b8), s);
+    addInst(new THREE.SphereGeometry(0.2, 8, 5, 0, 6.283, 0, 1.57), smat(0x2fe08a, { emissive: 0x1aa05a, emissiveIntensity: 0.9 }), c);
+    const l = [];
+    for (let i = 0; i < 6; i++) { const [x, z] = ringPos(12, ARENA + 6); l.push(TR(x, 0.4, z, 0, Math.random() * 3, 1.5708, 1, 1.6 + Math.random() * 1.2, 1)); }
+    addInst(new THREE.CylinderGeometry(0.42, 0.5, 1, 7), smat(0x3a2418), l);
+    // baykuşlu dal
+    const bark = smat(0x3a2418), owlM = smat(0x6b5035), g = new THREE.Group();
+    g.add(mk(CYL(0.4, 0.45, 3, 7), bark, 0, 0.4, 0));
+    g.children[0].rotation.z = 1.5708;
+    const body = mk(SPH(0.3), owlM, 0, 1.15, 0); body.scale.set(1, 1.3, 1);
+    g.add(body, mk(SPH(0.22), owlM, 0, 1.68, 0.02), mk(CONE(0.06, 0.18, 4), owlM, -0.12, 1.9, 0), mk(CONE(0.06, 0.18, 4), owlM, 0.12, 1.9, 0));
+    for (const sx of [-1, 1]) { g.add(mk(SPH(0.06), BMAT(0xffd84a), sx * 0.1, 1.7, 0.2)); const gs = glowSprite(0xffd84a, 0.5, 0.8); gs.position.set(sx * 0.1, 1.7, 0.22); g.add(gs); }
+    g.position.set(-16.5, 0, -6); g.rotation.y = 0.9;
+    addObj(g, bark, owlM);
+  },
+  // 1 · Yarasa Mağarası
+  () => {
+    const st = [], sl = [];
+    for (let i = 0; i < 36; i++) { const [x, z] = ringPos(ARENA + 0.5, ARENA + 9), h = 1.2 + Math.random() * 2.4, w = 0.6 + Math.random() * 0.7; st.push(TR(x, h / 2, z, 0, 0, 0, w, h, w)); }
+    for (let i = 0; i < 22; i++) { const [x, z] = ringPos(ARENA + 0.5, ARENA + 9), h = 1.5 + Math.random() * 3; sl.push(TR(x, 9 - h / 2, z, 3.1416, 0, 0, 0.7, h, 0.7)); }
+    const rock = smat(0x2c3a4c);
+    addInst(new THREE.ConeGeometry(0.5, 1, 6), rock, st);
+    addInst(new THREE.ConeGeometry(0.5, 1, 6), rock, sl);
+    const cr = [], cp = [];
+    for (let i = 0; i < 16; i++) { const [x, z] = ringPos(ARENA + 0.5, ARENA + 8), k = 0.7 + Math.random() * 0.9; cr.push(TR(x, 1.1 * k, z, rand(0.2), Math.random() * 3, rand(0.2), k, k * 2.4, k)); if (i < 6) cp.push([x, z, k]); }
+    addInst(new THREE.OctahedronGeometry(0.5), smat(0x66b8ff, { emissive: 0x2f7fe0, emissiveIntensity: 1.2, roughness: 0.2 }), cr);
+    for (const [x, z, k] of cp) { const gs = glowSprite(0x66b8ff, 4 * k, 0.6); gs.position.set(x, 1.2 * k, z); sceneryGroup.add(gs); }
+    const pd = [];
+    for (let i = 0; i < 7; i++) { const [x, z] = ringPos(8.5, ARENA - 0.5), s = 0.9 + Math.random() * 1.4; pd.push(TR(x, 0.03, z, -1.5708, 0, 0, s, s, 1)); }
+    addInst(new THREE.CircleGeometry(1, 16), smat(0x6fb8ff, { transparent: true, opacity: 0.35, roughness: 0.1, metalness: 0.3 }), pd);
+    if (cp[0]) setFireLight(cp[0][0], 2, cp[0][1], 0x44a0ff, 20, "pulse");
+  },
+  // 2 · Taş Bekçiler (harabe)
+  () => {
+    const cm = [], cc = [], list = [];
+    for (let i = 0; i < 16; i++) { const [x, z] = ringPos(); list.push([x, z, 1.5 + Math.random() * 4.5]); }
+    columnsAt(list, cm, cc);
+    const stone = smat(0x7a6a5a);
+    // yıkık kemerler
+    for (let i = 0; i < 3; i++) {
+      const [x, z] = ringPos(ARENA + 3, ARENA + 8), base = TR(x, 0, z, 0, Math.random() * 3, 0);
+      cm.push(MM(base, TR(-2.4, 2.5, 0, 0, 0, 0, 1, 5, 1)), MM(base, TR(2.4, 2.5, 0, 0, 0, 0, 1, 5, 1)));
+      cc.push(MM(base, TR(0, 5.2, 0, 0, 0, 0, 3.8, 0.8 / 0.35, 0.8)));
+    }
+    addInst(new THREE.CylinderGeometry(0.5, 0.6, 1, 10), stone, cm);
+    addInst(new THREE.BoxGeometry(1.5, 0.35, 1.5), stone, cc);
+    const fl = [];
+    for (let i = 0; i < 8; i++) { const [x, z] = ringPos(); fl.push(TR(x, 0.5, z, 0, Math.random() * 3, 1.5708, 1, 1.5 + Math.random() * 1.5, 1)); }
+    addInst(new THREE.CylinderGeometry(0.5, 0.55, 1, 9), stone, fl);
+    const bl = [];
+    for (let i = 0; i < 10; i++) { const [x, z] = ringPos(); bl.push(TR(x, 0.35, z, rand(0.3), Math.random() * 3, rand(0.3), 0.7 + Math.random())); }
+    addInst(new THREE.BoxGeometry(1.2, 0.8, 1), stone, bl);
+    const rn = [];
+    for (let i = 0; i < 14; i++) { const [x, z] = ringPos(8, ARENA - 0.3); rn.push(TR(x, 0.03, z, -1.5708, 0, Math.random() * 3)); }
+    addInst(new THREE.PlaneGeometry(0.18, 2.4), bmatOwn(0xffa044, { transparent: true, opacity: 0.85, side: THREE.DoubleSide }), rn);
+    // Taşkın heykeli (yarı gömülü)
+    const sm2 = smat(0x6a6a74), g = new THREE.Group();
+    g.add(mk(BOX(1.4, 1.6, 1), sm2, 0, 0.4, 0), mk(BOX(0.6, 0.6, 0.6), sm2, 0.1, 1.5, 0.1), mk(BOX(0.4, 1.2, 0.4), sm2, 1.0, 0.5, 0.2));
+    g.rotation.set(0.15, 0.6, -0.25); g.position.set(-13.5, -0.2, 9);
+    addObj(g, sm2);
+  },
+  // 3 · Hortlak Mezarlığı
+  () => {
+    const g1 = [], g2 = [], cols = [];
+    for (let i = 0; i < 40; i++) {
+      const [x, z] = ringPos(9.5, ARENA + 9), s = 0.8 + Math.random() * 0.5, base = TR(x, 0, z, rand(0.12), Math.random() * 6.28, rand(0.12), s);
+      g1.push(MM(base, TR(0, 0.6, 0))); g2.push(MM(base, TR(0, 1.2, 0, 0, 0, 0, 0.4, 0.3, 0.13)));
+      cols.push(jc(0x6a7068, 0.05));
+    }
+    const gm = smat(0xffffff);
+    addInst(new THREE.BoxGeometry(0.8, 1.2, 0.25), gm, g1, cols);
+    addInst(new THREE.SphereGeometry(1, 8, 6), gm, g2, cols);
+    const posts = [], rails = [], spikes = [];
+    for (let a = -ARENA; a <= ARENA; a += 2.2) {
+      for (const [x, z, ry] of [[a, -ARENA - 0.9, 0], [a, ARENA + 0.9, 0], [-ARENA - 0.9, a, 1.5708], [ARENA + 0.9, a, 1.5708]]) {
+        if (Math.random() < 0.35) continue;
+        const base = TR(x, 0, z, 0, ry, 0);
+        posts.push(TR(x, 0.55, z)); spikes.push(TR(x, 1.2, z));
+        rails.push(MM(base, TR(1.1, 0.5, 0)), MM(base, TR(1.1, 0.9, 0)));
+      }
+    }
+    const iron = smat(0x1c1c22, { metalness: 0.6, roughness: 0.5 });
+    addInst(new THREE.BoxGeometry(0.1, 1.1, 0.1), iron, posts);
+    addInst(new THREE.BoxGeometry(2.2, 0.06, 0.06), iron, rails);
+    addInst(new THREE.ConeGeometry(0.07, 0.25, 4), iron, spikes);
+    deadTrees(14, 0x1d1a18);
+    // fener direği
+    const pole = smat(0x14141a), g = new THREE.Group();
+    g.add(mk(CYL(0.07, 0.1, 3.2, 6), pole, 0, 1.6, 0), mk(SPH(0.22), BMAT(0xffcc77), 0, 3.3, 0));
+    const gs = glowSprite(0xffcc77, 3.5, 0.7); gs.position.set(0, 3.3, 0); g.add(gs);
+    g.position.set(-15.8, 0, -12);
+    addObj(g, pole);
+    setFireLight(-15.8, 3.3, -12, 0xffcc77, 30, "flicker");
+  },
+  // 4 · Donmuş Geçit
+  () => {
+    pines(14, 0xcfe3f2, 0x4a5a66);
+    const ic = [];
+    for (let i = 0; i < 34; i++) { const [x, z] = ringPos(i < 8 ? 11 : ARENA + 0.5, ARENA + 9), h = 1.5 + Math.random() * 4, w = 0.6 + Math.random() * 0.8; ic.push(TR(x, h / 2, z, rand(0.1), Math.random() * 3, rand(0.1), w, h, w)); }
+    addInst(new THREE.ConeGeometry(0.5, 1, 5), smat(0x9ee8ff, { transparent: true, opacity: 0.7, emissive: 0x3a7fa8, emissiveIntensity: 0.5, roughness: 0.15, metalness: 0.1 }), ic);
+    const mo = [];
+    for (let i = 0; i < 18; i++) { const [x, z] = ringPos(11.5, ARENA + 9), s = 1 + Math.random() * 1.6; mo.push(TR(x, 0, z, 0, 0, 0, s, s * 0.45, s)); }
+    addInst(new THREE.SphereGeometry(1, 10, 6), smat(0xdfeeff), mo);
+  },
+  // 5 · Yanık Köy
+  () => {
+    const posts = [], beams = [], walls = [];
+    for (let i = 0; i < 5; i++) {
+      const [x, z] = ringPos(ARENA + 1.5, ARENA + 8), base = TR(x, 0, z, 0, Math.random() * 3, 0);
+      for (const [px, pz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) { if (Math.random() < 0.2) continue; const hh = 1.5 + Math.random() * 2; posts.push(MM(base, TR(px, hh / 2, pz, 0, 0, 0, 1, hh, 1))); }
+      beams.push(MM(base, TR(-1.05, 3.1, 0, 0, 0, 0.5)), MM(base, TR(1.05, 3.1, 0, 0, 0, -0.5)));
+      walls.push(MM(base, TR(0, 0.7, -2)));
+    }
+    for (let i = 0; i < 16; i++) { const [x, z] = ringPos(10, ARENA + 8); beams.push(TR(x, 0.12, z, 0, Math.random() * 3, rand(0.1))); }
+    const char = smat(0x201612);
+    addInst(new THREE.BoxGeometry(0.25, 1, 0.25), char, posts);
+    addInst(new THREE.BoxGeometry(0.2, 0.2, 4.6), char, beams.slice(0, 10));
+    addInst(new THREE.BoxGeometry(3, 0.22, 0.22), char, beams.slice(10));
+    addInst(new THREE.BoxGeometry(4, 1.4, 0.2), char, walls);
+    // kuyu
+    const stone = smat(0x4a4038), wg = new THREE.Group();
+    const wallM = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.7, 10, 1, true), smat(0x4a4038, { side: THREE.DoubleSide }));
+    wallM.position.y = 0.35;
+    wg.add(wallM, mk(BOX(0.15, 2, 0.15), char, -0.9, 1, 0), mk(BOX(0.15, 2, 0.15), char, 0.9, 1, 0), mk(BOX(2, 0.15, 0.15), char, 0, 2, 0));
+    wg.position.set(16.5, 0, 6);
+    addObj(wg, wallM.material, wallM.geometry, stone);
+    const em = [];
+    for (let i = 0; i < 30; i++) { const [x, z] = ringPos(4, ARENA - 0.3); em.push(TR(x, 0.03, z, -1.5708, 0, 0, 1 + Math.random())); }
+    addInst(new THREE.CircleGeometry(0.1, 6), bmatOwn(0xff7a2a), em);
+    const st = [];
+    for (let i = 0; i < 10; i++) { const [x, z] = ringPos(ARENA + 0.5, ARENA + 8), h = 0.5 + Math.random() * 0.9; st.push(TR(x, h / 2, z, 0, 0, 0, 1, h, 1)); }
+    addInst(new THREE.CylinderGeometry(0.25, 0.35, 1, 6), char, st);
+    // ateşler (animasyonlu)
+    const fm1 = bmatOwn(0xff7a2a, { transparent: true, opacity: 0.85 }), fm2 = bmatOwn(0xffd070, { transparent: true, opacity: 0.9 });
+    const fires = [];
+    for (let i = 0; i < 3; i++) {
+      const [x, z] = ringPos(ARENA + 1, ARENA + 6), fg = new THREE.Group();
+      fg.add(mk(CONE(0.55, 1.5, 6), fm1, 0, 0.75, 0), mk(CONE(0.3, 1, 6), fm2, 0, 0.5, 0));
+      const gs = glowSprite(0xff7a2a, 4.5, 0.6); gs.position.y = 0.8; fg.add(gs);
+      fg.position.set(x, 0, z);
+      addObj(fg); fires.push(fg);
+      if (i === 0) setFireLight(x, 1.6, z, 0xff7a2a, 35, "flicker");
+    }
+    sc.disp.push(fm1, fm2);
+    sc.anim.push((t) => fires.forEach((f, i) => { const k = 1 + Math.sin(t * 11 + i * 2) * 0.12 + Math.sin(t * 23 + i) * 0.06; f.scale.set(1 / k, k, 1 / k); }));
+  },
+  // 6 · Kristal Yatağı
+  () => {
+    const pal = [0xc58cff, 0xff6ad5, 0x7a8cff, 0x5ee7ff];
+    const P = [], cols = [], glows = [], gcols = [];
+    for (let i = 0; i < 18; i++) {
+      const [x, z] = ringPos(ARENA + 0.5, ARENA + 9), h = 1.5 + Math.random() * 2.5, w = 0.6 + Math.random() * 0.6, c = new THREE.Color(pal[i % 4]);
+      P.push({ x, z, h, w, r: Math.random() * 6, sp: 0.1 + Math.random() * 0.25 });
+      cols.push(c); glows.push(TR(x, 0.04, z, -1.5708, 0, 0, h * 1.6, h * 1.6, 1)); gcols.push(c);
+    }
+    const pm = addInst(new THREE.OctahedronGeometry(1), smat(0xffffff, { emissive: 0x6a3aa0, emissiveIntensity: 0.9, roughness: 0.2 }), P.map(() => new THREE.Matrix4()), cols);
+    const m4 = new THREE.Matrix4(), v3 = new THREE.Vector3(), q4 = new THREE.Quaternion(), e4 = new THREE.Euler(), s3 = new THREE.Vector3();
+    const spin = (t) => {
+      P.forEach((p, i) => { pm.setMatrixAt(i, m4.compose(v3.set(p.x, p.h, p.z), q4.setFromEuler(e4.set(0, p.r + t * p.sp, 0)), s3.set(p.w, p.h, p.w))); });
+      pm.instanceMatrix.needsUpdate = true;
+    };
+    sc.anim.push(spin);
+    spin(0);
+    addInst(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.5 }), glows, gcols);
+    const sm = [], scol = [];
+    for (let i = 0; i < 28; i++) { const [x, z] = ringPos(10.5, ARENA + 8), k = 0.3 + Math.random() * 0.4; sm.push(TR(x, k * 0.9, z, rand(0.3), Math.random() * 3, rand(0.3), k * 0.8, k * 1.8, k * 0.8)); scol.push(new THREE.Color(pal[i % 4])); }
+    addInst(new THREE.OctahedronGeometry(1), smat(0xffffff, { emissive: 0x6a3aa0, emissiveIntensity: 0.9, roughness: 0.2 }), sm, scol);
+    setFireLight(0, 3, -15, 0xc58cff, 22, "pulse");
+  },
+  // 7 · Kemik Kule
+  () => {
+    const bones = [], skulls = [], jaws = [];
+    for (let c = 0; c < 10; c++) {
+      const [cx, cz] = ringPos(10, ARENA + 8);
+      for (let j = 0; j < 8; j++) bones.push(TR(cx + rand(1.2), 0.06 + Math.random() * 0.1, cz + rand(1.2), 0, Math.random() * 3, 1.5708 + rand(0.3), 1, 0.6 + Math.random() * 0.7, 1));
+    }
+    for (let i = 0; i < 16; i++) { const [x, z] = ringPos(10, ARENA + 8), base = TR(x, 0, z, 0, Math.random() * 6, 0); skulls.push(MM(base, TR(0, 0.25, 0, 0, 0, 0, 1, 0.9, 1.05))); jaws.push(MM(base, TR(0, 0.07, 0.06))); }
+    const ivory = smat(0xd9d4c0);
+    addInst(new THREE.CylinderGeometry(0.05, 0.05, 1, 5), ivory, bones);
+    addInst(new THREE.SphereGeometry(0.25, 8, 6), ivory, skulls);
+    addInst(new THREE.BoxGeometry(0.26, 0.1, 0.25), ivory, jaws);
+    const fp = [], fc = [];
+    for (let a = -ARENA; a <= ARENA; a += 2.4) for (const [x, z] of [[a, -ARENA - 0.8], [a, ARENA + 0.8], [-ARENA - 0.8, a], [ARENA + 0.8, a]]) { if (Math.random() < 0.4) continue; fp.push(TR(x, 0.6, z, 0, 0, 0, 1, 0.8 + Math.random() * 0.6, 1)); fc.push(TR(x, 1.3, z)); }
+    addInst(new THREE.CylinderGeometry(0.07, 0.1, 1.2, 5), ivory, fp);
+    addInst(new THREE.SphereGeometry(0.13, 6, 5), ivory, fc);
+    // kule (köşede)
+    const tw = smat(0x3a3a46), tg = new THREE.Group(), rm = bmatOwn(0xff4a4a, { side: THREE.DoubleSide });
+    tg.add(mk(CYL(2.8, 3.4, 15, 10), tw, 0, 7.5, 0));
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * 6.283; tg.add(mk(BOX(1, 1.2, 1), tw, Math.cos(a) * 2.7, 15.6, Math.sin(a) * 2.7)); }
+    const a0 = Math.atan2(18, 19);
+    for (const [da, y] of [[-0.3, 6], [0, 9], [0.3, 12]]) { const w = mk(new THREE.PlaneGeometry(0.6, 1.6), rm, Math.cos(a0 + da) * 3.2, y, Math.sin(a0 + da) * 3.2); w.rotation.y = Math.PI / 2 - (a0 + da); tg.add(w); }
+    tg.position.set(-19, 0, -18);
+    addObj(tg, tw, rm);
+    const cr = [];
+    for (let i = 0; i < 12; i++) { const [x, z] = ringPos(7, ARENA - 0.3); cr.push(TR(x, 0.03, z, -1.5708, 0, Math.random() * 3)); }
+    addInst(new THREE.PlaneGeometry(0.12, 2.2), bmatOwn(0xff3b3b, { transparent: true, opacity: 0.8, side: THREE.DoubleSide }), cr);
+    deadTrees(10, 0x2a2830);
+  },
+  // 8 · Gölge Kalesi
+  () => {
+    const stone = smat(0x2b1c28), g = new THREE.Group();
+    g.add(mk(BOX(8, 0.4, 4), stone, 0, 0.2, 0), mk(BOX(6, 0.4, 3), stone, 0, 0.6, -0.2), mk(BOX(2, 0.9, 1.6), stone, 0, 1.25, -0.5),
+      mk(BOX(2.4, 5.5, 0.5), stone, 0, 3.8, -1.2), mk(BOX(0.3, 1.2, 1.6), stone, -1.15, 1.6, -0.5), mk(BOX(0.3, 1.2, 1.6), stone, 1.15, 1.6, -0.5));
+    g.position.set(0, 0, -19.5);
+    addObj(g, stone);
+    const wall = smat(0x1a0d14);
+    sceneryGroup.add(mk(BOX(52, 13, 1), wall, 0, 6.5, -23));
+    sc.disp.push(wall);
+    const wins = [0xff5566, 0xffaa44, 0x66aaff, 0xaa66ff, 0x55ffaa].map((c) => bmatOwn(c, { transparent: true, opacity: 0.85 }));
+    wins.forEach((m, i) => { const x = (i - 2) * 6; if (x === 0) return; sceneryGroup.add(mk(new THREE.PlaneGeometry(1.8, 5.5), m, x, 6, -22.45)); sc.disp.push(m); });
+    sceneryGroup.add(mk(new THREE.PlaneGeometry(1.8, 5.5), wins[2], 0, 6, -22.45));
+    const heart = new THREE.Group();
+    heart.add(mk(SPH(0.9), BMAT(0xff3a5a)));
+    const hg = glowSprite(0xff3a5a, 9, 0.7); heart.add(hg);
+    heart.position.set(0, 7.5, -21.2);
+    addObj(heart);
+    sc.anim.push((t) => { const k = 1 + Math.sin(t * 2.2) * 0.08; heart.scale.setScalar(k); });
+    const pl = [], pb = [], cu = [];
+    for (const sx of [-1, 1]) for (const z of [-16, -8, 0, 8, 16]) { pl.push(TR(sx * 19.5, 5, z)); pb.push(TR(sx * 19.5, 0.3, z)); cu.push(TR(sx * 18.6, 5.5, z + 4, 0, 1.5708, 0)); }
+    const pm = smat(0x2f2230);
+    addInst(new THREE.CylinderGeometry(0.8, 0.9, 10, 10), pm, pl);
+    addInst(new THREE.BoxGeometry(2.2, 0.6, 2.2), pm, pb);
+    addInst(new THREE.BoxGeometry(1.4, 8, 0.15), smat(0x6a1020), cu);
+    setFireLight(0, 5, -18.5, 0xff3355, 45, "pulse");
+  },
+];
+
+function sceneryTick(dt, t) {
+  for (const f of sc.anim) f(t, dt);
+  fireLight.intensity = fireCfg.base
+    ? fireCfg.base * (fireCfg.mode === "pulse" ? 0.8 + 0.2 * Math.sin(t * 2) : 0.82 + 0.12 * Math.sin(t * 17) + Math.random() * 0.08)
+    : 0;
+  mistTex.offset.x += dt * 0.004;
+  mists[1].rotation.z += dt * 0.01;
+  starGroups[0].material.opacity = 0.65 + 0.35 * Math.sin(t * 1.3);
+  starGroups[1].material.opacity = 0.65 + 0.35 * Math.sin(t * 1.3 + 2);
+}
+
+// ---------- Büyücü (Aldemir) ----------
+// wizard grubu, orbTip ve wand ışığı dışarıdan kullanılır; gövde parçaları wiz.* altında animasyon için tutulur.
 const wizard = new THREE.Group();
-const orbTip = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10), new THREE.MeshBasicMaterial({ color: 0xe0b3ff }));
+const orbTip = new THREE.Mesh(new THREE.OctahedronGeometry(0.15), new THREE.MeshBasicMaterial({ color: 0xe0b3ff }));
+const orbGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xe0b3ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.85 }));
+orbGlow.scale.setScalar(1.3);
+orbTip.add(orbGlow);
+const wiz = { vx: 0, vz: 0, kick: 0, px: 0, pz: 0, lf: 0, lr: 0 };
+let wizKick = 0;
+function setWandColor(hex) {
+  orbTip.material.color.setHex(hex);
+  orbGlow.material.color.setHex(hex);
+  wand.color.setHex(hex);
+}
 function buildWizard() {
-  const robe = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.6, 10), mat({ color: 0x4b2a9c }));
-  robe.position.y = 0.8;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 12), mat({ color: 0xf2c9a0 }));
-  head.position.y = 1.7;
-  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.06, 20), mat({ color: 0x2a1566 }));
-  brim.position.y = 1.9;
-  const hat = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.1, 14), mat({ color: 0x2a1566 }));
-  hat.position.y = 2.45;
-  hat.rotation.z = 0.15;
-  const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2, 6), mat({ color: 0x6b4423 }));
-  staff.position.set(0.6, 1, 0.2);
-  orbTip.position.set(0.6, 2.05, 0.2);
-  wizard.add(robe, head, brim, hat, staff, orbTip);
-  wizard.traverse((n) => { if (n.isMesh) n.castShadow = true; });
+  const skin = SMAT(0xf2c9a0, { flatShading: false }), purple = SMAT(0x4a2a9c, { flatShading: true }), gold = SMAT(0xc8a24a, { metalness: 0.6, roughness: 0.4 });
+  const body = new THREE.Group();
+  wiz.body = body;
+  wizard.add(body);
+  // cüppe: lathe + etek kıvrımı + dikey renk gradyanı
+  const prof = [[0.8, 0], [0.77, 0.12], [0.66, 0.45], [0.5, 0.8], [0.4, 1.0], [0.34, 1.2], [0.36, 1.42], [0.28, 1.58], [0.16, 1.68], [0.001, 1.7]];
+  const robeGeo = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 24);
+  rippleLathe(robeGeo, 0.8, 0, 0.07, 0.03);
+  const pos = robeGeo.attributes.position, col = new Float32Array(pos.count * 3), top = new THREE.Color(0x6a40d0), bot = new THREE.Color(0x30166a), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) { c.lerpColors(bot, top, Math.min(Math.max(pos.getY(i) / 1.5, 0), 1)); col.set([c.r, c.g, c.b], i * 3); }
+  robeGeo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const robe = new THREE.Mesh(robeGeo, mat({ vertexColors: true, flatShading: true, roughness: 0.85, side: THREE.DoubleSide, emissive: 0x2a1060, emissiveIntensity: 0.5 }));
+  robe.castShadow = true;
+  body.add(robe, mk(TOR(0.79, 0.035, 6, 24), SMAT(0x1a0a38), 0, 0.03, 0));
+  body.children[1].rotation.x = Math.PI / 2;
+  // pelerin: 6x8 bölmeli düzlem, her karede dalgalanır
+  const capeGeo = new THREE.PlaneGeometry(0.95, 1.3, 6, 8);
+  const cp = capeGeo.attributes.position;
+  const rAt = (y) => { for (let i = 0; i < prof.length - 1; i++) { const [r0, y0] = prof[i], [r1, y1] = prof[i + 1]; if (y >= y0 && y <= y1) return r0 + ((r1 - r0) * (y - y0)) / (y1 - y0 || 1); } return 0.3; };
+  wiz.capeBase = new Float32Array(cp.count * 3); wiz.capeK = new Float32Array(cp.count);
+  for (let i = 0; i < cp.count; i++) {
+    const y = 0.9 + cp.getY(i), x = cp.getX(i);
+    const rr = rAt(Math.min(Math.max(y, 0.05), 1.65)), bz = -(Math.sqrt(Math.max(rr * rr - x * x, 0.01)) + 0.06);
+    wiz.capeBase.set([x, y, bz], i * 3);
+    wiz.capeK[i] = Math.min(Math.max((1.55 - y) / 1.3, 0), 1);
+    cp.setXYZ(i, x, y, bz);
+  }
+  wiz.capeGeo = capeGeo;
+  const cape = new THREE.Mesh(capeGeo, SMAT(0x2f1670, { side: THREE.DoubleSide, flatShading: true }));
+  cape.castShadow = true;
+  body.add(cape);
+  body.add(mk(TOR(0.2, 0.07, 6, 12), SMAT(0x3a1f80), 0, 1.62, 0));
+  body.children[body.children.length - 1].rotation.x = Math.PI / 2;
+  // kemer, tokası, kese
+  const belt = mk(TOR(0.41, 0.045, 6, 20), gold, 0, 1.0, 0);
+  belt.rotation.x = Math.PI / 2;
+  const pouch = mk(SPH(0.09), SMAT(0x5a3a1a), 0.4, 0.85, 0.15);
+  pouch.scale.set(1, 1.2, 0.8);
+  body.add(belt, mk(BOX(0.1, 0.1, 0.04), gold, 0, 1.0, 0.43), pouch);
+  // kollar
+  const mkArm = (sx, rx, rz) => {
+    const a = new THREE.Group();
+    a.position.set(sx * 0.37, 1.5, 0.02); a.rotation.set(rx, 0, rz);
+    const sleeve = mk(CYL(0.1, 0.17, 0.7, 8), purple, 0, -0.35, 0);
+    sleeve.castShadow = true;
+    a.add(sleeve, mk(SPH(0.09), skin, 0, -0.74, 0));
+    body.add(a);
+    return a;
+  };
+  wiz.armR = mkArm(1, -1.0, -0.15);
+  wiz.armL = mkArm(-1, 0.15, 0.2);
+  // baş
+  const head = new THREE.Group();
+  head.position.y = 1.8;
+  const skull = mk(SPH(0.3, 16, 12), skin);
+  skull.scale.set(1, 1.1, 0.95);
+  skull.castShadow = true;
+  const nose = mk(CONE(0.06, 0.2, 6), skin, 0, -0.02, 0.3);
+  nose.rotation.x = Math.PI / 2;
+  head.add(skull, nose);
+  const browM = SMAT(0xe8e4f2);
+  for (const sx of [-1, 1]) {
+    head.add(mk(SPH(0.04), BMAT(0xffe9a8), sx * 0.11, 0.06, 0.26));
+    const b = mk(BOX(0.12, 0.025, 0.03), browM, sx * 0.11, 0.14, 0.27);
+    b.rotation.z = -sx * 0.2;
+    head.add(b);
+  }
+  body.add(head);
+  // sakal: çene konisi + yan kıvrımlar + bıyık, bir pivotta sallanır
+  const beard = new THREE.Group();
+  beard.position.set(0, 1.66, 0.2);
+  const beardM = SMAT(0xe8e4f2, { flatShading: true, emissive: 0x222230 });
+  const bMain = mk(CONE(0.27, 0.8, 8), beardM, 0, -0.38, 0.05);
+  bMain.rotation.x = Math.PI;
+  bMain.castShadow = true;
+  beard.add(bMain);
+  for (const sx of [-1, 1]) {
+    const cu = mk(CONE(0.1, 0.35, 6), beardM, sx * 0.2, -0.18, 0.05);
+    cu.rotation.set(Math.PI, 0, sx * 0.4);
+    const mu = mk(CYL(0.03, 0.03, 0.2, 5), beardM, sx * 0.1, 0.1, 0.1);
+    mu.rotation.z = Math.PI / 2 - sx * 0.2;
+    beard.add(cu, mu);
+  }
+  body.add(beard);
+  wiz.beard = beard;
+  // şapka: bükülmüş koni + dalgalı kenar + bant + uçta yıldız
+  const hat = new THREE.Group();
+  hat.position.y = 2.03;
+  const brimGeo = new THREE.CylinderGeometry(0.62, 0.62, 0.05, 24);
+  const bp = brimGeo.attributes.position;
+  for (let i = 0; i < bp.count; i++) { const x = bp.getX(i), z = bp.getZ(i); if (Math.hypot(x, z) > 0.5) bp.setY(i, bp.getY(i) + Math.sin(Math.atan2(z, x) * 5) * 0.03); }
+  brimGeo.computeVertexNormals();
+  const hatM = SMAT(0x2a1566, { flatShading: true });
+  const brim = new THREE.Mesh(brimGeo, hatM);
+  brim.castShadow = true;
+  const coneGeo = new THREE.ConeGeometry(0.4, 1.2, 14, 8);
+  const hp = coneGeo.attributes.position;
+  for (let i = 0; i < hp.count; i++) { const t = (hp.getY(i) + 0.6) / 1.2; hp.setX(i, hp.getX(i) + 0.45 * t * t); hp.setY(i, hp.getY(i) - 0.12 * t * t * t); }
+  coneGeo.computeVertexNormals();
+  const hcone = new THREE.Mesh(coneGeo, hatM);
+  hcone.position.y = 0.6;
+  hcone.castShadow = true;
+  const band = mk(TOR(0.37, 0.035, 6, 20), gold, 0, 0.1, 0);
+  band.rotation.x = Math.PI / 2;
+  const star = mk(OCT(0.08), BMAT(0xffe27a), 0.45, 1.08, 0);
+  const sg = glowSprite(0xffe27a, 0.6, 0.8);
+  star.add(sg);
+  hat.add(brim, hcone, band, mk(BOX(0.1, 0.1, 0.03), gold, 0, 0.1, 0.37), star);
+  body.add(hat);
+  wiz.hat = hat;
+  // asa: eğri tüp, üstte 3 pençe ve emissive kristal (orbTip)
+  const staff = new THREE.Group();
+  staff.position.set(0.26, 0, 0.63);
+  const curve = new THREE.CatmullRomCurve3([[0, 0, 0], [0.02, 0.5, 0.02], [-0.02, 1.0, 0], [0.03, 1.5, -0.02], [0, 2.0, 0], [0, 2.25, 0]].map((p) => new THREE.Vector3(...p)));
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.05, 6), SMAT(0x6b4423));
+  tube.castShadow = true;
+  staff.add(tube);
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * 6.283, claw = mk(CONE(0.03, 0.22, 4), SMAT(0x6b4423), Math.cos(a) * 0.09, 2.3, Math.sin(a) * 0.09);
+    claw.rotation.set(Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35);
+    staff.add(claw);
+  }
+  orbTip.position.set(0, 2.38, 0);
+  staff.add(orbTip);
+  body.add(staff);
+  wiz.staff = staff;
 }
 buildWizard();
+bakeNode(wizard, []);
 scene.add(wizard);
+
+function animateWizard(dt, t) {
+  const b = wiz.body;
+  if (dt > 0) {
+    const vx = (wizard.position.x - wiz.px) / dt, vz = (wizard.position.z - wiz.pz) / dt;
+    const sp = Math.hypot(vx, vz), k = sp > 14 ? 14 / sp : 1; // ışınlanma sıçramasını yut
+    wiz.vx += (vx * k - wiz.vx) * Math.min(1, dt * 10);
+    wiz.vz += (vz * k - wiz.vz) * Math.min(1, dt * 10);
+  }
+  wiz.px = wizard.position.x; wiz.pz = wizard.position.z;
+  const ry = wizard.rotation.y, sn = Math.sin(ry), cs = Math.cos(ry);
+  const lf = THREE.MathUtils.clamp((wiz.vx * sn + wiz.vz * cs) / 8, -1, 1);
+  const lr = THREE.MathUtils.clamp((wiz.vx * cs - wiz.vz * sn) / 8, -1, 1);
+  const mv = Math.min(Math.hypot(wiz.vx, wiz.vz) / 8, 1);
+  b.position.y = Math.abs(Math.sin(t * 10)) * 0.06 * mv;
+  b.rotation.x = lf * 0.12;
+  b.scale.y = 1 + Math.sin(t * 1.5) * 0.015 * (1 - mv);
+  wiz.beard.rotation.x = Math.sin(t * 2) * 0.05 + lf * 0.25;
+  wiz.beard.rotation.z = -lr * 0.15;
+  wiz.hat.rotation.z = Math.sin(t * 1.3) * 0.03 - lr * 0.05;
+  wiz.hat.rotation.x = -lf * 0.05;
+  wiz.armL.rotation.x = 0.15 + Math.sin(t * 10) * 0.5 * mv;
+  wizKick = Math.max(wizKick - dt, 0);
+  const kk = wizKick / 0.18;
+  wiz.armR.rotation.x = -1.0 - kk * 0.5;
+  wiz.staff.position.set(0.26, 0, 0.63 + kk * 0.2);
+  const pulse = 1 + 0.1 * Math.sin(t * 6);
+  orbTip.scale.setScalar(pulse);
+  orbTip.rotation.y = t * 1.5;
+  // pelerin dalgası
+  const p = wiz.capeGeo.attributes.position, base = wiz.capeBase, K = wiz.capeK;
+  for (let i = 0; i < p.count; i++) {
+    const k = K[i], x = base[i * 3], y = base[i * 3 + 1];
+    const wave = Math.sin(t * 2 + x * 3 + y * 2) * 0.05 * k + Math.sin(t * 5 + x * 4) * 0.02 * k * mv;
+    const dz = THREE.MathUtils.clamp(-lf * 0.3 * k * k, -0.4, 0.04);
+    p.setXYZ(i, x - lr * 0.25 * k * k, y, base[i * 3 + 2] + dz + wave);
+  }
+  p.needsUpdate = true;
+}
 
 // Mana Kalkanı küresi
 const shieldBall = new THREE.Mesh(new THREE.SphereGeometry(1.4, 20, 14), new THREE.MeshBasicMaterial({ color: 0x5ab4ff, transparent: true, opacity: 0.25, depthWrite: false }));
 shieldBall.visible = false;
 scene.add(shieldBall);
 
-// Pırıl (dost ruh) ve kristal rehber çizgisi
-const piril = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), new THREE.MeshBasicMaterial({ color: 0xa8ffe8 }));
+// Pırıl (dost ruh): parlayan çekirdek, hale, yörünge kıvılcımları ve iz bırakan kuyruk
+const piril = new THREE.Group();
 piril.visible = false;
+const pirilCore = mk(new THREE.IcosahedronGeometry(0.12, 0), BMAT(0xd8fff4));
+const pirilOrbit = new THREE.Group();
+for (let i = 0; i < 3; i++) {
+  const s = glowSprite(0xa8ffe8, 0.35, 0.9), a = (i / 3) * 6.283;
+  s.position.set(Math.cos(a) * 0.3, Math.sin(a * 2) * 0.08, Math.sin(a) * 0.3);
+  pirilOrbit.add(s);
+}
+piril.add(pirilCore, glowSprite(0xa8ffe8, 1.1, 0.9), glowSprite(0x7fffd8, 2.4, 0.3), pirilOrbit);
 scene.add(piril);
+const pirilTrail = Array.from({ length: 6 }, (_, i) => {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xa8ffe8, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.5 * (1 - i / 6) }));
+  s.scale.setScalar(0.5 * (1 - i / 8));
+  s.position.set(0, -100, 0);
+  scene.add(s);
+  return s;
+});
+function animatePiril(dt, t) {
+  const zz = t % 8 < 0.7 ? Math.sin((t % 8) * 18) * 0.7 : 0; // 8 saniyede bir kısa zikzak
+  piril.position.set(wizard.position.x + Math.cos(t * 1.8) * 1.1 + zz, 2.4 + Math.sin(t * 3) * 0.2, wizard.position.z + Math.sin(t * 1.8) * 1.1 + zz * 0.5);
+  pirilOrbit.rotation.y = t * 3;
+  pirilCore.rotation.y = t * 2;
+  pirilCore.scale.setScalar(1 + Math.sin(t * 5) * 0.12);
+  pirilTrail.forEach((s, i) => {
+    s.visible = piril.visible;
+    if (s.position.y < -50) s.position.copy(piril.position);
+    s.position.lerp(i === 0 ? piril.position : pirilTrail[i - 1].position, Math.min(1, dt * (11 - i)));
+  });
+}
 const guideGeo = new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
 const guide = new THREE.Line(guideGeo, new THREE.LineBasicMaterial({ color: 0xa8ffe8, transparent: true, opacity: 0.55 }));
 guide.frustumCulled = false;
@@ -337,6 +1479,15 @@ const eShotMat = new THREE.MeshBasicMaterial({ color: 0xe8f0ff });
 const ringUnit = new THREE.RingGeometry(0.9, 1, 48);
 const discUnit = new THREE.CircleGeometry(1, 40);
 const shieldGeo = new THREE.SphereGeometry(1.3, 14, 10);
+const meteorGeo = new THREE.SphereGeometry(0.7, 12, 10);
+// mermi: çekirdek + additive hale (mermi başına ışık yok); donma okunda uzamış çekirdek
+function makeShot(color, kind) {
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(projGeo, shotMat(color));
+  if (kind === "frost") core.scale.set(0.55, 0.55, 2.0);
+  g.add(core, glowSprite(color, kind === "frost" ? 1.4 : 1.8, 0.85));
+  return g;
+}
 
 const pickups = []; // { mesh, type: "crystal" | "heart" | "light" }
 const enemies = [];
@@ -349,33 +1500,35 @@ const strikes = [];
 const fxs = [];
 const echoQ = [];
 
-// Kıvılcım havuzu: tek Points, sabit sayıda parçacık (yeni mesh üretilmez)
+// Kıvılcım havuzu: tek Points, sabit sayıda parçacık (yeni mesh üretilmez); parçacık başına ömür
 const MAX_SPARKS = 480;
 const sparkPos = new Float32Array(MAX_SPARKS * 3);
 const sparkCol = new Float32Array(MAX_SPARKS * 3);
 const sparkBase = new Float32Array(MAX_SPARKS * 3);
 const sparkVel = new Float32Array(MAX_SPARKS * 3);
 const sparkLife = new Float32Array(MAX_SPARKS);
+const sparkMax = new Float32Array(MAX_SPARKS).fill(0.6);
 let sparkHead = 0;
 const sparkGeo = new THREE.BufferGeometry();
 sparkGeo.setAttribute("position", new THREE.BufferAttribute(sparkPos, 3).setUsage(THREE.DynamicDrawUsage));
 sparkGeo.setAttribute("color", new THREE.BufferAttribute(sparkCol, 3).setUsage(THREE.DynamicDrawUsage));
-const sparkPoints = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ size: 0.3, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+const sparkPoints = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ size: 0.4, map: glowTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
 sparkPoints.frustumCulled = false;
 scene.add(sparkPoints);
 function resetSparks() { sparkLife.fill(0); sparkPos.fill(0); for (let i = 0; i < MAX_SPARKS; i++) sparkPos[i * 3 + 1] = -100; sparkCol.fill(0); sparkGeo.attributes.position.needsUpdate = sparkGeo.attributes.color.needsUpdate = true; }
 resetSparks();
 const _c = new THREE.Color();
-function burst(pos, color, n = 10) {
+function emit(pos, color, n = 10, speed = 4, life = 0.6) {
   _c.setHex(color);
   for (let i = 0; i < n; i++) {
     const k = sparkHead; sparkHead = (sparkHead + 1) % MAX_SPARKS;
     sparkPos[k * 3] = pos.x; sparkPos[k * 3 + 1] = pos.y; sparkPos[k * 3 + 2] = pos.z;
-    sparkVel[k * 3] = rand(4); sparkVel[k * 3 + 1] = Math.random() * 4; sparkVel[k * 3 + 2] = rand(4);
+    sparkVel[k * 3] = rand(speed); sparkVel[k * 3 + 1] = Math.random() * speed; sparkVel[k * 3 + 2] = rand(speed);
     sparkBase[k * 3] = _c.r; sparkBase[k * 3 + 1] = _c.g; sparkBase[k * 3 + 2] = _c.b;
-    sparkLife[k] = 0.6;
+    sparkLife[k] = sparkMax[k] = life;
   }
 }
+const burst = (pos, color, n = 10) => emit(pos, color, n, 4, 0.6);
 function updateSparks(dt) {
   for (let k = 0; k < MAX_SPARKS; k++) {
     if (sparkLife[k] <= 0) continue;
@@ -384,7 +1537,7 @@ function updateSparks(dt) {
     if (sparkLife[k] <= 0) { sparkPos[i + 1] = -100; sparkCol[i] = sparkCol[i + 1] = sparkCol[i + 2] = 0; continue; }
     sparkPos[i] += sparkVel[i] * dt; sparkPos[i + 1] += sparkVel[i + 1] * dt; sparkPos[i + 2] += sparkVel[i + 2] * dt;
     sparkVel[i + 1] -= 9 * dt;
-    const f = sparkLife[k] / 0.6;
+    const f = sparkLife[k] / sparkMax[k];
     sparkCol[i] = sparkBase[i] * f; sparkCol[i + 1] = sparkBase[i + 1] * f; sparkCol[i + 2] = sparkBase[i + 2] * f;
   }
   sparkGeo.attributes.position.needsUpdate = sparkGeo.attributes.color.needsUpdate = true;
@@ -395,55 +1548,233 @@ function placePickup(type, pos) {
   const mesh = new THREE.Mesh(g, m);
   mesh.position.copy(pos);
   mesh.castShadow = true;
+  mesh.add(glowSprite(m.color.getHex(), type === "heart" ? 2 : 2.6, 0.9)); // sahte bloom
   scene.add(mesh);
   pickups.push({ mesh, type });
 }
 const spawnCrystal = () => placePickup("crystal", new THREE.Vector3(rand(ARENA - 1.5), 0.9, rand(ARENA - 1.5)));
 const spawnLights = () => { for (let i = 0; i < 3; i++) placePickup("light", new THREE.Vector3(rand(ARENA - 2.5), 0.9, rand(ARENA - 2.5))); };
 
-// Düşman görseli (P3: burayı grup üreten gerçek modellerle değiştir; sözleşme: { obj, mat, base })
-// obj: sahneye eklenecek Object3D (ölçeği d.r tabanlıdır), mat: renk/emissive animasyonu için ana materyal.
-const LOOK = {
-  ghost: ["sphere", [1, 1, 1]], bat: ["cone", [1.4, 0.5, 1.4]], golem: ["box", [1, 1, 1]], boss: ["ico", [1, 1, 1]],
-  archer: ["box", [1, 2.4, 0.8]], wolf: ["box", [0.8, 0.8, 1.8]], ember: ["ico", [1, 1, 1]], priest: ["priest", [1, 1.4, 1]],
-  totem: ["totem", [1, 1.6, 1]], knight: ["box", [1, 1.4, 0.8]],
+// Düşman görseli (P3). Sözleşme: buildEnemy(type) -> { obj, mat, base, anim }.
+// obj: sahneye eklenen grup (ölçeği d.r tabanlı); mat: renk/emissive animasyonunu taşıyan ana (kişi başına) materyal.
+// Diğer tüm parçalar paylaşımlı sabit materyal/geometri kullanır, bu yüzden yalnız `mat` dispose edilir.
+// Modeller birim uzayda kurulur (y: -1 zemin ... +1 tepe); `size` iç grubu ölçekler.
+const ICE_MAT = BMAT(0xbfeaff, { transparent: true, opacity: 0.85 });
+const batWingGeo = () => {
+  const P = { A: [0, 0, 0.35], B: [0.6, 0.25, 0.6], C: [1.5, 0.35, 0.15], D: [1.05, 0.1, -0.55], E: [0.45, 0, -0.5], F: [0, 0, -0.35] };
+  const tri = [["A", "B", "E"], ["B", "D", "E"], ["B", "C", "D"], ["A", "E", "F"]];
+  const g = new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(tri.flat().flatMap((k) => P[k]), 3));
+  g.computeVertexNormals();
+  return g;
 };
-const enemyGeos = {
-  sphere: new THREE.SphereGeometry(1, 16, 12),
-  cone: new THREE.ConeGeometry(0.8, 1.2, 5),
-  box: new THREE.BoxGeometry(1, 1, 1),
-  ico: new THREE.IcosahedronGeometry(1, 1),
-  priest: new THREE.ConeGeometry(0.7, 1.6, 8),
-  totem: new THREE.CylinderGeometry(0.6, 0.8, 2, 8),
+const BUILD = {
+  ghost(m) {
+    const g = new THREE.Group();
+    const geo = cg("ghostBody", () => {
+      const lg = new THREE.LatheGeometry([[0.001, 1.15], [0.38, 1.08], [0.66, 0.78], [0.8, 0.3], [0.82, -0.25], [0.74, -0.65], [0.62, -0.95]].map(([r, y]) => new THREE.Vector2(r, y)), 14);
+      rippleLathe(lg, -0.1, -0.95, 0.18, 0.08);
+      return lg;
+    });
+    const body = mk(geo, m);
+    g.add(body);
+    const dark = BMAT(0x05050a);
+    for (const sx of [-1, 1]) {
+      const so = mk(SPH(0.15), dark, sx * 0.28, 0.4, 0.62); so.scale.set(1, 1.5, 0.6);
+      g.add(so, mk(SPH(0.06), BMAT(0xd8ffe8), sx * 0.28, 0.4, 0.72));
+    }
+    const mo = mk(SPH(0.15), dark, 0, -0.05, 0.74); mo.scale.set(1, 1.6, 0.5);
+    const arms = [-1, 1].map((sx) => { const a = mk(CONE(0.16, 0.9, 6), m, sx * 0.85, 0.05, 0.2); a.userData.dyn = true; a.rotation.z = -sx * (Math.PI / 2 + 0.6); g.add(a); return a; });
+    g.add(mo, glowSprite(0x7fffc0, 3.4, 0.3));
+    return { g, size: 1.1, anim: (t, e) => { g.rotation.z = Math.sin(t * 2 + e.phase) * 0.07; arms[0].rotation.z = -(Math.PI / 2 + 0.6) + Math.sin(t * 3 + e.phase) * 0.2; arms[1].rotation.z = Math.PI / 2 + 0.6 - Math.sin(t * 3 + e.phase) * 0.2; } };
+  },
+  bat(m) {
+    m.side = THREE.DoubleSide;
+    const g = new THREE.Group();
+    const body = mk(SPH(0.4), m); body.scale.set(0.9, 0.85, 1.25);
+    g.add(body, mk(SPH(0.26), m, 0, 0.18, 0.5), mk(CONE(0.09, 0.28, 4), m, -0.14, 0.42, 0.5), mk(CONE(0.09, 0.28, 4), m, 0.14, 0.42, 0.5));
+    for (const sx of [-1, 1]) g.add(mk(SPH(0.05), BMAT(0xff3030), sx * 0.1, 0.22, 0.72));
+    const wing = cg("batWing", batWingGeo);
+    const wr = new THREE.Group(), wl = new THREE.Group();
+    wr.position.set(0.3, 0.1, 0); wl.position.set(-0.3, 0.1, 0); wl.scale.x = -1;
+    wr.add(mk(wing, m)); wl.add(mk(wing, m));
+    g.add(wr, wl);
+    return { g, size: 1.25, anim: (t, e) => { const a = Math.sin(t * 18 + e.phase) * 0.7; wr.rotation.z = a; wl.rotation.z = -a; } };
+  },
+  golem(m) {
+    const g = new THREE.Group(), rune = BMAT(0x7dffb0), moss = SMAT(0x2f5a2a);
+    g.add(mk(BOX(1.1, 1.0, 0.75), m, 0, 0.1, 0), mk(BOX(0.5, 0.45, 0.5), m, 0, 0.85, 0.05), mk(BOX(0.56, 0.1, 0.2), m, 0, 0.97, 0.25),
+      mk(BOX(0.12, 0.06, 0.05), rune, -0.13, 0.85, 0.31), mk(BOX(0.12, 0.06, 0.05), rune, 0.13, 0.85, 0.31),
+      mk(BOX(0.5, 0.4, 0.55), m, -0.8, 0.5, 0), mk(BOX(0.5, 0.4, 0.55), m, 0.8, 0.5, 0),
+      mk(BOX(0.42, 0.7, 0.45), m, -0.3, -0.65, 0), mk(BOX(0.42, 0.7, 0.45), m, 0.3, -0.65, 0),
+      mk(BOX(0.7, 0.05, 0.05), rune, 0, 0.35, 0.39), mk(BOX(0.05, 0.5, 0.05), rune, 0, 0.15, 0.39), mk(BOX(0.4, 0.05, 0.05), rune, 0, -0.05, 0.39));
+    const m1 = mk(SPH(0.2, 6, 4), moss, -0.8, 0.72, 0.05); m1.scale.set(1.3, 0.4, 1.1);
+    const m2 = mk(SPH(0.25, 6, 4), moss, 0.1, 0.62, -0.38); m2.scale.set(1.4, 0.4, 1);
+    g.add(m1, m2);
+    const arms = [-1, 1].map((sx) => {
+      const a = new THREE.Group(); a.position.set(sx * 0.85, 0.45, 0);
+      a.add(mk(BOX(0.38, 1.0, 0.4), m, 0, -0.5, 0), mk(BOX(0.5, 0.45, 0.5), m, 0, -1.1, 0));
+      g.add(a); return a;
+    });
+    return { g, size: 1.0, anim: (t, e) => { const s = Math.sin(t * 3 + e.phase); g.rotation.z = s * 0.06; arms[0].rotation.x = s * 0.35; arms[1].rotation.x = -s * 0.35; } };
+  },
+  archer(m) {
+    const g = new THREE.Group(), blue = BMAT(0x66b8ff);
+    g.add(mk(BOX(0.1, 0.9, 0.1), m, 0, 0.05, 0), mk(BOX(0.45, 0.15, 0.25), m, 0, -0.45, 0));
+    for (let i = 0; i < 3; i++) { const r = mk(CYL(0.3, 0.3, 0.05, 8), m, 0, 0.35 - i * 0.18, 0); r.scale.z = 0.6; g.add(r); }
+    for (const sx of [-1, 1]) {
+      g.add(mk(BOX(0.12, 0.6, 0.12), m, sx * 0.12, -0.8, 0), mk(SPH(0.05), blue, sx * 0.09, 0.74, 0.2));
+    }
+    const sk = mk(SPH(0.25), m, 0, 0.72, 0); sk.scale.set(1, 1.05, 1.05);
+    g.add(sk, mk(BOX(0.2, 0.08, 0.2), m, 0, 0.5, 0.08));
+    const arm = new THREE.Group(); arm.position.set(-0.3, 0.45, 0); arm.rotation.x = -1.3; arm.add(mk(BOX(0.09, 0.6, 0.09), m, 0, -0.3, 0));
+    const arm2 = new THREE.Group(); arm2.position.set(0.3, 0.45, 0); arm2.rotation.x = -0.9; arm2.add(mk(BOX(0.09, 0.6, 0.09), m, 0, -0.3, 0));
+    const bowIn = mk(cg("bowArc", () => new THREE.TorusGeometry(0.7, 0.03, 6, 12, Math.PI)), SMAT(0x5a3a20)); bowIn.rotation.z = -Math.PI / 2;
+    const bow = new THREE.Group(); bow.rotation.y = -Math.PI / 2; bow.position.set(-0.3, 0.2, 0.7);
+    bow.add(bowIn, mk(CYL(0.01, 0.01, 1.4, 3), BMAT(0xddddcc)));
+    g.add(arm, arm2, bow);
+    return { g, size: 1.45, anim: (t, e) => { bow.rotation.x = Math.sin(t * 2 + e.phase) * 0.05; } };
+  },
+  wolf(m) {
+    const g = new THREE.Group(), eye = BMAT(0x9fe8ff);
+    const body = mk(cg("capsule", () => new THREE.CapsuleGeometry(0.38, 0.9, 4, 8)), m, 0, -0.25, 0); body.rotation.x = Math.PI / 2;
+    const snout = mk(CONE(0.17, 0.5, 6), m, 0, -0.08, 1.35); snout.rotation.x = Math.PI / 2;
+    g.add(body, mk(SPH(0.34), m, 0, 0, 0.95), snout, mk(CONE(0.1, 0.3, 4), m, -0.17, 0.3, 0.85), mk(CONE(0.1, 0.3, 4), m, 0.17, 0.3, 0.85),
+      mk(SPH(0.06), eye, -0.14, 0.08, 1.2), mk(SPH(0.06), eye, 0.14, 0.08, 1.2));
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(mk(BOX(0.14, 0.55, 0.14), m, sx * 0.25, -0.75, sz * 0.5));
+    const tail = new THREE.Group(); tail.position.set(0, -0.1, -1.0);
+    for (let i = 0; i < 3; i++) { const c = mk(CONE(0.13 - i * 0.03, 0.5, 5), m, 0, 0, -0.25 - i * 0.35); c.rotation.x = -Math.PI / 2 - 0.2; tail.add(c); }
+    g.add(tail);
+    return { g, size: 1.1, anim: (t, e) => { tail.rotation.y = Math.sin(t * 6 + e.phase) * 0.4; } };
+  },
+  ember(m) {
+    const g = new THREE.Group();
+    const shards = new THREE.Group();
+    for (let i = 0; i < 3; i++) { const a = (i / 3) * 6.283; shards.add(mk(cg("tetra", () => new THREE.TetrahedronGeometry(0.2)), BMAT(0xff9a3a), Math.cos(a) * 0.95, Math.sin(a * 2) * 0.2, Math.sin(a) * 0.95)); }
+    const core = mk(cg("ico1", () => new THREE.IcosahedronGeometry(0.6, 1)), m); core.userData.dyn = true;
+    g.add(core, shards, glowSprite(0xff7a2a, 3.2, 0.55));
+    return { g, size: 1.1, anim: (t, e) => { shards.rotation.y = t * 3; shards.rotation.x = t * 1.3; core.scale.setScalar(1 + Math.sin(t * 8 + e.phase) * 0.08); } };
+  },
+  priest(m) {
+    const g = new THREE.Group(), green = BMAT(0x6bff9a);
+    const robe = mk(cg("priestRobe", () => {
+      const lg = new THREE.LatheGeometry([[0.75, -1], [0.68, -0.7], [0.5, -0.2], [0.34, 0.3], [0.3, 0.55], [0.001, 0.7]].map(([r, y]) => new THREE.Vector2(r, y)), 12);
+      rippleLathe(lg, -0.4, -1, 0.1, 0.05);
+      return lg;
+    }), m);
+    const hood = mk(SPH(0.34, 12, 8), m, 0, 0.75, 0); hood.scale.set(1, 1.1, 1);
+    g.add(robe, hood, mk(SPH(0.22), BMAT(0x050308), 0, 0.73, 0.17), mk(SPH(0.045), green, -0.09, 0.76, 0.34), mk(SPH(0.045), green, 0.09, 0.76, 0.34));
+    for (const sx of [-1, 1]) { const s = mk(CYL(0.08, 0.16, 0.6, 6), m, sx * 0.38, 0.35, 0.15); s.rotation.x = -0.8; g.add(s); }
+    g.add(mk(CYL(0.03, 0.03, 2.0, 5), SMAT(0x4a3320), 0.55, -0.1, 0.45), mk(OCT(0.13), green, 0.55, 0.95, 0.45));
+    const cs = glowSprite(0x6bff9a, 1.1, 0.8); cs.position.set(0.55, 0.95, 0.45); g.add(cs);
+    const halo = mk(TOR(0.9, 0.02, 6, 28), BMAT(0x6bff9a, { transparent: true, opacity: 0.5 }), 0, -0.1, 0); halo.rotation.x = Math.PI / 2; halo.userData.dyn = true;
+    g.add(halo);
+    return { g, size: 1.2, anim: (t) => { halo.rotation.z = t * 1.2; } };
+  },
+  totem(m) {
+    const g = new THREE.Group(), rune = BMAT(0xff7a2a);
+    g.add(mk(CYL(0.55, 0.7, 1.6, 8), m, 0, -0.2, 0), mk(BOX(1.5, 0.3, 1.5), m, 0, -0.85, 0));
+    for (const y of [-0.5, 0, 0.45]) { const r = mk(TOR(0.6, 0.05, 6, 16), rune, 0, y, 0); r.rotation.x = Math.PI / 2; g.add(r); }
+    g.add(mk(BOX(0.4, 0.15, 0.1), rune, 0, 0.15, 0.58), mk(BOX(0.12, 0.1, 0.1), rune, -0.15, -0.1, 0.58), mk(BOX(0.12, 0.1, 0.1), rune, 0.15, -0.1, 0.58));
+    const crystal = mk(OCT(0.35), BMAT(0xffa040), 0, 0.95, 0); crystal.scale.set(1, 1.6, 1); crystal.userData.dyn = true;
+    const gs = glowSprite(0xff9a3a, 3, 0.7); gs.position.y = 0.95;
+    g.add(crystal, gs);
+    return { g, size: 1.6, anim: (t) => { crystal.rotation.y = t * 2; crystal.position.y = gs.position.y = 0.95 + Math.sin(t * 3) * 0.05; } };
+  },
+  knight(m) {
+    const g = new THREE.Group(), steel = SMAT(0x4a4f66, { metalness: 0.5, roughness: 0.45 }), blue = BMAT(0x66b8ff);
+    g.add(mk(BOX(1.0, 1.0, 0.6), steel, 0, 0.25, 0), mk(BOX(0.8, 0.7, 0.1), m, 0, 0.3, 0.33), mk(BOX(0.7, 0.2, 0.4), steel, 0, -0.3, 0),
+      mk(SPH(0.36), steel, 0, 1.05, 0), mk(BOX(0.4, 0.06, 0.1), blue, 0, 1.05, 0.34),
+      mk(BOX(0.2, 0.8, 0.2), m, -0.25, -0.7, 0), mk(BOX(0.2, 0.8, 0.2), m, 0.25, -0.7, 0));
+    for (const sx of [-1, 1]) {
+      const p = mk(SPH(0.4, 8, 6), steel, sx * 0.7, 0.75, 0); p.scale.set(1, 0.7, 1);
+      const h = mk(CONE(0.08, 0.4, 4), m, sx * 0.3, 1.35, 0); h.rotation.z = -sx * 0.5;
+      const sp = mk(CONE(0.08, 0.3, 4), steel, sx * 0.85, 1.05, 0); sp.rotation.z = -sx * 0.6;
+      g.add(p, h, sp);
+    }
+    const shield = new THREE.Group(); shield.position.set(-0.95, 0.2, 0.2);
+    shield.add(mk(BOX(0.12, 1.1, 0.9), steel), mk(BOX(0.14, 0.9, 0.12), m, 0, 0, 0));
+    const armR = new THREE.Group(); armR.position.set(0.85, 0.6, 0);
+    armR.add(mk(BOX(0.2, 0.8, 0.2), m, 0, -0.4, 0), mk(BOX(0.1, 0.1, 1.7), SMAT(0xcfd8ff, { metalness: 0.7, roughness: 0.3 }), 0, -0.85, 0.9), mk(BOX(0.4, 0.08, 0.1), steel, 0, -0.85, 0.1));
+    g.add(shield, armR);
+    return { g, size: 0.8, anim: (t, e) => { armR.rotation.x = e.wind > 0 ? -2.6 : -0.3 + Math.sin(t * 2) * 0.05; } };
+  },
+  boss(m) {
+    const g = new THREE.Group(), steel = SMAT(0x3a2430, { metalness: 0.5, roughness: 0.45 }), red = BMAT(0xff2a4a);
+    const robe = mk(cg("bossRobe", () => {
+      const lg = new THREE.LatheGeometry([[0.95, -1], [0.9, -0.7], [0.7, -0.2], [0.5, 0.2], [0.45, 0.5], [0.5, 0.62], [0.3, 0.75], [0.001, 0.8]].map(([r, y]) => new THREE.Vector2(r, y)), 16);
+      rippleLathe(lg, -0.3, -1, 0.1, 0.05);
+      return lg;
+    }), m);
+    robe.material.side = THREE.DoubleSide;
+    g.add(robe, mk(SPH(0.3), SMAT(0x14070d), 0, 0.98, 0), mk(SPH(0.06), red, -0.1, 1.0, 0.25), mk(SPH(0.06), red, 0.1, 1.0, 0.25));
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * 6.283, c = mk(CONE(0.07, 0.38, 4), steel, Math.cos(a) * 0.3, 1.3, Math.sin(a) * 0.3); c.rotation.set(Math.sin(a) * 0.3, 0, -Math.cos(a) * 0.3); g.add(c); }
+    for (const sx of [-1, 1]) {
+      g.add(mk(BOX(0.5, 0.18, 0.5), steel, sx * 0.62, 0.7, 0));
+      const sp = mk(CONE(0.09, 0.45, 4), steel, sx * 0.8, 0.9, 0); sp.rotation.z = -sx * 0.5; g.add(sp);
+      const arm = mk(CYL(0.1, 0.16, 0.8, 6), m, sx * 0.7, 0.3, 0.15); arm.rotation.x = -0.5; g.add(arm);
+      g.add(mk(BOX(0.04, 0.5, 0.03), red, sx * 0.2, -0.2, 0.72));
+    }
+    const cape = mk(cg("capeP", () => new THREE.PlaneGeometry(1.6, 1.9)), SMAT(0x4a0f22, { side: THREE.DoubleSide }), 0, 0.0, -0.58); cape.rotation.x = 0.08;
+    g.add(cape, mk(SPH(0.16), red, 0, 0.45, 0.48));
+    const cs = glowSprite(0xff2a4a, 2, 0.8); cs.position.set(0, 0.45, 0.5);
+    const cs3 = glowSprite(0xffe9a0, 3, 0.9); cs3.position.copy(cs.position); cs3.visible = false;
+    g.add(cs, cs3);
+    const shards = new THREE.Group();
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * 6.283; shards.add(mk(OCT(0.18), SMAT(0x6a2a8a, { transparent: true, opacity: 0.65, emissive: 0x3a1060 }), Math.cos(a) * 1.4, -0.2 + (i % 3) * 0.6, Math.sin(a) * 1.4)); }
+    g.add(shards);
+    return { g, size: 0.9, anim: (t, e) => { shards.rotation.y = t * 0.9; const p3 = e.bp === 3; cs.visible = !p3; cs3.visible = p3; (p3 ? cs3 : cs).scale.setScalar((p3 ? 3 : 2) + Math.sin(t * 4) * 0.3); } };
+  },
 };
+const BLOB_GEO = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+const BLOB_MAT = new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: 0.7 });
 function buildEnemy(type) {
   const d = ENEMIES[type];
-  const [geo, s] = LOOK[type];
   const m = new THREE.MeshStandardMaterial({
-    color: d.color, emissive: d.emissive, transparent: type === "ghost", opacity: type === "ghost" ? 0.75 : 1, roughness: 0.6,
+    color: d.color, emissive: d.emissive, transparent: type === "ghost" || type === "wolf", opacity: type === "ghost" ? 0.75 : type === "wolf" ? 0.85 : 1,
+    roughness: 0.6, flatShading: type !== "ghost" && type !== "ember",
   });
-  const obj = new THREE.Mesh(enemyGeos[geo], m);
-  const base = new THREE.Vector3(d.r * s[0], d.r * s[1], d.r * s[2]);
-  obj.scale.copy(base);
-  obj.castShadow = true;
-  return { obj, mat: m, base };
+  const out = BUILD[type](m);
+  out.g.scale.setScalar(out.size);
+  const obj = new THREE.Group();
+  obj.add(out.g);
+  const baked = bakeNode(out.g, []);
+  if (type === "knight" || type === "boss") out.g.traverse((n) => { if (n.isMesh) n.castShadow = true; });
+  return { obj, mat: m, base: new THREE.Vector3(d.r, d.r, d.r), anim: out.anim, baked };
+}
+// yavaşlama göstergesi: küçük buz kristalleri (paylaşımlı geometri/materyal)
+function setIce(e, on) {
+  if (on && !e.iceG) {
+    e.iceG = new THREE.Group();
+    for (let i = 0; i < 4; i++) { const a = (i / 4) * 6.283, c = mk(OCT(0.18), ICE_MAT, Math.cos(a) * 0.85, 0.4 + (i % 2) * 0.5, Math.sin(a) * 0.85); e.iceG.add(c); }
+    e.mesh.add(e.iceG);
+  }
+  if (e.iceG) { e.iceG.visible = on; if (on) e.iceG.rotation.y += 0.05; }
 }
 
 const liveCount = () => enemies.reduce((n, e) => n + (e.d.noCap ? 0 : 1), 0);
 
 function spawnEnemy(type, at) {
   const d = ENEMIES[type];
-  const { obj, mat: m, base } = buildEnemy(type);
+  const { obj, mat: m, base, anim, baked } = buildEnemy(type);
   if (at) obj.position.set(at.x, d.y, at.z);
   else {
     const a = Math.random() * Math.PI * 2;
     obj.position.set(Math.cos(a) * ARENA, d.y, Math.sin(a) * ARENA);
   }
+  obj.scale.setScalar(0.001); // belirme animasyonu applyLook içinde büyür
   scene.add(obj);
   const e = {
     mesh: obj, mat: m, base, type, d, hp: d.hp, maxHp: d.hp, slow: 0, phase: Math.random() * 10, spd: d.speed,
     glow: 0, sq: 1, shield: 0, dead: false, st: "approach", tm: 0, cd: 0, fuse: 0,
+    anim, baked, age: 0, flash: 0, kx: 0, kz: 0, blob: null, iceG: null,
   };
+  if (type !== "boss" && type !== "knight") { // kontakt gölgesi: gerçek gölge yerine yumuşak daire
+    e.blob = new THREE.Mesh(BLOB_GEO, BLOB_MAT);
+    e.blob.scale.setScalar(d.r * 2.4);
+    e.blob.position.set(obj.position.x, 0.04, obj.position.z);
+    scene.add(e.blob);
+  }
+  burst(obj.position, d.color, 6);
   if (type === "archer") e.cd = 1 + Math.random() * 1.5;
   if (type === "priest") e.cd = 2 + Math.random() * 2;
   if (type === "totem") e.cd = 12;
@@ -454,6 +1785,14 @@ function spawnEnemy(type, at) {
   return e;
 }
 
+// kişi başına kaynaklar: ana materyal, kalkan materyali, birleştirilmiş geometriler (diğer parçalar paylaşımlıdır)
+function disposeEnemy(e) {
+  e.mat.dispose();
+  if (e.sm) e.sm.material.dispose();
+  if (e.baked) e.baked.forEach((g) => g.dispose());
+  e.baked = null;
+}
+
 function setShieldVis(e, on, color) {
   if (on && !e.sm) {
     e.sm = new THREE.Mesh(shieldGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.3, depthWrite: false }));
@@ -462,11 +1801,18 @@ function setShieldVis(e, on, color) {
   if (e.sm) e.sm.visible = on;
 }
 
+// Şimşek: titrek (zigzag) çizgi, iki katman (renkli + beyaz çekirdek) ve uçta kıvılcım
 function addBolt(a, b, color) {
-  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a.clone(), b.clone()]), new THREE.LineBasicMaterial({ color, transparent: true }));
-  line.userData.life = 0.18;
-  scene.add(line);
-  bolts.push(line);
+  for (let k = 0; k < 2; k++) {
+    const pts = [a.clone()], n = 7, jit = k ? 0.15 : 0.35;
+    for (let i = 1; i < n; i++) pts.push(a.clone().lerp(b, i / n).add(new THREE.Vector3(rand(jit), rand(jit), rand(jit))));
+    pts.push(b.clone());
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: k ? 0xffffff : color, transparent: true }));
+    line.userData.life = 0.18;
+    scene.add(line);
+    bolts.push(line);
+  }
+  emit(b, color, 4, 3, 0.3);
 }
 
 // Yer işareti: delay sonunda r yarıçapında hasar (dmg 0 ise yalnızca işaret). real=true ise zaman yavaşlamasından etkilenmez.
@@ -495,8 +1841,9 @@ function addFx(x, z, color, r0, r1, life, y = 0.1) {
   fxs.push({ m, t: life, life, r0, r1 });
 }
 
+const cloudGeo = new THREE.SphereGeometry(1, 14, 8);
 function addCloud(x, z, dmg, o) {
-  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8), new THREE.MeshBasicMaterial({ color: 0x6bff6b, transparent: true, opacity: 0.28, depthWrite: false }));
+  const m = new THREE.Mesh(cloudGeo, new THREE.MeshBasicMaterial({ color: 0x6bff6b, transparent: true, opacity: 0.28, depthWrite: false }));
   m.scale.set(o.r, 0.9, o.r);
   m.position.set(x, 0.6, z);
   scene.add(m);
@@ -514,7 +1861,7 @@ function clearWorld() {
   clouds.forEach((c) => c.m.material.dispose());
   fxs.forEach((f) => f.m.material.dispose());
   strikes.forEach((s) => s.ball.material.dispose());
-  enemies.forEach((e) => { e.mat.dispose(); if (e.sm) e.sm.material.dispose(); });
+  enemies.forEach((e) => { disposeEnemy(e); if (e.blob) scene.remove(e.blob); });
   pickups.length = enemies.length = shots.length = enemyShots.length = bolts.length = hazards.length = clouds.length = strikes.length = fxs.length = echoQ.length = 0;
   resetSparks();
   bossRef = null;
@@ -580,8 +1927,7 @@ fireEl.addEventListener("pointercancel", stopFire);
 function selectWeapon(id) {
   if (!id || !S.unlocked.includes(id)) return;
   S.weapon = id;
-  orbTip.material.color.setHex(WEAPONS[id].color);
-  wand.color.setHex(WEAPONS[id].color);
+  setWandColor(WEAPONS[id].color);
   renderWeapons();
 }
 
@@ -661,6 +2007,8 @@ function fireSpell(id) {
   const origin = wizard.position.clone().setY(1.7);
   const dmg = w.dmg * S.dmgMul;
   sfx("cast:" + id);
+  wizKick = 0.18;
+  emit(origin, w.color, 4, 2, 0.3);
 
   if (w.chain) {
     let prev = origin;
@@ -693,7 +2041,8 @@ function fireSpell(id) {
 
   if (w.meteor) {
     const x = THREE.MathUtils.clamp(aimPoint.x, -ARENA, ARENA), z = THREE.MathUtils.clamp(aimPoint.z, -ARENA, ARENA);
-    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.7, 12, 10), new THREE.MeshBasicMaterial({ color: w.color }));
+    const ball = new THREE.Mesh(meteorGeo, new THREE.MeshBasicMaterial({ color: w.color }));
+    ball.add(glowSprite(w.color, 3.4, 0.8));
     ball.position.set(x, 14, z);
     scene.add(ball);
     addHazard(x, z, w.meteor.r, w.meteor.delay, 0, w.color, true);
@@ -705,12 +2054,13 @@ function fireSpell(id) {
   for (let i = 0; i < n; i++) {
     const ang = n === 1 ? 0 : (i - (n - 1) / 2) * 0.28;
     const v = aim.clone().applyAxisAngle(UP, ang).multiplyScalar(w.speed);
-    const m = new THREE.Mesh(projGeo, shotMat(w.color));
+    const m = makeShot(w.color, id === "frost" ? "frost" : "");
     m.position.copy(origin);
+    if (id === "frost") m.lookAt(origin.clone().add(v));
     scene.add(m);
     if (w.cloud) {
       m.scale.setScalar(1.6);
-      shots.push({ mesh: m, v, life: w.cloud.dist / w.speed, cloud: w.cloud, dmg, hit: null });
+      shots.push({ mesh: m, v, life: w.cloud.dist / w.speed, cloud: w.cloud, dmg, hit: null, color: w.color });
     } else {
       shots.push({ mesh: m, v, life: 1.4, dmg, slow: !!w.slow, color: w.color, pierce: S.pierce && w.pierceable ? 1 : 0, hit: new Set() });
     }
@@ -725,6 +2075,11 @@ function hurt(e, dmg, slow, bypassShield = false) {
   if (e.type === "boss" && e.bp < 3) e.hp = Math.max(e.hp, e.maxHp * (e.bp === 1 ? 0.66 : 0.33) - 0.001); // faz atlanmasın
   if (slow) e.slow = 3;
   burst(e.mesh.position, e.d.emissive === 0 ? 0xffffff : e.d.color, 5);
+  e.flash = 0.1; // vuruş geri bildirimi: beyaz parlama + hafif geri itme
+  if (!e.d.static && e.type !== "boss" && e.type !== "knight") {
+    const dx = e.mesh.position.x - wizard.position.x, dz = e.mesh.position.z - wizard.position.z, l = Math.hypot(dx, dz) || 1;
+    e.kx = (dx / l) * 3; e.kz = (dz / l) * 3;
+  }
   sfx("hit");
   if (e.hp <= 0) killEnemy(e);
 }
@@ -735,6 +2090,7 @@ function explodeEmber(e) {
   addFx(p.x, p.z, 0xff7a2a, 0.4, 2.5, 0.35);
   burst(p, 0xff9a3a, 24);
   sfx("explode");
+  shake = Math.max(shake, 0.25);
   if (invuln <= 0 && flatDist(p, wizard.position) < 2.5) damagePlayer(1);
   for (const o of [...enemies]) if (o !== e && !o.dead && flatDist(o.mesh.position, p) < 2.5) hurt(o, 1, false);
 }
@@ -746,9 +2102,10 @@ function killEnemy(e) {
   e.dead = true;
   enemies.splice(i, 1);
   scene.remove(e.mesh);
-  e.mat.dispose();
-  if (e.sm) e.sm.material.dispose();
+  if (e.blob) scene.remove(e.blob);
+  disposeEnemy(e);
   burst(e.mesh.position, e.d.color, 14);
+  if (e.type === "boss" || e.type === "knight") { shake = Math.max(shake, 0.6); burst(e.mesh.position, 0xffffff, 30); }
   sfx("kill:" + e.type);
   if (e.type === "ember" && !e.exploded) explodeEmber(e);
   if (e.type === "priest") for (const o of enemies) if (flatDist(o.mesh.position, e.mesh.position) < 8) o.shield = 0;
@@ -776,6 +2133,7 @@ function damagePlayer(n) {
     invuln = 0.6;
     burst(wizard.position.clone().setY(1.2), 0x5ab4ff, 16);
     sfx("shield_break");
+    shake = Math.max(shake, 0.2);
     return;
   }
   if (stoneReady) { n *= 0.5; stoneReady = false; }
@@ -783,6 +2141,8 @@ function damagePlayer(n) {
   invuln = 1.5;
   burst(wizard.position.clone().setY(1.2), 0xff4d6d);
   sfx("hurt");
+  shake = Math.max(shake, 0.45);
+  flashHurt();
   if (S.hp <= 0) { renderHud(); gameOver(); }
 }
 
@@ -854,9 +2214,10 @@ function screen(title, html, buttons) {
     const el = document.createElement("button");
     el.className = "gbtn";
     el.innerHTML = b.label;
-    el.onclick = b.fn;
+    el.onclick = () => { sfx("click"); b.fn(); };
     box.appendChild(el);
   }
+  mus.set("menu");
   $("msg").hidden = false;
 }
 
@@ -900,8 +2261,8 @@ function startLevel() {
   for (let i = 0; i < crystals; i++) spawnCrystal();
   for (const [type, n] of Object.entries(L.start)) for (let i = 0; i < n; i++) spawnEnemy(type);
   if (L.objective === "totem") for (const [x, z] of L.totems) spawnEnemy("totem", { x, z });
-  orbTip.material.color.setHex(WEAPONS[S.weapon].color);
-  wand.color.setHex(WEAPONS[S.weapon].color);
+  setWandColor(WEAPONS[S.weapon].color);
+  mus.set(L.objective === "boss" ? "boss" : "play", L.theme);
   $("msg").hidden = true;
   document.body.classList.add("playing");
   running = true;
@@ -972,7 +2333,7 @@ resize();
 const UP = new THREE.Vector3(0, 1, 0);
 
 function enemyShoot(e, ux, uz) {
-  const m = new THREE.Mesh(projGeo, eShotMat);
+  const m = makeShot(0xbfd8ff, "");
   m.scale.setScalar(0.8);
   m.position.copy(e.mesh.position);
   scene.add(m);
@@ -1046,19 +2407,24 @@ function bossLogic(e, dt, es) {
 }
 
 function applyLook(e) {
-  const slowed = e.slow > 0;
-  e.mat.color.setHex(slowed ? 0x9fdcff : e.fuse > 0 ? 0xffffff : e.d.color);
-  e.mat.emissiveIntensity = slowed ? 0.2 : 1 + e.glow * 3;
-  e.mesh.scale.set(e.base.x, e.base.y * e.sq, e.base.z);
+  const slowed = e.slow > 0, fl = e.flash > 0;
+  e.mat.color.setHex(fl ? 0xffffff : slowed ? 0x9fdcff : e.fuse > 0 ? 0xffffff : e.d.color);
+  e.mat.emissiveIntensity = fl ? 4 : slowed ? 0.2 : 1 + e.glow * 3;
+  const k = Math.min(e.age / 0.35, 1), gk = 1 - (1 - k) * (1 - k); // belirme: yumuşak büyüme
+  e.mesh.scale.set(e.base.x * gk, e.base.y * e.sq * gk, e.base.z * gk);
   const sh = e.shield > 0 || !!e.shielded;
   setShieldVis(e, sh, e.shielded ? 0xbfe0ff : 0x6bff9a);
+  setIce(e, slowed);
 }
+const turnTo = (cur, target, k) => cur + ((((target - cur + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) - Math.PI) * Math.min(1, k);
 
 function updateEnemies(dt, t, es) {
   for (const e of [...enemies]) {
     if (e.dead) continue;
     const d = e.d, p = e.mesh.position;
     e.slow = Math.max(e.slow - dt, 0);
+    e.age += dt;
+    e.flash = Math.max(e.flash - dt, 0);
     if (e.shield > 0) e.shield = Math.max(e.shield - dt, 0);
     const edt = dt * es * (e.slow > 0 ? 0.35 : 1);
     const dx = wizard.position.x - p.x, dz = wizard.position.z - p.z;
@@ -1141,12 +2507,15 @@ function updateEnemies(dt, t, es) {
       }
     }
 
-    p.x = THREE.MathUtils.clamp(p.x + mx * edt, -ARENA - 1, ARENA + 1);
-    p.z = THREE.MathUtils.clamp(p.z + mz * edt, -ARENA - 1, ARENA + 1);
+    p.x = THREE.MathUtils.clamp(p.x + mx * edt + e.kx * dt, -ARENA - 1, ARENA + 1);
+    p.z = THREE.MathUtils.clamp(p.z + mz * edt + e.kz * dt, -ARENA - 1, ARENA + 1);
+    const kd = Math.exp(-dt * 10); // vuruş geri itmesi hızla söner
+    e.kx *= kd; e.kz *= kd;
     p.y = d.y + Math.sin(t * 3 + e.phase) * (d.bob !== undefined ? d.bob : 0.3);
-    if (d.spin) e.mesh.rotation.y += dt;
-    else if (d.ai === "ranged" || d.ai === "charge" || d.ai === "support") e.mesh.rotation.y = Math.atan2(ux, uz);
+    if (d.ai !== "static") e.mesh.rotation.y = turnTo(e.mesh.rotation.y, Math.atan2(ux, uz), dt * 8); // düşman oyuncuya dönük
     applyLook(e);
+    if (e.anim) e.anim(t, e);
+    if (e.blob) e.blob.position.set(p.x, 0.04, p.z);
 
     if (d.dmg > 0 && invuln <= 0 && dist < d.r + 0.5) {
       damagePlayer(d.dmg);
@@ -1171,6 +2540,14 @@ function update(dt, t) {
   timeslowT = Math.max(timeslowT - dt, 0);
   const es = timeslowT > 0 ? 0.4 : 1; // düşman/mermi zaman ölçeği
   document.body.classList.toggle("slowtime", timeslowT > 0);
+  trailTick++;
+  { // müzik yoğunluğu: düşman doluluğu, az can, süre sonu
+    const cap = Math.max(LEVELS[S.level].cap, 1);
+    let inten = Math.min(liveCount() / cap, 1) * 0.9;
+    if (S.hp <= 1) inten += 0.2;
+    if (timeLeft < 10) inten += 0.2;
+    mus.intensity(Math.min(inten, 1));
+  }
 
   for (let i = echoQ.length - 1; i >= 0; i--) {
     echoQ[i].t -= dt;
@@ -1216,6 +2593,7 @@ function update(dt, t) {
   for (let i = shots.length - 1; i >= 0; i--) {
     const s = shots[i];
     s.mesh.position.addScaledVector(s.v, dt);
+    if ((trailTick + i) % 2 === 0) emit(s.mesh.position, s.color, 1, 0.5, 0.25); // iz bırakan kıvılcım
     s.life -= dt;
     let gone = s.life <= 0;
     if (s.cloud) {
@@ -1268,11 +2646,13 @@ function update(dt, t) {
     const s = strikes[i];
     s.t -= dt;
     s.ball.position.y = 0.7 + 13.3 * Math.max(s.t / s.max, 0);
+    emit(s.ball.position, 0xffa03a, 2, 1.5, 0.35);
     if (s.t <= 0) {
       scene.remove(s.ball); s.ball.material.dispose(); strikes.splice(i, 1);
       addFx(s.x, s.z, 0xffa03a, 0.5, s.r, 0.3);
       burst(new THREE.Vector3(s.x, 0.8, s.z), 0xffa03a, 30);
       sfx("meteor_hit");
+      shake = Math.max(shake, 0.3);
       for (const e of [...enemies]) if (!e.dead && flatDist(e.mesh.position, s) < s.r + e.d.r * 0.5) hurt(e, s.dmg, false);
       if (!running) return;
     }
@@ -1287,6 +2667,7 @@ function update(dt, t) {
       hazards.splice(i, 1);
       if (h.dmg > 0) {
         burst(new THREE.Vector3(h.x, 0.5, h.z), 0xff5566, 18);
+        shake = Math.max(shake, 0.25);
         if (invuln <= 0 && flatDist(wizard.position, h) < h.r) damagePlayer(h.dmg);
       }
       dropHazard(h);
@@ -1352,9 +2733,14 @@ renderer.setAnimationLoop(() => {
   const t = clock.elapsedTime;
   ring.rotation.z += dt * 0.3;
   const focus = wizard.position.clone().multiplyScalar(0.6);
-  camera.position.set(focus.x, 17 * camK, focus.z + 12 * camK);
+  shake = Math.max(shake - dt * 2.5, 0);
+  camera.position.set(focus.x + rand(shake), 17 * camK + rand(shake * 0.5), focus.z + 12 * camK + rand(shake));
   camera.lookAt(focus);
   camera.updateMatrixWorld();
+  animateWizard(dt, t);
+  updateWeather(dt, t);
+  sceneryTick(dt, t);
+  wand.intensity = 30 + Math.sin(t * 13) * 3 + Math.random() * 2; // asa ışığı titremesi
   pickups.forEach((p, i) => { p.mesh.position.y = 0.9 + Math.sin(t * 2.5 + i) * 0.2; p.mesh.rotation.y += dt * 1.5; });
   updateSparks(dt);
   for (let i = bolts.length - 1; i >= 0; i--) {
@@ -1373,7 +2759,7 @@ renderer.setAnimationLoop(() => {
 
   // Pırıl: ilk bölüm bittikten sonra büyücüyü çevreler
   piril.visible = S.level >= 1;
-  piril.position.set(wizard.position.x + Math.cos(t * 1.8) * 1.1, 2.4 + Math.sin(t * 3) * 0.2, wizard.position.z + Math.sin(t * 1.8) * 1.1);
+  animatePiril(dt, t);
 
   if (running) {
     update(dt, t);
@@ -1392,10 +2778,14 @@ renderer.setAnimationLoop(() => {
     guide.visible = g;
     updateAbilityUi();
   } else guide.visible = false;
+  orbTip.getWorldPosition(_tip); // asa ışığı ve kıvılcımlar asanın ucunda
+  wand.position.copy(_tip); wand.position.y += 0.25;
+  if (Math.random() < 0.15) emit(_tip, orbTip.material.color.getHex(), 1, 0.8, 0.5);
   renderer.render(scene, camera);
 });
 
 // Açılış ekranı
+applyTheme(0);
 renderWeapons();
 screen("Büyücünün Gecesi", `<i>${esc(OPENING)}</i><br><br>${LEVELS.length} lanetli bölümden geç. Mana kristallerini topla, totemleri yık, düşmanları büyüyle durdur, yeni büyüler ve yetenekler kazan.<br>WASD / ok tuşları: yürü · Fare: nişan · Boşluk / tık: büyü · 1-7: büyü seç · Q / E / R: yetenekler<br><small>Mobilde: ekranda parmağını sürükleyerek yürü, sağ alttaki ✦ butonuna basılı tutarak ateş et (nişan otomatik). Alttaki çubuğu kaydırarak büyü değiştir; yetenek düğmeleri ✦'nın üstünde belirir.</small>`, [
   { label: "Büyüyü Başlat", fn: introLevel },
