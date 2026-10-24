@@ -8,36 +8,85 @@
 { "imports": { "three": "../vendor/three.module.min.js" } }
 </script>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0714; font-family: Georgia, "Times New Roman", serif; color: #f1e6ff; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0714; font-family: Georgia, "Times New Roman", serif; color: #f1e6ff; user-select: none; }
   canvas { display: block; width: 100%; height: 100%; }
-  #hud { position: fixed; top: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 28px; font-size: 20px; pointer-events: none; text-shadow: 0 0 8px #8e44ff, 0 2px 6px #000; }
-  #hearts { letter-spacing: 4px; }
-  #msg { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(40,15,80,.8), rgba(5,3,12,.92)); text-align: center; gap: 12px; padding: 0 20px; }
+  #hud { position: fixed; top: 12px; left: 0; right: 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 26px; font-size: 19px; pointer-events: none; text-shadow: 0 0 8px #8e44ff, 0 2px 6px #000; }
+  #hearts { letter-spacing: 3px; color: #ff7a93; }
+  #boss { color: #ff9a9a; }
+  #weapons { position: fixed; bottom: 14px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; }
+  .wbtn { font-family: inherit; font-size: 15px; padding: 8px 14px; border: 1px solid #6b4fb0; border-radius: 8px; background: rgba(30,15,60,.8); color: #cdb8ff; cursor: pointer; }
+  .wbtn.active { border-color: #fff; background: #5128a8; color: #fff; box-shadow: 0 0 12px #8e44ff; }
+  .wbtn.locked { opacity: .35; cursor: default; }
+  #msg { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(40,15,80,.82), rgba(5,3,12,.94)); text-align: center; gap: 12px; padding: 0 20px; }
   #msg[hidden] { display: none; }
-  h1 { font-size: 44px; margin: 0; color: #d9b3ff; text-shadow: 0 0 18px #8e44ff; }
-  button { font-family: inherit; font-size: 18px; padding: 10px 30px; border: 1px solid #d9b3ff; border-radius: 8px; background: #3a1d7a; color: #fff; cursor: pointer; box-shadow: 0 0 14px #8e44ff; }
-  button:hover { background: #5128a8; }
+  #btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+  h1 { font-size: 42px; margin: 0; color: #d9b3ff; text-shadow: 0 0 18px #8e44ff; }
+  p { margin: 0; max-width: 560px; line-height: 1.5; }
+  .gbtn { font-family: inherit; font-size: 17px; padding: 10px 24px; border: 1px solid #d9b3ff; border-radius: 8px; background: #3a1d7a; color: #fff; cursor: pointer; box-shadow: 0 0 14px #8e44ff; }
+  .gbtn:hover { background: #5128a8; }
+  .gbtn small { display: block; font-size: 13px; color: #cdb8ff; margin-top: 3px; }
 </style>
 </head>
 <body>
-<div id="hud"><span id="score">Mana: 0</span><span id="hearts"></span><span id="time">Gece: 45</span></div>
-<div id="msg">
-  <h1 id="title">Büyücünün Gecesi</h1>
-  <p id="sub">Lanetli ormanda mana kristallerini topla.<br>Ruhlar sana yaklaşır: onlara <b>Boşluk</b> / tıklama ile ateş topu at.<br>WASD / ok tuşları ile yürü, fare ile nişan al (mobilde dokunup sürükle).</p>
-  <button id="start">Büyüyü Başlat</button>
+<div id="hud">
+  <span id="level"></span><span id="goal"></span><span id="hearts"></span><span id="time"></span><span id="score"></span><span id="boss"></span>
 </div>
+<div id="weapons"></div>
+<div id="msg"><h1 id="title"></h1><p id="sub"></p><div id="btns"></div></div>
 <script type="module">
 import * as THREE from "three";
 
-const ROUND_SECONDS = 45;
 const ARENA = 14;
-const SPEED = 8;
-const MAX_HP = 3;
+const BASE_SPEED = 8;
+const START_HP = 3;
 
 const $ = (id) => document.getElementById(id);
 const rand = (r) => (Math.random() * 2 - 1) * r;
 const mat = (o) => new THREE.MeshStandardMaterial(o);
 
+// ---------- Veri: bölümler, silahlar, düşmanlar, yetenekler ----------
+const LEVELS = [
+  { name: "Fısıldayan Orman", goal: 6, time: 50, start: { ghost: 3 }, spawn: { ghost: 1 }, every: 8, cap: 5, reward: "frost" },
+  { name: "Yarasa Mağarası", goal: 8, time: 55, start: { ghost: 2, bat: 3 }, spawn: { bat: 1, ghost: 1 }, every: 7, cap: 7, reward: "arcane" },
+  { name: "Taş Bekçiler", goal: 10, time: 60, start: { ghost: 2, bat: 2, golem: 2 }, spawn: { golem: 1, bat: 1 }, every: 7, cap: 8, reward: "lightning" },
+  { name: "Hortlak Geçidi", goal: 12, time: 65, start: { ghost: 3, bat: 3, golem: 3 }, spawn: { ghost: 1, bat: 1, golem: 1 }, every: 6, cap: 10, reward: null },
+  { name: "Gölge Kral", goal: 0, time: 100, start: { boss: 1 }, spawn: { ghost: 1, bat: 1 }, every: 6, cap: 7, reward: null, boss: true },
+];
+
+const WEAPONS = {
+  fire: { name: "Ateş Topu", key: "1", color: 0xffa03a, cd: 0.35, dmg: 1, speed: 16 },
+  frost: { name: "Buz Oku", key: "2", color: 0x7fd6ff, cd: 0.5, dmg: 1, speed: 15, slow: true },
+  arcane: { name: "Üçlü Büyü", key: "3", color: 0xd27bff, cd: 0.65, dmg: 1, speed: 15, spread: 3 },
+  lightning: { name: "Yıldırım", key: "4", color: 0xfff27a, cd: 0.9, dmg: 2, chain: 3, range: 13 },
+};
+const WEAPON_ORDER = ["fire", "frost", "arcane", "lightning"];
+
+const ENEMIES = {
+  ghost: { hp: 1, speed: 2.2, r: 0.7, y: 1.2, score: 20, drop: 0.12, color: 0xc9ffd9, emissive: 0x2f9e5a, dmg: 1 },
+  bat: { hp: 1, speed: 4.6, r: 0.5, y: 1.6, score: 25, drop: 0.12, color: 0xb98bff, emissive: 0x5a2fa0, dmg: 1, zig: true },
+  golem: { hp: 4, speed: 1.3, r: 1.2, y: 1.2, score: 60, drop: 0.4, color: 0x8a8a96, emissive: 0x2a2a35, dmg: 1 },
+  boss: { hp: 30, speed: 1.5, r: 2.2, y: 2.4, score: 500, drop: 0, color: 0xff5a6e, emissive: 0x8a1030, dmg: 2 },
+};
+
+const PERKS = [
+  { id: "hp", name: "Yaşam Özü", desc: "Azami can +1 ve 1 can yenilenir", apply: () => { S.maxHp++; S.hp = Math.min(S.hp + 1, S.maxHp); } },
+  { id: "speed", name: "Rüzgâr Ayakkabıları", desc: "Hareket hızı +15%", apply: () => { S.speedMul *= 1.15; } },
+  { id: "power", name: "Güç Tılsımı", desc: "Tüm büyülerin hasarı +25%", apply: () => { S.dmgMul *= 1.25; } },
+  { id: "haste", name: "Hızlı Parmaklar", desc: "Büyü bekleme süresi -20%", apply: () => { S.cdMul *= 0.8; } },
+  { id: "magnet", name: "Mana Mıknatısı", desc: "Kristaller ve kalpler sana çekilir", apply: () => { S.magnet += 3.5; } },
+];
+
+// ---------- Oyun durumu ----------
+const S = {};
+let snapshot = null;
+function newRun() {
+  Object.assign(S, { level: 0, hp: START_HP, maxHp: START_HP, speedMul: 1, dmgMul: 1, cdMul: 1, magnet: 0, unlocked: ["fire"], weapon: "fire", score: 0 });
+}
+newRun();
+
+let collected = 0, timeLeft = 0, running = false, cooldown = 0, invuln = 0, spawnTimer = 0, bossSummon = 0, bossRef = null;
+
+// ---------- Sahne ----------
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0714);
 scene.fog = new THREE.FogExp2(0x0a0714, 0.035);
@@ -51,7 +100,8 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 document.body.prepend(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0x6a5acd, 0x120a24, 0.9));
+const hemi = new THREE.HemisphereLight(0x6a5acd, 0x120a24, 0.9);
+scene.add(hemi);
 const moon = new THREE.DirectionalLight(0xb9c7ff, 1.4);
 moon.position.set(-8, 14, 6);
 moon.castShadow = true;
@@ -61,8 +111,8 @@ scene.add(moon);
 const wand = new THREE.PointLight(0xc58cff, 40, 12);
 scene.add(wand);
 
-// Zemin ve yıldızlar
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(ARENA * 2, ARENA * 2), mat({ color: 0x1a1030, roughness: 1 }));
+const floorMat = mat({ color: 0x1a1030, roughness: 1 });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(ARENA * 2, ARENA * 2), floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
@@ -72,14 +122,28 @@ ring.rotation.x = -Math.PI / 2;
 ring.position.y = 0.02;
 scene.add(ring);
 
-const stars = new THREE.Points(
+scene.add(new THREE.Points(
   new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(
     Array.from({ length: 600 }, () => rand(40)).map((v, i) => (i % 3 === 1 ? 10 + Math.abs(v) : v)), 3)),
   new THREE.PointsMaterial({ color: 0xffffff, size: 0.15 })
-);
-scene.add(stars);
+));
 
-// Ağaçlar (çarpışmasız dekor, arenanın kenarında)
+// Bölüme göre renk teması
+const THEMES = [
+  { bg: 0x0a0714, floor: 0x1a1030, ring: 0x8e44ff },
+  { bg: 0x08101a, floor: 0x14202e, ring: 0x44a0ff },
+  { bg: 0x140c08, floor: 0x2a1c14, ring: 0xffa044 },
+  { bg: 0x0a1410, floor: 0x142a20, ring: 0x44ff9a },
+  { bg: 0x1a0508, floor: 0x2e1018, ring: 0xff4466 },
+];
+function applyTheme(i) {
+  const t = THEMES[i];
+  scene.background.setHex(t.bg);
+  scene.fog.color.setHex(t.bg);
+  floorMat.color.setHex(t.floor);
+  ring.material.color.setHex(t.ring);
+}
+
 const trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, 2, 6);
 const crownGeo = new THREE.ConeGeometry(1.4, 4, 7);
 for (let i = 0; i < 28; i++) {
@@ -97,7 +161,7 @@ for (let i = 0; i < 28; i++) {
   scene.add(g);
 }
 
-// Büyücü
+// ---------- Büyücü ----------
 const wizard = new THREE.Group();
 const robe = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.6, 10), mat({ color: 0x4b2a9c }));
 robe.position.y = 0.8;
@@ -116,38 +180,53 @@ wizard.add(robe, head, brim, hat, staff, orbTip);
 wizard.traverse((n) => { if (n.isMesh) n.castShadow = true; });
 scene.add(wizard);
 
-// Mana kristalleri, ruhlar, ateş topları
+// ---------- Nesneler ----------
 const crystalGeo = new THREE.OctahedronGeometry(0.5);
 const crystalMat = mat({ color: 0x5ee7ff, emissive: 0x1b9ec2, emissiveIntensity: 1.2, roughness: 0.2 });
-const ghostGeo = new THREE.SphereGeometry(0.7, 16, 12);
-const ghostMat = new THREE.MeshStandardMaterial({ color: 0xc9ffd9, emissive: 0x2f9e5a, transparent: true, opacity: 0.75 });
-const fireGeo = new THREE.SphereGeometry(0.25, 12, 10);
-const fireMat = new THREE.MeshBasicMaterial({ color: 0xffa03a });
+const heartGeo = new THREE.IcosahedronGeometry(0.45);
+const heartMat = mat({ color: 0xff3b5c, emissive: 0xa00828, emissiveIntensity: 1.3, roughness: 0.3 });
+const enemyGeos = {
+  ghost: new THREE.SphereGeometry(1, 16, 12),
+  bat: new THREE.ConeGeometry(0.8, 1.2, 5),
+  golem: new THREE.BoxGeometry(1, 1, 1),
+  boss: new THREE.IcosahedronGeometry(1, 1),
+};
+const projGeo = new THREE.SphereGeometry(0.25, 12, 10);
 
-const crystals = [];
-const ghosts = [];
-const fires = [];
+const pickups = []; // { mesh, type: "crystal" | "heart" }
+const enemies = [];
+const shots = [];
 const sparks = [];
+const bolts = [];
 
-function spawnCrystal() {
-  const m = new THREE.Mesh(crystalGeo, crystalMat);
-  m.position.set(rand(ARENA - 1.5), 0.9, rand(ARENA - 1.5));
+function placePickup(type, pos) {
+  const m = new THREE.Mesh(type === "heart" ? heartGeo : crystalGeo, type === "heart" ? heartMat : crystalMat);
+  m.position.copy(pos);
   m.castShadow = true;
   scene.add(m);
-  crystals.push(m);
+  pickups.push({ mesh: m, type });
 }
+const spawnCrystal = () => placePickup("crystal", new THREE.Vector3(rand(ARENA - 1.5), 0.9, rand(ARENA - 1.5)));
 
-function spawnGhost() {
-  const m = new THREE.Mesh(ghostGeo, ghostMat);
+function spawnEnemy(type) {
+  const d = ENEMIES[type];
+  const m = new THREE.Mesh(enemyGeos[type], new THREE.MeshStandardMaterial({
+    color: d.color, emissive: d.emissive, transparent: type === "ghost", opacity: type === "ghost" ? 0.75 : 1, roughness: 0.6,
+  }));
+  m.scale.setScalar(d.r);
+  if (type === "bat") m.scale.set(d.r * 1.4, d.r * 0.5, d.r * 1.4);
   const a = Math.random() * Math.PI * 2;
-  m.position.set(Math.cos(a) * ARENA, 1.2, Math.sin(a) * ARENA);
-  m.userData.speed = 1.8 + Math.random() * 1.4;
+  m.position.set(Math.cos(a) * ARENA, d.y, Math.sin(a) * ARENA);
+  m.castShadow = true;
   scene.add(m);
-  ghosts.push(m);
+  const e = { mesh: m, type, d, hp: d.hp, slow: 0, phase: Math.random() * 10 };
+  enemies.push(e);
+  if (type === "boss") bossRef = e;
+  return e;
 }
 
-function burst(pos, color) {
-  for (let i = 0; i < 10; i++) {
+function burst(pos, color, n = 10) {
+  for (let i = 0; i < n; i++) {
     const s = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), new THREE.MeshBasicMaterial({ color, transparent: true }));
     s.position.copy(pos);
     s.userData = { v: new THREE.Vector3(rand(4), Math.random() * 4, rand(4)), life: 0.6 };
@@ -156,13 +235,24 @@ function burst(pos, color) {
   }
 }
 
-// Girdi
+function clearWorld() {
+  [...pickups.map((p) => p.mesh), ...enemies.map((e) => e.mesh), ...shots.map((s) => s.mesh), ...sparks, ...bolts].forEach((m) => scene.remove(m));
+  pickups.length = enemies.length = shots.length = sparks.length = bolts.length = 0;
+  bossRef = null;
+}
+
+// ---------- Girdi ----------
 const keys = new Set();
 const aim = new THREE.Vector3(0, 0, -1);
 const ray = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let drag = null;
-addEventListener("keydown", (e) => { keys.add(e.code); if (e.code === "Space") { e.preventDefault(); cast(); } });
+addEventListener("keydown", (e) => {
+  keys.add(e.code);
+  if (e.code === "Space") { e.preventDefault(); cast(); }
+  const idx = ["Digit1", "Digit2", "Digit3", "Digit4"].indexOf(e.code);
+  if (idx >= 0) selectWeapon(WEAPON_ORDER[idx]);
+});
 addEventListener("keyup", (e) => keys.delete(e.code));
 addEventListener("pointermove", (e) => {
   mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
@@ -170,48 +260,198 @@ addEventListener("pointermove", (e) => {
 });
 addEventListener("pointerdown", (e) => {
   if (e.target.closest("button")) return;
-  if (e.pointerType === "touch") drag = { x: e.clientX, y: e.clientY };
-  else cast();
+  if (e.pointerType === "touch") {
+    drag = { x: e.clientX, y: e.clientY };
+    cast();
+  } else cast();
 });
 addEventListener("pointerup", () => { drag = null; });
 
-let score = 0, hp = MAX_HP, timeLeft = 0, running = false, cooldown = 0, invuln = 0, spawnTimer = 0;
+function selectWeapon(id) {
+  if (!S.unlocked.includes(id)) return;
+  S.weapon = id;
+  orbTip.material.color.setHex(WEAPONS[id].color);
+  renderWeapons();
+}
+
+function renderWeapons() {
+  const bar = $("weapons");
+  bar.innerHTML = "";
+  for (const id of WEAPON_ORDER) {
+    const w = WEAPONS[id];
+    const b = document.createElement("button");
+    const open = S.unlocked.includes(id);
+    b.className = "wbtn" + (id === S.weapon ? " active" : "") + (open ? "" : " locked");
+    b.textContent = open ? `${w.key} · ${w.name}` : `${w.key} · 🔒`;
+    b.onclick = () => selectWeapon(id);
+    bar.appendChild(b);
+  }
+}
+
+// ---------- Savaş ----------
+function nearestEnemies(from, n, range) {
+  return enemies
+    .map((e) => ({ e, d: e.mesh.position.distanceTo(from) }))
+    .filter((x) => x.d <= range)
+    .sort((a, b) => a.d - b.d)
+    .slice(0, n)
+    .map((x) => x.e);
+}
 
 function cast() {
   if (!running || cooldown > 0) return;
-  cooldown = 0.35;
-  const f = new THREE.Mesh(fireGeo, fireMat);
-  f.position.copy(wizard.position).setY(1.6);
-  f.userData = { v: aim.clone().multiplyScalar(16), life: 1.4 };
-  scene.add(f);
-  fires.push(f);
+  const w = WEAPONS[S.weapon];
+  cooldown = w.cd * S.cdMul;
+  const origin = wizard.position.clone().setY(1.7);
+  const dmg = w.dmg * S.dmgMul;
+
+  if (w.chain) {
+    let prev = origin;
+    for (const e of nearestEnemies(origin, w.chain, w.range)) {
+      const to = e.mesh.position.clone();
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([prev.clone(), to]), new THREE.LineBasicMaterial({ color: w.color, transparent: true }));
+      line.userData.life = 0.18;
+      scene.add(line);
+      bolts.push(line);
+      hurt(e, dmg, false);
+      prev = to;
+    }
+    if (prev === origin) { // hedef yoksa ileri doğru kısa şimşek
+      const to = origin.clone().addScaledVector(aim, 6);
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([origin, to]), new THREE.LineBasicMaterial({ color: w.color, transparent: true }));
+      line.userData.life = 0.18;
+      scene.add(line);
+      bolts.push(line);
+    }
+    return;
+  }
+
+  const n = w.spread || 1;
+  for (let i = 0; i < n; i++) {
+    const ang = n === 1 ? 0 : (i - (n - 1) / 2) * 0.28;
+    const v = aim.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), ang).multiplyScalar(w.speed);
+    const m = new THREE.Mesh(projGeo, new THREE.MeshBasicMaterial({ color: w.color }));
+    m.position.copy(origin);
+    scene.add(m);
+    shots.push({ mesh: m, v, life: 1.4, dmg, slow: !!w.slow, color: w.color });
+  }
 }
 
+function hurt(e, dmg, slow) {
+  e.hp -= dmg;
+  if (slow) e.slow = 3;
+  burst(e.mesh.position, e.d.emissive === 0 ? 0xffffff : e.d.color, 5);
+  if (e.hp <= 0) killEnemy(e);
+}
+
+function killEnemy(e) {
+  const i = enemies.indexOf(e);
+  if (i < 0) return;
+  enemies.splice(i, 1);
+  scene.remove(e.mesh);
+  burst(e.mesh.position, e.d.color, 14);
+  S.score += e.d.score;
+  if (Math.random() < e.d.drop) placePickup("heart", e.mesh.position.clone().setY(0.9));
+  if (e.type === "boss") { bossRef = null; levelClear(); }
+}
+
+function damagePlayer(n) {
+  S.hp -= n;
+  invuln = 1.5;
+  burst(wizard.position.clone().setY(1.2), 0xff4d6d);
+  if (S.hp <= 0) { renderHud(); gameOver(); }
+}
+
+// ---------- Arayüz / akış ----------
 function renderHud() {
-  $("score").textContent = `Mana: ${score}`;
-  $("hearts").textContent = "♥".repeat(hp) + "♡".repeat(MAX_HP - hp);
-  $("time").textContent = `Gece: ${Math.ceil(timeLeft)}`;
+  const L = LEVELS[S.level];
+  $("level").textContent = `Bölüm ${S.level + 1}/${LEVELS.length}`;
+  $("goal").textContent = L.boss ? "Hedef: Gölge Kral" : `Mana: ${collected}/${L.goal}`;
+  $("hearts").textContent = "♥".repeat(Math.max(S.hp, 0)) + "♡".repeat(Math.max(S.maxHp - S.hp, 0));
+  $("time").textContent = `Süre: ${Math.ceil(timeLeft)}`;
+  $("score").textContent = `Puan: ${S.score}`;
+  $("boss").textContent = bossRef ? `Kral: ${"█".repeat(Math.ceil(bossRef.hp / 2))}` : "";
 }
 
-function reset() {
-  [...crystals, ...ghosts, ...fires, ...sparks].forEach((m) => scene.remove(m));
-  crystals.length = ghosts.length = fires.length = sparks.length = 0;
-  wizard.position.set(0, 0, 0);
-  score = 0; hp = MAX_HP; timeLeft = ROUND_SECONDS; cooldown = 0; invuln = 0; spawnTimer = 0;
-  for (let i = 0; i < 6; i++) spawnCrystal();
-  for (let i = 0; i < 3; i++) spawnGhost();
-  renderHud();
-}
-
-function end(won) {
+function screen(title, html, buttons) {
   running = false;
-  $("title").textContent = won ? "Şafak doğdu!" : "Ruhlar seni yakaladı…";
-  $("sub").textContent = `Topladığın mana: ${score}`;
-  $("start").textContent = "Tekrar dene";
+  $("title").textContent = title;
+  $("sub").innerHTML = html;
+  const box = $("btns");
+  box.innerHTML = "";
+  for (const b of buttons) {
+    const el = document.createElement("button");
+    el.className = "gbtn";
+    el.innerHTML = b.label;
+    el.onclick = b.fn;
+    box.appendChild(el);
+  }
   $("msg").hidden = false;
 }
 
-$("start").onclick = () => { reset(); $("msg").hidden = true; running = true; };
+const ENEMY_NAMES = { ghost: "Ruh", bat: "Yarasa", golem: "Taş Bekçi", boss: "Gölge Kral" };
+
+function introLevel() {
+  const L = LEVELS[S.level];
+  snapshot = JSON.parse(JSON.stringify(S));
+  clearWorld();
+  applyTheme(S.level);
+  wizard.position.set(0, 0, 0);
+  const foes = Object.keys(L.start).map((k) => ENEMY_NAMES[k]).join(", ");
+  const goal = L.boss ? "Gölge Kral'ı yen!" : `${L.goal} mana kristali topla.`;
+  screen(`Bölüm ${S.level + 1}: ${L.name}`, `${goal}<br>Düşmanlar: <b>${foes}</b><br>Süre: ${L.time} sn · Can: ${S.hp}/${S.maxHp}<br><small>Düşenlerden kalp çıkabilir. Yıldırım ve diğer büyüler bölüm sonunda açılır.</small>`, [
+    { label: "Savaşa gir", fn: startLevel },
+  ]);
+  renderHud();
+  renderWeapons();
+}
+
+function startLevel() {
+  const L = LEVELS[S.level];
+  clearWorld();
+  collected = 0; timeLeft = L.time; cooldown = 0; invuln = 1; spawnTimer = 0; bossSummon = 5;
+  wizard.position.set(0, 0, 0);
+  for (let i = 0; i < 5; i++) spawnCrystal();
+  for (const [type, n] of Object.entries(L.start)) for (let i = 0; i < n; i++) spawnEnemy(type);
+  orbTip.material.color.setHex(WEAPONS[S.weapon].color);
+  $("msg").hidden = true;
+  running = true;
+  renderHud();
+  renderWeapons();
+}
+
+function gameOver() {
+  running = false;
+  screen("Ruhlar seni yakaladı…", `Bölüm ${S.level + 1} · Puan: ${S.score}`, [
+    { label: "Bu bölümü tekrar dene<small>Açılan büyüler ve yetenekler korunur</small>", fn: () => { Object.assign(S, snapshot, { hp: snapshot.maxHp }); S.unlocked = [...snapshot.unlocked]; introLevel(); } },
+    { label: "Baştan başla", fn: () => { newRun(); introLevel(); } },
+  ]);
+}
+
+function levelClear() {
+  const L = LEVELS[S.level];
+  running = false;
+  const bonus = Math.ceil(timeLeft) * 2;
+  S.score += bonus + 100 * (S.level + 1);
+  renderHud();
+  if (S.level === LEVELS.length - 1) {
+    screen("Şafak doğdu!", `Gölge Kral yenildi. Lanet kalktı.<br>Toplam puan: <b>${S.score}</b>`, [
+      { label: "Yeniden oyna", fn: () => { newRun(); introLevel(); } },
+    ]);
+    return;
+  }
+  let rewardText = "";
+  if (L.reward && !S.unlocked.includes(L.reward)) {
+    S.unlocked.push(L.reward);
+    rewardText = `<br>Yeni büyü: <b>${WEAPONS[L.reward].name}</b> (${WEAPONS[L.reward].key} tuşu)`;
+  }
+  if (S.hp < S.maxHp) S.hp++;
+  const choices = [...PERKS].sort(() => Math.random() - 0.5).slice(0, 3);
+  screen(`Bölüm ${S.level + 1} tamam!`, `Süre bonusu: +${bonus}${rewardText}<br>Bir yetenek seç:`, choices.map((p) => ({
+    label: `${p.name}<small>${p.desc}</small>`,
+    fn: () => { p.apply(); S.level++; introLevel(); },
+  })));
+}
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
@@ -221,16 +461,17 @@ function resize() {
 addEventListener("resize", resize);
 resize();
 
+// ---------- Döngü ----------
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const hit = new THREE.Vector3();
 const clock = new THREE.Clock();
+const UP = new THREE.Vector3(0, 1, 0);
 
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
   ring.rotation.z += dt * 0.3;
-  crystals.forEach((c, i) => { c.position.y = 0.9 + Math.sin(t * 2.5 + i) * 0.2; c.rotation.y += dt * 1.5; });
-  ghosts.forEach((g, i) => { g.position.y = 1.2 + Math.sin(t * 3 + i) * 0.3; });
+  pickups.forEach((p, i) => { p.mesh.position.y = 0.9 + Math.sin(t * 2.5 + i) * 0.2; p.mesh.rotation.y += dt * 1.5; });
 
   for (let i = sparks.length - 1; i >= 0; i--) {
     const s = sparks[i];
@@ -240,17 +481,23 @@ renderer.setAnimationLoop(() => {
     s.material.opacity = Math.max(s.userData.life / 0.6, 0);
     if (s.userData.life <= 0) { scene.remove(s); sparks.splice(i, 1); }
   }
+  for (let i = bolts.length - 1; i >= 0; i--) {
+    bolts[i].userData.life -= dt;
+    bolts[i].material.opacity = Math.max(bolts[i].userData.life / 0.18, 0);
+    if (bolts[i].userData.life <= 0) { scene.remove(bolts[i]); bolts.splice(i, 1); }
+  }
 
   if (running) {
     cooldown -= dt;
     invuln -= dt;
 
+    // Hareket
     let dx = (keys.has("KeyD") || keys.has("ArrowRight")) - (keys.has("KeyA") || keys.has("ArrowLeft"));
     let dz = (keys.has("KeyS") || keys.has("ArrowDown")) - (keys.has("KeyW") || keys.has("ArrowUp"));
     if (drag && drag.dx !== undefined) { dx += THREE.MathUtils.clamp(drag.dx / 60, -1, 1); dz += THREE.MathUtils.clamp(drag.dy / 60, -1, 1); }
     const dir = new THREE.Vector3(dx, 0, dz);
     if (dir.lengthSq() > 1) dir.normalize();
-    wizard.position.addScaledVector(dir, SPEED * dt);
+    wizard.position.addScaledVector(dir, BASE_SPEED * S.speedMul * dt);
     wizard.position.x = THREE.MathUtils.clamp(wizard.position.x, -ARENA + 0.5, ARENA - 0.5);
     wizard.position.z = THREE.MathUtils.clamp(wizard.position.z, -ARENA + 0.5, ARENA - 0.5);
 
@@ -265,53 +512,90 @@ renderer.setAnimationLoop(() => {
     wand.position.set(wizard.position.x, 2.2, wizard.position.z);
     wizard.visible = invuln <= 0 || Math.floor(t * 12) % 2 === 0;
 
-    for (const g of ghosts) {
-      const to = wizard.position.clone().sub(g.position).setY(0).normalize();
-      g.position.addScaledVector(to, g.userData.speed * dt);
-      if (invuln <= 0 && g.position.distanceTo(wizard.position.clone().setY(g.position.y)) < 1.1) {
-        hp--; invuln = 1.5;
-        burst(wizard.position.clone().setY(1.2), 0xff4d6d);
-        if (hp <= 0) { renderHud(); return end(false); }
+    // Düşmanlar
+    for (const e of [...enemies]) {
+      e.slow = Math.max(e.slow - dt, 0);
+      const spd = e.d.speed * (e.slow > 0 ? 0.35 : 1);
+      const to = wizard.position.clone().sub(e.mesh.position).setY(0).normalize();
+      if (e.d.zig) to.applyAxisAngle(UP, Math.sin(t * 5 + e.phase) * 0.9);
+      e.mesh.position.addScaledVector(to, spd * dt);
+      e.mesh.position.x = THREE.MathUtils.clamp(e.mesh.position.x, -ARENA - 1, ARENA + 1);
+      e.mesh.position.z = THREE.MathUtils.clamp(e.mesh.position.z, -ARENA - 1, ARENA + 1);
+      e.mesh.position.y = e.d.y + Math.sin(t * 3 + e.phase) * 0.3;
+      e.mesh.material.emissiveIntensity = e.slow > 0 ? 0.2 : 1;
+      e.mesh.material.color.setHex(e.slow > 0 ? 0x9fdcff : e.d.color);
+      if (e.type === "golem" || e.type === "boss") e.mesh.rotation.y += dt;
+      const flat = wizard.position.clone().setY(e.mesh.position.y);
+      if (invuln <= 0 && e.mesh.position.distanceTo(flat) < e.d.r + 0.5) {
+        damagePlayer(e.d.dmg);
+        if (!running) return;
       }
     }
 
-    for (let i = fires.length - 1; i >= 0; i--) {
-      const f = fires[i];
-      f.position.addScaledVector(f.userData.v, dt);
-      f.userData.life -= dt;
-      let gone = f.userData.life <= 0;
-      for (let j = ghosts.length - 1; j >= 0 && !gone; j--) {
-        if (f.position.distanceTo(ghosts[j].position) < 1) {
-          burst(ghosts[j].position, 0x9dffc0);
-          scene.remove(ghosts[j]);
-          ghosts.splice(j, 1);
-          score += 2;
+    // Mermiler
+    for (let i = shots.length - 1; i >= 0; i--) {
+      const s = shots[i];
+      s.mesh.position.addScaledVector(s.v, dt);
+      s.life -= dt;
+      let gone = s.life <= 0;
+      for (const e of enemies) {
+        if (gone) break;
+        if (s.mesh.position.distanceTo(e.mesh.position) < e.d.r + 0.3) {
           gone = true;
-          setTimeout(() => { if (running) spawnGhost(); }, 1500);
+          hurt(e, s.dmg, s.slow);
         }
       }
-      if (gone) { scene.remove(f); fires.splice(i, 1); }
+      if (gone) { scene.remove(s.mesh); shots.splice(i, 1); }
+      if (!running) return;
     }
 
-    for (let i = crystals.length - 1; i >= 0; i--) {
-      if (crystals[i].position.distanceTo(wizard.position.clone().setY(crystals[i].position.y)) < 1.2) {
-        burst(crystals[i].position, 0x5ee7ff);
-        scene.remove(crystals[i]);
-        crystals.splice(i, 1);
-        score++;
-        spawnCrystal();
+    // Toplananlar
+    for (let i = pickups.length - 1; i >= 0; i--) {
+      const p = pickups[i];
+      const flat = wizard.position.clone().setY(p.mesh.position.y);
+      const dist = p.mesh.position.distanceTo(flat);
+      if (S.magnet && dist < S.magnet) p.mesh.position.addScaledVector(flat.sub(p.mesh.position).normalize(), 9 * dt);
+      if (dist < 1.2) {
+        scene.remove(p.mesh);
+        pickups.splice(i, 1);
+        if (p.type === "heart") {
+          S.hp = Math.min(S.hp + 1, S.maxHp);
+          burst(p.mesh.position, 0xff3b5c, 14);
+        } else {
+          collected++;
+          S.score += 10;
+          burst(p.mesh.position, 0x5ee7ff);
+          if (pickups.filter((q) => q.type === "crystal").length < 5) spawnCrystal();
+          if (!LEVELS[S.level].boss && collected >= LEVELS[S.level].goal) { levelClear(); return; }
+        }
       }
     }
 
+    // Yeni düşman doğurma
+    const L = LEVELS[S.level];
     spawnTimer += dt;
-    if (spawnTimer > 9 && ghosts.length < 9) { spawnTimer = 0; spawnGhost(); }
+    if (spawnTimer > L.every && enemies.length < L.cap) {
+      spawnTimer = 0;
+      const types = Object.keys(L.spawn);
+      for (let k = 0; k < types.length; k++) spawnEnemy(types[Math.floor(Math.random() * types.length)]);
+    }
+    if (bossRef) {
+      bossSummon -= dt;
+      if (bossSummon <= 0) { bossSummon = 6; spawnEnemy("ghost"); spawnEnemy("ghost"); }
+    }
 
     timeLeft -= dt;
-    if (timeLeft <= 0) { timeLeft = 0; renderHud(); return end(true); }
+    if (timeLeft <= 0) { timeLeft = 0; renderHud(); gameOver(); }
     renderHud();
   }
   renderer.render(scene, camera);
 });
+
+// Açılış ekranı
+renderWeapons();
+screen("Büyücünün Gecesi", "5 lanetli bölümden geç. Mana kristallerini topla, düşmanları büyüyle durdur, yeni büyüler ve yetenekler kazan.<br>WASD / ok tuşları: yürü · Fare: nişan · Boşluk / tık: büyü · 1-4: büyü seç<br><small>Mobilde: dokunup sürükle</small>", [
+  { label: "Büyüyü Başlat", fn: introLevel },
+]);
 </script>
 </body>
 </html>
