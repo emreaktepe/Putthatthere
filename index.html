@@ -2,97 +2,44 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Şunu Şuraya Koy — Put That There | Tarayıcıda 3B Güvenlik Bulmacası</title>
-<meta name="description" content="Eksik nesneyi doğru yere koy, sapmanı santimetreyle gör. Metro peronu, yangın koridoru ve daha fazlası: gerçek güvenlik kurallarını öğreten ücretsiz 3B tarayıcı bulmacası. Kurulum ve kayıt yok." />
-<link rel="canonical" href="https://emreaktepe.github.io/Putthatthere/" />
-<meta name="robots" content="index,follow" />
-<meta name="theme-color" content="#111111" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Şunu Şuraya Koy" />
-<meta property="og:title" content="Şunu Şuraya Koy — 3B güvenlik bulmacası" />
-<meta property="og:description" content="Eksik nesneyi doğru yere koy; “Sapma: 38 cm” gibi somut geri bildirimle gerçek güvenlik kurallarını öğren. Ücretsiz, kurulumsuz." />
-<meta property="og:url" content="https://emreaktepe.github.io/Putthatthere/" />
-<meta property="og:image" content="https://emreaktepe.github.io/Putthatthere/assets/og-image.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Şunu Şuraya Koy oyunundan 3B metro peronu sahnesi" />
-<meta property="og:locale" content="tr_TR" />
-<meta property="og:locale:alternate" content="en_US" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Şunu Şuraya Koy — 3B güvenlik bulmacası" />
-<meta name="twitter:description" content="Eksik nesneyi doğru yere koy, sapmanı santimetreyle gör. Ücretsiz tarayıcı oyunu." />
-<meta name="twitter:image" content="https://emreaktepe.github.io/Putthatthere/assets/og-image.png" />
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-<link rel="stylesheet" href="css/style.css" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Büyücünün Gecesi</title>
+<meta name="theme-color" content="#0a0714" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Büyücü" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png" />
+<link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
 <script type="importmap">
-{
-  "imports": {
-    "three": "./vendor/three.module.min.js",
-    "three/addons/": "./vendor/addons/"
-  }
-}
+{ "imports": { "three": "./vendor/three.module.min.js" } }
 </script>
+<link rel="stylesheet" href="./css/game.css" />
 </head>
 <body>
-<div id="app">
-
-  <section id="screen-intro" class="screen">
-    <div class="intro-card">
-      <h1 id="intro-title"></h1>
-      <p id="intro-body"></p>
-      <button id="btn-start" class="btn btn-primary"></button>
-    </div>
-  </section>
-
-  <section id="screen-game" class="screen" hidden>
-    <header id="topbar">
-      <span id="scene-counter"></span>
-      <span id="scene-title"></span>
-      <span id="score-label"></span>
-      <button id="btn-lang" class="btn btn-ghost"></button>
-    </header>
-
-    <div id="canvas-wrap">
-      <canvas id="scene-canvas"></canvas>
-      <p id="pick-up-hint" class="floating-hint"></p>
-      <p id="orbit-hint" class="floating-hint hint-bottom"></p>
-      <p id="rotate-hint" class="floating-hint hint-rotate" hidden></p>
-    </div>
-
-    <footer id="bottombar">
-      <div id="tray" title="">
-        <canvas id="tray-canvas"></canvas>
-      </div>
-      <button id="btn-confirm" class="btn btn-primary" disabled></button>
-    </footer>
-
-    <div id="result-modal" class="modal-overlay" hidden>
-      <div class="modal-card">
-        <div id="result-stars" class="stars"></div>
-        <p id="result-message"></p>
-        <p id="result-explanation" class="explanation"></p>
-        <p id="result-error" class="metric"></p>
-        <p id="result-placement-score" class="metric"></p>
-        <p id="result-running-total" class="metric"></p>
-        <button id="btn-next-scene" class="btn btn-primary"></button>
-      </div>
-    </div>
-  </section>
-
-  <section id="screen-final" class="screen" hidden>
-    <div class="intro-card">
-      <h1 id="final-title"></h1>
-      <p id="final-score"></p>
-      <p id="final-stars"></p>
-      <p id="final-rank"></p>
-      <button id="btn-play-again" class="btn btn-primary"></button>
-    </div>
-  </section>
-
-  <p id="error-banner" class="error-banner" hidden></p>
-
-</div>
-<script type="module" src="js/main.js"></script>
+<div id="hud" aria-label="Oyun durumu"></div>
+<div id="weapons" role="toolbar" aria-label="Büyüler"></div>
+<div id="abil" role="toolbar" aria-label="Yetenekler"></div>
+<div id="joy"><i></i></div>
+<button id="fire" aria-label="Büyü yap">✦</button>
+<div id="tint"></div>
+<div id="haze"></div>
+<div id="hurt"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="stage" hidden></div>
+<div id="msg" hidden><h1 id="title"></h1><p id="sub"></p><div id="btns"></div></div>
+<button id="cam" class="round-btn" aria-label="Kamera açısını değiştir (V)" title="Kamera açısı (V) · Z/C döndür · tekerlek yakınlaştır">📷</button>
+<button id="mute" class="round-btn" aria-label="Sesi kapat" title="Sesi kapat">🔊</button>
+<!-- file:// ile açılırsa ES modülleri tarayıcıda yüklenmez; bu yüzden uyarı modül değil, bu küçük klasik betikten gelir
+     (metin js/config/load.js FILE_PROTOCOL_MESSAGE ile aynı olmalı). -->
+<script>
+  if (location.protocol === "file:") {
+    document.getElementById("msg").hidden = false;
+    document.getElementById("title").textContent = "Sunucu gerekli";
+    document.getElementById("sub").textContent = "Bu oyun bir sunucudan açılmalı: dosyaya çift tıklamak (file://) tarayıcıda çalışmaz. Proje klasöründe `npx serve . -l 8000` çalıştırıp http://localhost:8000 adresini açın.";
+  }
+</script>
+<script type="module" src="./js/main.js"></script>
 </body>
 </html>
