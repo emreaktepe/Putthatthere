@@ -1,6 +1,6 @@
 # 3B model listesi (kodla üretilen karakterler)
 
-Durum: Aldemir, Pırıl ve 10 düşmanın tamamı (Ruh, Yarasa, Taş Bekçi, Gölge Kral + Okçu, Kurt, Kor Hortlak, Rahip, Totem, Şövalye; Full12 Pro v2 paketi) HAZIR ve oyuna bağlı (12/12). Yalnızca P3 sahne figürleri (Zerrin, Taşkın, Veyis-insan) hâlâ yok. Aldemir için gelen paket (`createAldemir`) örnek alındı. Düşman değerleri `data/game.config.json`'dan, davranışlar `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md` §3'ten alındı. Poligon bütçeleri VARSAYIMDIR, gerçek telefonda ölçülmedi.
+Durum: Aldemir, Pırıl ve 10 düşmanın tamamı (Ruh, Yarasa, Taş Bekçi, Gölge Kral + Okçu, Kurt, Kor Hortlak, Rahip, Totem, Şövalye; Full12 Pro v2 paketi) HAZIR ve oyuna bağlı (12/12). P3 sahne figürleri (Zerrin, Taşkın, Veyis-insan) da HAZIR ve bağlı: 15/15. Aldemir için gelen paket (`createAldemir`) örnek alındı. Düşman değerleri `data/game.config.json`'dan, davranışlar `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md` §3'ten alındı. Poligon bütçeleri VARSAYIMDIR, gerçek telefonda ölçülmedi.
 
 ## 1. Neden bütçe önemli
 
@@ -102,9 +102,13 @@ Oyundaki mevcut durum: 10 düşmanın hepsi 3B modelle çiziliyor (`js/render/en
 
 | Dosya | Karakter | Not |
 |---|---|---|
-| `zerrin.js` | Zerrin (baykuş) | Arenanın kenarında bir dalda duran baykuş; bölüm girişinde başını çevirir. Savaşa katılmaz. Küçük sınıf. |
-| `taskin.js` | Taşkın | 3. bölümden sonra kenarda duran, kırık, lanetten kurtulmuş taş bekçi heykeli; ara sıra kafasını eğer. Savaşa katılmaz. Orta sınıf. |
-| `veyis-insan.js` | Veyis (insan hali) | Final diyaloğu / son sahne için taçsız, yaşlı kral. Gerekirse portre yeterli. |
+| Dosya | Karakter | Durum / bağlantı | Yer ve görünme koşulu |
+|---|---|---|---|
+| `zerrin.js` | Zerrin (baykuş) | HAZIR, bağlı: `models/zerrin.js` -> `propsvis.js` + `props3d.js` (8424 üçgen, ~28 çizim) | Tüm bölümlerde arena dışında sol-arka kenarda (-16, -5.5), kendi dalında; bölüm girişinde oyuncuya döner (`windup` dönerken), sonra yan bakar. Düşük kalitede gizli. |
+| `taskin.js` | Taşkın | HAZIR, bağlı: `models/taskin.js` (2342 üçgen, ~23 çizim) | `golems` bölümü tamamlanınca (kayıttaki `completed`) golems ve sonraki bölümlerde sağ-arka kenarda (16, -7.5); ~8 sn'de bir başını eğer. Düşük kalitede gizli. |
+| `veyis-insan.js` | Veyis (insan hali) | HAZIR, bağlı: `models/veyis-insan.js` (7656 üçgen, ~26 çizim) | Yalnız gerçek finalde (`castle` tamamlanıp zafer ekranı): Aldemir'in 3,4 birim karşısında ona dönük, ~0,6 sn sonra yumuşakça belirir; sonraki bölüm/harita/menüde gizlenir. Her kalitede gösterilir. |
+
+Sahne figürleri çarpışmasız, hedeflenemez, düşman sayacına/cap'e girmez, ışıksızdır; gerçek gölge yerine yumuşak "blob" gölge (+1 çizim). Her figür ilk gerektiğinde bir kez kurulur, sonra gizlenir/gösterilir (`disposeProps()` hepsini bırakır). Paket notları: Zerrin'in `update()` gövde yüksekliğini (0,9) sıfıra ezer; oyunda `propsvis.js` `lift` ile her karede geri ekler (paket dosyası değiştirilmedi). Üçgen sayıları ilk bütçe hedeflerini aşar (Zerrin hedef 2500, Veyis 7000).
 
 ### Bonus — Karakter olmayan ama etkisi büyük (3B)
 

@@ -16,3 +16,7 @@ Buyucunun_Gecesi_3D_Core6_Pro_v1/
 
 # Üçüncü taraf/indirme paketi (içinde three kopyası ve büyük referans PNG var); yalnızca js/render/models/ içine kopyalananlar repoya girer
 Buyucunun_Gecesi_3D_Full12_Pro_v2/
+
+# Emre'nin "son 3" sahne figürü klasörü (zerrin, taskin, veyis-insan): yalnızca yerelde kalır, repoya girmez.
+# Oyunun kullandığı dosyalar js/render/models/ altına kopyalandı (başlarında köken notu var).
+son 3/

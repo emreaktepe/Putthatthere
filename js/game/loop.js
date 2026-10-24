@@ -16,6 +16,7 @@ import { camera, renderer, ring, scene, updateWeather, wand } from "../render/sc
 import { rig, updateCamera } from "../render/camera.js";
 import { rotateMove } from "./cameramath.js";
 import { sceneryTick } from "../render/scenery.js";
+import { tickProps } from "../render/props3d.js";
 import { animatePiril, animateWizard, guide, guideGeo, orbTip, piril, shieldBall, wizard } from "../render/wizard.js";
 import { renderHud, updateAbilityUi } from "../ui/hud.js";
 
@@ -233,6 +234,7 @@ export function startLoop() {
   animateWizard(dt, t);
   updateWeather(dt, t, wizard.position.x, wizard.position.z);
   sceneryTick(dt, t);
+  tickProps(t, dt);
   wand.intensity = 30 + Math.sin(t * 13) * 3 + Math.random() * 2; // asa ışığı titremesi
   pickups.forEach((p, i) => { p.mesh.position.y = 0.9 + Math.sin(t * 2.5 + i) * 0.2; p.mesh.rotation.y += dt * 1.5; });
   updateSparks(dt);
