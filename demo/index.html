@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Küre Toplayıcı — Three.js demo</title>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.min.js" } }
+</script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #10131c; font-family: system-ui, sans-serif; color: #fff; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #hud { position: fixed; top: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 24px; font-size: 20px; pointer-events: none; text-shadow: 0 2px 6px #000; }
+  #msg { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(8,10,16,.75); text-align: center; gap: 12px; }
+  #msg[hidden] { display: none; }
+  button { font-size: 18px; padding: 10px 28px; border: 0; border-radius: 8px; background: #ffb703; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="hud"><span id="score">Puan: 0</span><span id="time">Süre: 30</span></div>
+<div id="msg"><h1 id="title">Küre Toplayıcı</h1><p id="sub">Altın küreleri topla, kırmızı bloklardan kaç!<br>WASD / ok tuşları ile hareket et (mobilde ekrana dokunup sürükle).</p><button id="start">Başla</button></div>
+<script type="module" src="./game.js"></script>
+</body>
+</html>
