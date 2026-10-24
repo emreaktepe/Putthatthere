@@ -29,6 +29,7 @@ python3 -m http.server 8000
 - `data/scenes.json` — 5 sahnelik içerik (hedef konum/tolerans metre cinsinden, kamera kadrajı, yerleştirme yüzeyleri, TR/EN açıklamalar)
 - `data/strings.tr.json`, `data/strings.en.json` — arayüz metinleri (varsayılan TR, sağ üstten EN'e geçilebilir)
 - `vendor/` — Three.js r185 (MIT, yerel kopya; CDN bağımlılığı yok)
+- `demo/` — bağımsız küçük Three.js demo oyunu (Küre Toplayıcı); sunucu açıkken `/demo/` adresinden oynanır
 - `docs/design/` — kurgu, oyun tasarımı ve araştırma dokümanları
 - `.github/workflows/deploy-pages.yml` — push'ta GitHub Pages'e otomatik dağıtım
 
