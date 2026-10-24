@@ -3,22 +3,315 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Küre Toplayıcı — Three.js demo</title>
+<title>Büyücünün Gecesi — Three.js demo</title>
 <script type="importmap">
 { "imports": { "three": "../vendor/three.module.min.js" } }
 </script>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #10131c; font-family: system-ui, sans-serif; color: #fff; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0714; font-family: Georgia, "Times New Roman", serif; color: #f1e6ff; }
   canvas { display: block; width: 100%; height: 100%; }
-  #hud { position: fixed; top: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 24px; font-size: 20px; pointer-events: none; text-shadow: 0 2px 6px #000; }
-  #msg { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(8,10,16,.75); text-align: center; gap: 12px; }
+  #hud { position: fixed; top: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 28px; font-size: 20px; pointer-events: none; text-shadow: 0 0 8px #8e44ff, 0 2px 6px #000; }
+  #hearts { letter-spacing: 4px; }
+  #msg { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(40,15,80,.8), rgba(5,3,12,.92)); text-align: center; gap: 12px; padding: 0 20px; }
   #msg[hidden] { display: none; }
-  button { font-size: 18px; padding: 10px 28px; border: 0; border-radius: 8px; background: #ffb703; cursor: pointer; }
+  h1 { font-size: 44px; margin: 0; color: #d9b3ff; text-shadow: 0 0 18px #8e44ff; }
+  button { font-family: inherit; font-size: 18px; padding: 10px 30px; border: 1px solid #d9b3ff; border-radius: 8px; background: #3a1d7a; color: #fff; cursor: pointer; box-shadow: 0 0 14px #8e44ff; }
+  button:hover { background: #5128a8; }
 </style>
 </head>
 <body>
-<div id="hud"><span id="score">Puan: 0</span><span id="time">Süre: 30</span></div>
-<div id="msg"><h1 id="title">Küre Toplayıcı</h1><p id="sub">Altın küreleri topla, kırmızı bloklardan kaç!<br>WASD / ok tuşları ile hareket et (mobilde ekrana dokunup sürükle).</p><button id="start">Başla</button></div>
-<script type="module" src="./game.js"></script>
+<div id="hud"><span id="score">Mana: 0</span><span id="hearts"></span><span id="time">Gece: 45</span></div>
+<div id="msg">
+  <h1 id="title">Büyücünün Gecesi</h1>
+  <p id="sub">Lanetli ormanda mana kristallerini topla.<br>Ruhlar sana yaklaşır: onlara <b>Boşluk</b> / tıklama ile ateş topu at.<br>WASD / ok tuşları ile yürü, fare ile nişan al (mobilde dokunup sürükle).</p>
+  <button id="start">Büyüyü Başlat</button>
+</div>
+<script type="module">
+import * as THREE from "three";
+
+const ROUND_SECONDS = 45;
+const ARENA = 14;
+const SPEED = 8;
+const MAX_HP = 3;
+
+const $ = (id) => document.getElementById(id);
+const rand = (r) => (Math.random() * 2 - 1) * r;
+const mat = (o) => new THREE.MeshStandardMaterial(o);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0714);
+scene.fog = new THREE.FogExp2(0x0a0714, 0.035);
+
+const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+camera.position.set(0, 17, 12);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+document.body.prepend(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0x6a5acd, 0x120a24, 0.9));
+const moon = new THREE.DirectionalLight(0xb9c7ff, 1.4);
+moon.position.set(-8, 14, 6);
+moon.castShadow = true;
+Object.assign(moon.shadow.camera, { left: -ARENA, right: ARENA, top: ARENA, bottom: -ARENA });
+scene.add(moon);
+
+const wand = new THREE.PointLight(0xc58cff, 40, 12);
+scene.add(wand);
+
+// Zemin ve yıldızlar
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(ARENA * 2, ARENA * 2), mat({ color: 0x1a1030, roughness: 1 }));
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+const ring = new THREE.Mesh(new THREE.RingGeometry(3.2, 3.5, 48), new THREE.MeshBasicMaterial({ color: 0x8e44ff, side: THREE.DoubleSide, transparent: true, opacity: 0.6 }));
+ring.rotation.x = -Math.PI / 2;
+ring.position.y = 0.02;
+scene.add(ring);
+
+const stars = new THREE.Points(
+  new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(
+    Array.from({ length: 600 }, () => rand(40)).map((v, i) => (i % 3 === 1 ? 10 + Math.abs(v) : v)), 3)),
+  new THREE.PointsMaterial({ color: 0xffffff, size: 0.15 })
+);
+scene.add(stars);
+
+// Ağaçlar (çarpışmasız dekor, arenanın kenarında)
+const trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, 2, 6);
+const crownGeo = new THREE.ConeGeometry(1.4, 4, 7);
+for (let i = 0; i < 28; i++) {
+  const a = (i / 28) * Math.PI * 2;
+  const r = ARENA + 1 + Math.random() * 2;
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(trunkGeo, mat({ color: 0x2b1a12 }));
+  trunk.position.y = 1;
+  const crown = new THREE.Mesh(crownGeo, mat({ color: 0x143a2a }));
+  crown.position.y = 3.5;
+  trunk.castShadow = crown.castShadow = true;
+  g.add(trunk, crown);
+  g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+  g.scale.setScalar(0.8 + Math.random() * 0.8);
+  scene.add(g);
+}
+
+// Büyücü
+const wizard = new THREE.Group();
+const robe = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.6, 10), mat({ color: 0x4b2a9c }));
+robe.position.y = 0.8;
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 12), mat({ color: 0xf2c9a0 }));
+head.position.y = 1.7;
+const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.06, 20), mat({ color: 0x2a1566 }));
+brim.position.y = 1.9;
+const hat = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.1, 14), mat({ color: 0x2a1566 }));
+hat.position.y = 2.45;
+hat.rotation.z = 0.15;
+const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2, 6), mat({ color: 0x6b4423 }));
+staff.position.set(0.6, 1, 0.2);
+const orbTip = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10), new THREE.MeshBasicMaterial({ color: 0xe0b3ff }));
+orbTip.position.set(0.6, 2.05, 0.2);
+wizard.add(robe, head, brim, hat, staff, orbTip);
+wizard.traverse((n) => { if (n.isMesh) n.castShadow = true; });
+scene.add(wizard);
+
+// Mana kristalleri, ruhlar, ateş topları
+const crystalGeo = new THREE.OctahedronGeometry(0.5);
+const crystalMat = mat({ color: 0x5ee7ff, emissive: 0x1b9ec2, emissiveIntensity: 1.2, roughness: 0.2 });
+const ghostGeo = new THREE.SphereGeometry(0.7, 16, 12);
+const ghostMat = new THREE.MeshStandardMaterial({ color: 0xc9ffd9, emissive: 0x2f9e5a, transparent: true, opacity: 0.75 });
+const fireGeo = new THREE.SphereGeometry(0.25, 12, 10);
+const fireMat = new THREE.MeshBasicMaterial({ color: 0xffa03a });
+
+const crystals = [];
+const ghosts = [];
+const fires = [];
+const sparks = [];
+
+function spawnCrystal() {
+  const m = new THREE.Mesh(crystalGeo, crystalMat);
+  m.position.set(rand(ARENA - 1.5), 0.9, rand(ARENA - 1.5));
+  m.castShadow = true;
+  scene.add(m);
+  crystals.push(m);
+}
+
+function spawnGhost() {
+  const m = new THREE.Mesh(ghostGeo, ghostMat);
+  const a = Math.random() * Math.PI * 2;
+  m.position.set(Math.cos(a) * ARENA, 1.2, Math.sin(a) * ARENA);
+  m.userData.speed = 1.8 + Math.random() * 1.4;
+  scene.add(m);
+  ghosts.push(m);
+}
+
+function burst(pos, color) {
+  for (let i = 0; i < 10; i++) {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), new THREE.MeshBasicMaterial({ color, transparent: true }));
+    s.position.copy(pos);
+    s.userData = { v: new THREE.Vector3(rand(4), Math.random() * 4, rand(4)), life: 0.6 };
+    scene.add(s);
+    sparks.push(s);
+  }
+}
+
+// Girdi
+const keys = new Set();
+const aim = new THREE.Vector3(0, 0, -1);
+const ray = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let drag = null;
+addEventListener("keydown", (e) => { keys.add(e.code); if (e.code === "Space") { e.preventDefault(); cast(); } });
+addEventListener("keyup", (e) => keys.delete(e.code));
+addEventListener("pointermove", (e) => {
+  mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  if (drag) { drag.dx = e.clientX - drag.x; drag.dy = e.clientY - drag.y; }
+});
+addEventListener("pointerdown", (e) => {
+  if (e.target.closest("button")) return;
+  if (e.pointerType === "touch") drag = { x: e.clientX, y: e.clientY };
+  else cast();
+});
+addEventListener("pointerup", () => { drag = null; });
+
+let score = 0, hp = MAX_HP, timeLeft = 0, running = false, cooldown = 0, invuln = 0, spawnTimer = 0;
+
+function cast() {
+  if (!running || cooldown > 0) return;
+  cooldown = 0.35;
+  const f = new THREE.Mesh(fireGeo, fireMat);
+  f.position.copy(wizard.position).setY(1.6);
+  f.userData = { v: aim.clone().multiplyScalar(16), life: 1.4 };
+  scene.add(f);
+  fires.push(f);
+}
+
+function renderHud() {
+  $("score").textContent = `Mana: ${score}`;
+  $("hearts").textContent = "♥".repeat(hp) + "♡".repeat(MAX_HP - hp);
+  $("time").textContent = `Gece: ${Math.ceil(timeLeft)}`;
+}
+
+function reset() {
+  [...crystals, ...ghosts, ...fires, ...sparks].forEach((m) => scene.remove(m));
+  crystals.length = ghosts.length = fires.length = sparks.length = 0;
+  wizard.position.set(0, 0, 0);
+  score = 0; hp = MAX_HP; timeLeft = ROUND_SECONDS; cooldown = 0; invuln = 0; spawnTimer = 0;
+  for (let i = 0; i < 6; i++) spawnCrystal();
+  for (let i = 0; i < 3; i++) spawnGhost();
+  renderHud();
+}
+
+function end(won) {
+  running = false;
+  $("title").textContent = won ? "Şafak doğdu!" : "Ruhlar seni yakaladı…";
+  $("sub").textContent = `Topladığın mana: ${score}`;
+  $("start").textContent = "Tekrar dene";
+  $("msg").hidden = false;
+}
+
+$("start").onclick = () => { reset(); $("msg").hidden = true; running = true; };
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize);
+resize();
+
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const hit = new THREE.Vector3();
+const clock = new THREE.Clock();
+
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+  ring.rotation.z += dt * 0.3;
+  crystals.forEach((c, i) => { c.position.y = 0.9 + Math.sin(t * 2.5 + i) * 0.2; c.rotation.y += dt * 1.5; });
+  ghosts.forEach((g, i) => { g.position.y = 1.2 + Math.sin(t * 3 + i) * 0.3; });
+
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.position.addScaledVector(s.userData.v, dt);
+    s.userData.v.y -= 9 * dt;
+    s.userData.life -= dt;
+    s.material.opacity = Math.max(s.userData.life / 0.6, 0);
+    if (s.userData.life <= 0) { scene.remove(s); sparks.splice(i, 1); }
+  }
+
+  if (running) {
+    cooldown -= dt;
+    invuln -= dt;
+
+    let dx = (keys.has("KeyD") || keys.has("ArrowRight")) - (keys.has("KeyA") || keys.has("ArrowLeft"));
+    let dz = (keys.has("KeyS") || keys.has("ArrowDown")) - (keys.has("KeyW") || keys.has("ArrowUp"));
+    if (drag && drag.dx !== undefined) { dx += THREE.MathUtils.clamp(drag.dx / 60, -1, 1); dz += THREE.MathUtils.clamp(drag.dy / 60, -1, 1); }
+    const dir = new THREE.Vector3(dx, 0, dz);
+    if (dir.lengthSq() > 1) dir.normalize();
+    wizard.position.addScaledVector(dir, SPEED * dt);
+    wizard.position.x = THREE.MathUtils.clamp(wizard.position.x, -ARENA + 0.5, ARENA - 0.5);
+    wizard.position.z = THREE.MathUtils.clamp(wizard.position.z, -ARENA + 0.5, ARENA - 0.5);
+
+    // Nişan: fare yerde nereyi gösteriyorsa; dokunmatikte yürüme yönü
+    ray.setFromCamera(mouse, camera);
+    if (drag) { if (dir.lengthSq() > 0) aim.copy(dir).normalize(); }
+    else if (ray.ray.intersectPlane(groundPlane, hit)) {
+      const d = hit.sub(wizard.position).setY(0);
+      if (d.lengthSq() > 0.01) aim.copy(d.normalize());
+    }
+    wizard.rotation.y = Math.atan2(aim.x, aim.z);
+    wand.position.set(wizard.position.x, 2.2, wizard.position.z);
+    wizard.visible = invuln <= 0 || Math.floor(t * 12) % 2 === 0;
+
+    for (const g of ghosts) {
+      const to = wizard.position.clone().sub(g.position).setY(0).normalize();
+      g.position.addScaledVector(to, g.userData.speed * dt);
+      if (invuln <= 0 && g.position.distanceTo(wizard.position.clone().setY(g.position.y)) < 1.1) {
+        hp--; invuln = 1.5;
+        burst(wizard.position.clone().setY(1.2), 0xff4d6d);
+        if (hp <= 0) { renderHud(); return end(false); }
+      }
+    }
+
+    for (let i = fires.length - 1; i >= 0; i--) {
+      const f = fires[i];
+      f.position.addScaledVector(f.userData.v, dt);
+      f.userData.life -= dt;
+      let gone = f.userData.life <= 0;
+      for (let j = ghosts.length - 1; j >= 0 && !gone; j--) {
+        if (f.position.distanceTo(ghosts[j].position) < 1) {
+          burst(ghosts[j].position, 0x9dffc0);
+          scene.remove(ghosts[j]);
+          ghosts.splice(j, 1);
+          score += 2;
+          gone = true;
+          setTimeout(() => { if (running) spawnGhost(); }, 1500);
+        }
+      }
+      if (gone) { scene.remove(f); fires.splice(i, 1); }
+    }
+
+    for (let i = crystals.length - 1; i >= 0; i--) {
+      if (crystals[i].position.distanceTo(wizard.position.clone().setY(crystals[i].position.y)) < 1.2) {
+        burst(crystals[i].position, 0x5ee7ff);
+        scene.remove(crystals[i]);
+        crystals.splice(i, 1);
+        score++;
+        spawnCrystal();
+      }
+    }
+
+    spawnTimer += dt;
+    if (spawnTimer > 9 && ghosts.length < 9) { spawnTimer = 0; spawnGhost(); }
+
+    timeLeft -= dt;
+    if (timeLeft <= 0) { timeLeft = 0; renderHud(); return end(true); }
+    renderHud();
+  }
+  renderer.render(scene, camera);
+});
+</script>
 </body>
 </html>
