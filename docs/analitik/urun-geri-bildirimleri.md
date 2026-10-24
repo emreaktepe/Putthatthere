@@ -1,0 +1,22 @@
+# Ürün Geri Bildirimleri (Ürün Stüdyosu'na)
+
+Kapsam: Yalnızca bu oturumda repodaki dosyalardan doğrulanan bulgular. Kullanıcıdan gelen gerçek geri bildirim yok (lansman yapılmadı, ölçüm yok); "kullanıcılar şunu istiyor" türü bir iddia yazılmadı. Tarayıcıda hiçbir şey çalıştırılmadı; her madde kod/dosya okumasına dayanır.
+
+| # | Bulgu | Dayanak | Etki | Öneri |
+|---|---|---|---|---|
+| G1 | Analitik yok; `js/analytics.js` yok, takip kodu yok | `js/` dizin listesi; `index.html` ve `js/*.js` içinde ölçüm kodu araması boş | Lansman sonrası hiçbir huni sayısı çıkmaz; ücretli test ön koşulu sağlanamaz | Onay sonrası `docs/analitik/olcum-plani.md` §1 olay tablosu uygulanır |
+| G2 | Paylaşım önizleme görseli yok | `index.html` `og:image` ve `twitter:image` `assets/og-image.png` adresini işaret ediyor; `assets/` içinde yalnızca `favicon.svg` | Bağlantı paylaşımları görselsiz önizlenir; reklam planının ön koşulu karşılanmıyor | 1200x630 görsel üret (brief `docs/web-seo/seo-raporu.md` §2) |
+| G3 | WebGL yoksa kullanıcı anlamsız bir hata görür, "Başla" sessiz kalır | `js/main.js` `init()`: `new ThreeApp(...)` (içinde `new THREE.WebGLRenderer`) hata fırlatırsa `catch` yalnızca genel "Bir şeyler ters gitti. Sayfayı yenile." gösterir; düğme olay dinleyicileri `ThreeApp` kurulumundan SONRA bağlanır ve giriş ekranı `hidden` değildir (`index.html`), yani "Başla" görünür ama tıklanınca bir şey olmaz. `data/strings.*.json` içinde WebGL'e özel metin yok | WebGL kapalı/eski cihazda oyuncu takılır, sebep belirtilmez; hata sayısı ölçülemez | WebGL hatasını ayır, "tarayıcın 3B'yi desteklemiyor" metni göster, "Başla"yı devre dışı bırak; ölçüm için `webgl_yok` olayı |
+| G4 | Mobil/dokunma davranışı doğrulanmadı | `docs/strateji/mvp-kapsami.md` (dokunma/mobil test edilmedi); `docs/test-yayin/sahne1-dogrulama.md` "Yapılamayanlar": gerçek cihaz testi yok; kod tarafında pointer olayları ve `touch-action: none` (`css/style.css`) var, ama çalışma doğrulanmadı | Reklam ağırlıklı mobil hedeflediğinden (reklam planı §3) en büyük belirsizlik | Gerçek telefonda 5 sahneyi oyna; test sonucu belgelensin |
+| G5 | Portre ekranda sahne 1'de şeridin tamamı kadrajda olmayabilir | `docs/test-yayin/sahne1-dogrulama.md` (4): hedef noktası portrede kadrajda ama "şeridin tüm uzunluğu portrede kırpılabilir, bakılmadı" | Mobilde ilk sahnede yerleştirme alanı kısmen görünmeyebilir | Portre kadraj görsel testi |
+| G6 | Sahne 1 görsel kalitesi tarayıcıda doğrulanmadı | `sahne1-dogrulama.md`: render, ışık, doku okunurluğu, FPS ölçülmedi | Aktivasyonun (ilk sahne) kalitesi bilinmiyor | Emre'nin tarayıcıda 5 sahneyi oynaması (lansman planı Hafta 0) |
+| G7 | `robots.txt` proje alt yolunda etkisiz | `seo-raporu.md` §2: GitHub Pages proje sitesi `.../Putthatthere/`, robots.txt yalnızca alan adı kökünde okunur; dosya depo kökünde | `robots.txt`'teki `Disallow: /Putthatthere/demo/` fiilen işlemez | Engelleme `noindex` meta ile yapılır. Güncel durum: `demo/index.html` satır 6'da `<meta name="robots" content="noindex">` VAR (SEO raporu bunu "onay bekliyor" gösteriyor; rapor eskimiş, tutarsızlık Web/SEO odasına bildirilmeli). Ayrıca özel alan adı düşünülebilir |
+| G8 | Tüm depo yayınlanıyor, `docs/` ve `demo/` herkese açık | `.github/workflows/deploy-pages.yml`: `upload-pages-artifact` `path: '.'`; `README.md` demo'nun sunucuda `/demo/` altında olduğunu belirtir | İç belgeler (strateji, fiyatlandırma, bütçe) URL'si bilinirse okunabilir; `noindex` yalnızca arama motorunu engeller | Emre karar versin: yayın klasörünü yalnızca site dosyalarıyla sınırla (gizlilik/yayın kararı onay kapısında) |
+| G9 | "Skoru kopyala" ve "Yeni sahneler" ilgi düğmesi yok | `index.html` düğme listesi: yalnızca başla, dil, onay, sonraki sahne, tekrar oyna; `js/main.js` başka dinleyici yok. Lansman planı bunları hafta 0/4 işi olarak ister | Paylaşım ve talep ilgisi ölçülemez | Önceliklendirme Ürün Stüdyosu'nda |
+| G10 | Dil değişimi aynı URL'de | `seo-raporu.md` §2 (hreflang yok); `js/i18n.js` dili `localStorage`'a yazıyor | EN kullanıcı ilk HTML'de TR görür; arama/paylaşımda EN ayrışmaz | EN için ayrı URL ileride değerlendirilsin |
+
+## Kapsam dışı bırakılanlar (dayanak yok)
+
+- Gerçek kullanıcıların takıldığı sahne veya istediği özellik: veri yok. Sahne düşüşü ancak ölçüm kurulduktan ve oyuncu geldikten sonra görülür.
+- "Zor/kolay" yorumu: oyuncu verisi yok; yıldız ve puan dağılımı ölçülmedi.
+- Türkiye standartlarına uygunluk: karşılaştırma yapılmadı (lansman planı §1).
