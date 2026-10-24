@@ -17,6 +17,12 @@ const { createBat } = await import("../js/render/models/bat.js");
 const { createGolem } = await import("../js/render/models/golem.js");
 const { createBoss } = await import("../js/render/models/boss.js");
 const { createPiril } = await import("../js/render/models/piril.js");
+const { createArcher } = await import("../js/render/models/archer.js");
+const { createWolf } = await import("../js/render/models/wolf.js");
+const { createEmber } = await import("../js/render/models/ember.js");
+const { createPriest } = await import("../js/render/models/priest.js");
+const { createTotem } = await import("../js/render/models/totem.js");
+const { createKnight } = await import("../js/render/models/knight.js");
 const { ENEMY_VIS, DEATH_TIME, deathScale, drawCalls, enemyMode, prepareVisual } = await import("../js/render/enemyvis.js");
 const { MODEL_KINDS } = await import("../js/config/registry.js");
 const cfg = JSON.parse(readFileSync(new URL("../data/game.config.json", import.meta.url)));
@@ -28,6 +34,12 @@ const MODELS = {
   golem: { make: createGolem, tris: 6000 },
   boss: { make: createBoss, tris: 25000 },
   piril: { make: createPiril, tris: 2000 },
+  archer: { make: createArcher, tris: 6000 },
+  wolf: { make: createWolf, tris: 6000 },
+  ember: { make: createEmber, tris: 3000 },
+  priest: { make: createPriest, tris: 6000 },
+  totem: { make: createTotem, tris: 12000 },
+  knight: { make: createKnight, tris: 12000 },
 };
 const tris = (g) => { let n = 0; g.traverse((o) => { if (o.isMesh) n += o.geometry.index ? o.geometry.index.count / 3 : o.geometry.attributes.position.count / 3; }); return n; };
 const allFinite = (g) => { let ok = true; g.traverse((o) => { for (const v of [o.position, o.scale, o.rotation]) if (!Number.isFinite(v.x + v.y + v.z)) ok = false; if (o.material && "opacity" in o.material && !Number.isFinite(o.material.opacity)) ok = false; }); return ok; };
@@ -81,8 +93,17 @@ test("boss: setPhase kalkanı yalnız faz 3'te gösterir", () => {
   v.dispose();
 });
 
-test("ENEMY_VIS: dört model, config r/y ile uyumlu ve kayıtlı model türü", () => {
-  assert.deepEqual(Object.keys(ENEMY_VIS).sort(), ["bat", "boss", "ghost", "golem"]);
+test("knight: setEnraged öfke durumunu tutar", () => {
+  const v = createKnight({ scale: 1 });
+  assert.equal(v.getEnraged(), false);
+  v.setEnraged(true); assert.equal(v.getEnraged(), true);
+  v.update(1, 0.016, "windup"); assert.ok(allFinite(v.group));
+  v.setEnraged(false); assert.equal(v.getEnraged(), false);
+  v.dispose();
+});
+
+test("ENEMY_VIS: 10 düşman modeli, config r/y ile uyumlu ve kayıtlı model türü", () => {
+  assert.deepEqual(Object.keys(ENEMY_VIS).sort(), [...MODEL_KINDS].sort());
   for (const [id, s] of Object.entries(ENEMY_VIS)) {
     assert.ok(MODEL_KINDS.includes(id));
     assert.ok(cfg.enemies[id].r > 0 && cfg.enemies[id].y > 0);
@@ -93,12 +114,16 @@ test("ENEMY_VIS: dört model, config r/y ile uyumlu ve kayıtlı model türü", 
     // görsel boy / yarıçap oranı makul (çarpışma d.r ile sabit; görsel hit alanından çok küçük/büyük olmasın)
     assert.ok(h / r > 1.4 && h / r < 3.5, `${id}: boy ${h.toFixed(2)}, r ${r}`);
     assert.ok(box.min.y < s.cy && box.max.y > s.cy, `${id}: cy modelin içinde olmalı`);
+    if (s.grounded) { // yere basan model: ayaklar obj orijininin (config y) altında en çok bir bob kadar yerin altına girer
+      const feet = cfg.enemies[id].y - (s.cy - box.min.y) * s.scale * (cfg.enemies[id].scale || 1);
+      assert.ok(feet > -0.12 && feet < 0.3, `${id}: ayak yüksekliği ${feet.toFixed(2)}`);
+    }
     v.dispose();
   }
 });
 
-test("prepareVisual: receiveShadow kapalı, castShadow yalnız boss'ta", () => {
-  for (const id of ["ghost", "golem", "boss"]) {
+test("prepareVisual: receiveShadow kapalı, castShadow yalnız boss ve şövalyede", () => {
+  for (const id of Object.keys(ENEMY_VIS)) {
     const v = ENEMY_VIS[id].create({ scale: 1 });
     prepareVisual(v, ENEMY_VIS[id]);
     let cast = 0; v.group.traverse((o) => { if (o.isMesh) { assert.equal(o.receiveShadow, false); if (o.castShadow) cast++; } });
@@ -126,17 +151,19 @@ test("deathScale: 1'den 0'a, sınırlı", () => {
 
 test("çizim yükü: model başına çizim çağrısı sınırı ve en kalabalık bölüm tahmini", () => {
   const per = {};
-  for (const id of ["ghost", "bat", "golem", "boss"]) {
+  for (const id of Object.keys(ENEMY_VIS)) {
     const v = ENEMY_VIS[id].create({ scale: 1 });
     prepareVisual(v, ENEMY_VIS[id]);
     per[id] = { draw: drawCalls(v.group), meshes: v.stats.meshes, tris: v.stats.triangles, shadowPass: ENEMY_VIS[id].shadow ? 1 : 0 };
     v.dispose();
   }
   assert.ok(per.ghost.draw <= 20 && per.bat.draw <= 20 && per.golem.draw <= 30 && per.boss.draw <= 45, JSON.stringify(per));
+  for (const id of ["archer", "wolf", "ember", "priest", "totem"]) assert.ok(per[id].draw <= 30, `${id}: ${per[id].draw}`);
+  assert.ok(per.knight.draw <= 45);
   // en kalabalık bölüm: en büyük cap'li bölümün başlangıç karışımı + spawn en kötü durumu
   const cap = Math.max(...Object.values(cfg.levels).map((l) => l.cap || 0));
-  const worst = Math.max(per.ghost.draw, per.bat.draw, per.golem.draw);
-  const total = cap * worst + per.boss.draw * 2; // üst sınır: cap kadar en ağır küçük/orta düşman + 2 boss-sınıfı
+  const worst = Math.max(...Object.entries(per).filter(([k]) => k !== "boss" && k !== "knight").map(([, v]) => v.draw));
+  const total = cap * worst + Math.max(per.boss.draw, per.knight.draw) * 2; // üst sınır: cap kadar en ağır küçük/orta düşman + 2 boss-sınıfı
   console.log("[cizim-yuku]", JSON.stringify(per), "cap", cap, "ust-sinir-cagri", total);
   assert.ok(total < 600);
 });

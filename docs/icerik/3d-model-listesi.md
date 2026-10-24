@@ -1,6 +1,6 @@
 # 3B model listesi (kodla üretilen karakterler)
 
-Durum: Aldemir, Pırıl, Ruh, Yarasa, Taş Bekçi ve Gölge Kral HAZIR ve oyuna bağlı (aşağıdaki tablo). Okçu, Kurt, Kor Hortlak, Rahip, Totem ve Şövalye henüz üretilmedi (mevcut prosedürel modellerde). Aldemir için gelen paket (`createAldemir`) örnek alındı. Düşman değerleri `data/game.config.json`'dan, davranışlar `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md` §3'ten alındı. Poligon bütçeleri VARSAYIMDIR, gerçek telefonda ölçülmedi.
+Durum: Aldemir, Pırıl ve 10 düşmanın tamamı (Ruh, Yarasa, Taş Bekçi, Gölge Kral + Okçu, Kurt, Kor Hortlak, Rahip, Totem, Şövalye; Full12 Pro v2 paketi) HAZIR ve oyuna bağlı (12/12). Yalnızca P3 sahne figürleri (Zerrin, Taşkın, Veyis-insan) hâlâ yok. Aldemir için gelen paket (`createAldemir`) örnek alındı. Düşman değerleri `data/game.config.json`'dan, davranışlar `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md` §3'ten alındı. Poligon bütçeleri VARSAYIMDIR, gerçek telefonda ölçülmedi.
 
 ## 1. Neden bütçe önemli
 
@@ -58,10 +58,18 @@ Kurallar:
 | Yarasa | HAZIR, bağlı (kaliteden bağımsız) | `models/bat.js` | ölçek 1, merkez 0.06 |
 | Taş Bekçi | HAZIR, bağlı (kaliteden bağımsız) | `models/golem.js` | ölçek 1, merkez 1.2, yere basar |
 | Gölge Kral | HAZIR, bağlı (kaliteden bağımsız) | `models/boss.js` | ölçek 1.3, merkez 1.77, yere basar; faz 3 kalkanı modelin kendi küresi |
+| Kemik Okçu | HAZIR, bağlı (kaliteden bağımsız) | `models/archer.js` | ölçek 0.9, merkez 1.15, yere basar (5095 üçgen) |
+| Kurt Ruhu | HAZIR, bağlı (kaliteden bağımsız) | `models/wolf.js` | ölçek 1, merkez 0.78, yere basar (3682) |
+| Kor Hortlak | HAZIR, bağlı (kaliteden bağımsız) | `models/ember.js` | ölçek 0.85, merkez 0.91, havada süzülür (2124) |
+| Karanlık Rahip | HAZIR, bağlı (kaliteden bağımsız) | `models/priest.js` | ölçek 0.85, merkez 1.35, süzülür (5199) |
+| Lanet Totemi | HAZIR, bağlı (kaliteden bağımsız) | `models/totem.js` | ölçek 1.25, merkez 1.28, yere basar (4036) |
+| Kemik Şövalye | HAZIR, bağlı (kaliteden bağımsız) | `models/knight.js` | ölçek 0.9, merkez 1.34, yere basar, gerçek gölge; `setEnraged` (6994) |
 
 Mod eşlemesi (oyun durumu -> `update` modu): hareket `walk`/durağan `idle`; temas hasarından hemen önce (`dist < r + 1.2`) ve Gölge Kral yer halkası uyarısı süresince `windup`; temas hasarı anı, boss halka patlaması ve boss çağrısı `attack`; hasar alınca 0.28 sn `hurt`; ölümde ~0.35 sn `dead` (oynanış ölümü anında işlenir, yalnız görsel gecikmeli silinir). Donma/vuruş flaşı `setTint` ile. Bağlantı mantığı: `js/render/enemyvis.js`.
 
-Oyundaki mevcut durum: hepsi şimdilik `js/render/enemies.js` içindeki basit prosedürel modellerle çiziliyor.
+Full12 v2 düşmanları için ek eşleme (`ai.js` durum bilgisinden; sayılar/oynanış değişmedi): **Okçu** `windup` = atıştan önceki son 0,5 sn, `attack` = atış anı (0,3 sn). **Kurt** `windup` = çömelme (0,7 sn), `attack` = hücum (0,6 sn), yorgunlukta (1 sn) yavaş `walk`. **Kor Hortlak** `windup` = patlama öncesi 0,5 sn kızarma; patlamada düşman ölür (`dead`, 0,35 sn küçülme), ayrı bir `attack` karesi yok. **Rahip** `windup` = kalkan/iyileştirmeden önceki son 0,5 sn, `attack` = verme anı (0,6 sn). **Totem** hep `idle`; doğurmadan önceki son 1 sn `windup`, doğurma anı `attack` (0,8 sn). **Şövalye** `windup` = yere vurma hazırlığı (1 sn), `attack` = şok dalgası patlarken (0,4 sn); %50 hp öfkesi modelin `setEnraged(true)` çağrısına bağlı (`e.enraged`, mor aura + parlayan göz). Eski prosedürel düşman modelleri (`BUILD`) kaldırıldı, yedek yok: modül yüklenemezse oyun açılmaz (modeller statik import).
+
+Oyundaki mevcut durum: 10 düşmanın hepsi 3B modelle çiziliyor (`js/render/enemies.js` içindeki eski prosedürel modeller kaldırıldı).
 
 ### P0 — En görünür (oyunun ilk izlenimi)
 

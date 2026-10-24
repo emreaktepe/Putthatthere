@@ -86,15 +86,12 @@ export function bossLogic(e, dt, es) {
 
 export function applyLook(e) {
   const slowed = e.slow > 0, fl = e.flash > 0;
-  if (e.vis) { // 3B model: renk karışımı setTint ile (vuruş flaşı beyaz, yavaşlama buz mavisi); yalnız durum değişince
+  { // 3B model: renk karışımı setTint ile (vuruş flaşı beyaz, yavaşlama buz mavisi); yalnız durum değişince
     const key = fl ? 2 : slowed ? 1 : 0;
     if (key !== e.tintKey) { e.tintKey = key; e.vis.setTint(key === 2 ? 0xffffff : 0x9fdcff, key === 2 ? 0.75 : key === 1 ? 0.5 : 0); }
-  } else {
-    e.mat.color.setHex(fl ? 0xffffff : slowed ? 0x9fdcff : e.fuse > 0 ? 0xffffff : e.d.color);
-    e.mat.emissiveIntensity = fl ? 4 : slowed ? 0.2 : 1 + e.glow * 3;
   }
   const k = Math.min(e.age / 0.35, 1), gk = 1 - (1 - k) * (1 - k); // belirme: yumuşak büyüme
-  e.mesh.scale.set(e.base.x * gk, e.base.y * e.sq * gk, e.base.z * gk);
+  e.mesh.scale.set(e.base.x * gk, e.base.y * gk, e.base.z * gk);
   const sh = e.shield > 0 || !!e.shielded;
   setShieldVis(e, sh && !(e.vis && e.vis.setPhase), e.shielded ? 0xbfe0ff : 0x6bff9a); // Gölge Kral modelin kendi faz-3 kalkanını çizer: çift görüntü yok
   setIce(e, slowed);
@@ -117,7 +114,6 @@ export function updateEnemies(dt, t, es) {
     const dx = wizard.position.x - p.x, dz = wizard.position.z - p.z;
     const dist = Math.hypot(dx, dz) || 0.0001;
     const ux = dx / dist, uz = dz / dist;
-    e.glow = 0; e.sq = 1;
     let mx = 0, mz = 0; // hareket (birim/sn)
 
     switch (d.ai) {
@@ -131,8 +127,8 @@ export function updateEnemies(dt, t, es) {
         const want = dist > 9 ? 1 : dist < 7 ? -1 : 0;
         mx = ux * e.spd * want; mz = uz * e.spd * want;
         e.cd -= edt;
-        if (e.cd < 0.5) e.glow = 1;
-        if (e.cd <= 0) { e.cd = 2.5; enemyShoot(e, ux, uz); }
+        e.windT = e.cd > 0 && e.cd < 0.5 ? 0.1 : 0; // ateş öncesi son 0,5 sn: silah parlaması (model "windup")
+        if (e.cd <= 0) { e.cd = 2.5; enemyShoot(e, ux, uz); e.atkT = 0.3; } // atış anı ("attack")
         break;
       }
       case "charge": { // Kurt Ruhu: yaklaş -> çömel -> hücum -> yorgun
@@ -140,10 +136,11 @@ export function updateEnemies(dt, t, es) {
           mx = ux * e.spd; mz = uz * e.spd;
           if (dist < 6) { e.st = "crouch"; e.tm = 0.7; }
         } else if (e.st === "crouch") {
-          e.tm -= edt; e.glow = 1; e.sq = 0.6;
+          e.tm -= edt; e.windT = 0.1; // çömelme 0,7 sn ("windup")
           if (e.tm <= 0) { e.st = "charge"; e.tm = 0.6; e.cx = ux; e.cz = uz; }
         } else if (e.st === "charge") {
           mx = e.cx * 10; mz = e.cz * 10;
+          e.atkT = 0.1; // hücum süresince "attack"; sonra yorgunlukta yavaş yürüyüş
           e.tm -= edt;
           if (e.tm <= 0) { e.st = "tired"; e.tm = 1; }
         } else {
@@ -155,7 +152,7 @@ export function updateEnemies(dt, t, es) {
       }
       case "bomber": { // Kor Hortlak: yaklaşınca 0.5 sn kızarıp patlar
         if (e.fuse > 0) {
-          e.fuse -= edt; e.glow = 1;
+          e.fuse -= edt; e.windT = 0.1; // patlama öncesi kızarma 0,5 sn ("windup"); patlama anında düşman ölür ("dead")
           if (e.fuse <= 0) { e.suicide = true; killEnemy(e); continue; }
         } else {
           mx = ux * e.spd; mz = uz * e.spd;
@@ -167,18 +164,21 @@ export function updateEnemies(dt, t, es) {
         const want = dist < 8 ? -1 : dist > 12 ? 1 : 0;
         mx = ux * e.spd * want; mz = uz * e.spd * want;
         e.cd -= edt;
-        if (e.cd <= 0) { e.cd = 4; priestSupport(e); }
+        e.windT = e.cd > 0 && e.cd < 0.5 ? 0.1 : 0; // kalkan/iyileştirme öncesi son 0,5 sn ("windup")
+        if (e.cd <= 0) { e.cd = 4; priestSupport(e); e.atkT = 0.6; } // verme anı ("attack")
         break;
       }
       case "static": { // Lanet Totemi: 12 sn'de bir Ruh doğurur
-        e.cd -= edt; e.glow = 0.5 + 0.5 * Math.sin(t * 4);
-        if (e.cd <= 0) { e.cd = 12; if (d.summon && liveCount() < LEVELS[S.level].cap + 3) spawnEnemy(d.summon, { x: p.x + rand(1.5), z: p.z + rand(1.5) }); }
+        e.cd -= edt;
+        e.windT = e.cd > 0 && e.cd < 1 ? 0.1 : 0; // doğurmadan önceki son 1 sn ("windup"); sonra "attack"
+        if (e.cd <= 0) { e.cd = 12; e.atkT = 0.8; if (d.summon && liveCount() < LEVELS[S.level].cap + 3) spawnEnemy(d.summon, { x: p.x + rand(1.5), z: p.z + rand(1.5) }); }
         break;
       }
       case "knight": { // Kemik Şövalye: yürür, 5 sn'de bir yere vurur (yarıçap 4 şok), %50 hp'de hızlanır
         if (!e.enraged && e.hp <= e.maxHp * 0.5) { e.enraged = true; e.spd = 1.6; e.cd = 0; toast(STRINGS.toasts.knightEnrage, 2000); }
         if (e.wind > 0) {
-          e.wind -= edt; e.glow = 1;
+          e.wind -= edt; e.windT = 0.1; // yere vurma hazırlığı 1 sn ("windup"); biterken şok dalgası patlar ("attack")
+          if (e.wind <= 0) e.atkT = 0.4;
         } else {
           mx = ux * e.spd; mz = uz * e.spd;
           e.cd -= edt;

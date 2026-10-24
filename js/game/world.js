@@ -32,7 +32,7 @@ export function spawnEnemy(type, at) {
   scene.add(obj);
   const e = {
     mesh: obj, mat: m, base, type, d, hp: d.hp, maxHp: d.hp, slow: 0, phase: Math.random() * 10, spd: d.speed,
-    glow: 0, sq: 1, shield: 0, dead: false, st: "approach", tm: 0, cd: 0, fuse: 0,
+    shield: 0, dead: false, st: "approach", tm: 0, cd: 0, fuse: 0,
     anim, baked, vis, shieldK, tintKey: -1, ts: 1, moving: false, dying: false, hurtT: 0, atkT: 0, windT: 0, age: 0, flash: 0, kx: 0, kz: 0, blob: null, iceG: null,
   };
   if (d.ai !== "boss" && d.ai !== "knight") { // kontakt gölgesi: gerçek gölge yerine yumuşak daire

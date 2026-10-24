@@ -11,7 +11,7 @@ export const ARENA = 14; // geometriye bağlı; konfigürasyondan değişmez
 
 // düşman yapay zekâ durum makineleri (js/game/ai.js)
 export const AI_KINDS = ["chase", "ranged", "charge", "bomber", "support", "static", "knight", "boss"];
-// düşman geometri üreticileri (js/render/enemies.js BUILD) ve ses etiketi (kill:<model>)
+// düşman 3B modelleri (js/render/enemyvis.js ENEMY_VIS) ve ses etiketi (kill:<model>)
 export const MODEL_KINDS = ["ghost", "bat", "golem", "archer", "wolf", "ember", "priest", "totem", "knight", "boss"];
 // zemin doku türleri (js/render/themes.js drawFloor)
 export const FLOOR_KINDS = ["grass", "wet", "flag", "dirt", "snow", "ash", "facet", "bone", "tile"];
