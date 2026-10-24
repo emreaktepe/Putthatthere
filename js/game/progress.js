@@ -88,3 +88,27 @@ export function recordBest(best, id, { score, time }) {
   const prev = best.levels[id] || { score: 0, time: 0 };
   return { score: best.score, levels: { ...best.levels, [id]: { score: Math.max(prev.score, Math.floor(score)), time: Math.max(prev.time, Math.floor(time)) } } };
 }
+
+// Harita çizim modeli (SVG'den bağımsız, saf). pts: order ile aynı sırada [{x,y}]; useVia=false ise kenarlara hafif varsayılan kıvrım verilir
+// (dikey yerleşimde config'teki via noktaları geçersizdir). -> { nodes: [{id,index,x,y,status}], links: [{from,to,state,d}] }
+export function buildMapGraph(order, edges, statuses, pts, useVia = true) {
+  const at = (id) => pts[order.indexOf(id)];
+  const nodes = order.map((id, index) => ({ id, index, x: pts[index].x, y: pts[index].y, status: statuses[id] }));
+  const links = [];
+  edges.forEach((e, i) => {
+    const a = at(e.from), b = at(e.to);
+    if (!a || !b) return;
+    const via = useVia && e.via.length ? e.via : defaultVia(a, b, i % 2 ? -1 : 1);
+    links.push({ from: e.from, to: e.to, state: edgeState(e, statuses), d: smoothPath([[a.x, a.y], ...via, [b.x, b.y]]) });
+  });
+  return { nodes, links };
+}
+
+// Bölüm konumları: tüm bölümlerde config konumu varsa o; yoksa yatay yılan. Dikey ekranda türetilmiş dikey yerleşim.
+export function mapPoints(levels, { portrait = false, viewBox = [1000, 700] } = {}) {
+  const n = levels.length;
+  if (portrait) { const p = portraitLayout(n); return { W: p.W, H: p.H, pts: p.pts, useVia: false }; }
+  const [W, H] = viewBox;
+  const has = levels.every((L) => L.map && Number.isFinite(L.map.x) && Number.isFinite(L.map.y));
+  return { W, H, pts: has ? levels.map((L) => ({ x: L.map.x, y: L.map.y })) : serpentineLayout(n, W, H), useVia: has };
+}

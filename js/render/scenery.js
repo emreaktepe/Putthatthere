@@ -2,7 +2,7 @@
 import * as THREE from "three";
 import { ARENA, rand } from "../core/util.js";
 import { BMAT, BOX, CONE, CYL, MM, SPH, TR, glowSprite, glowTex, mk } from "./gfx.js";
-import { fireCfg, fireLight, mistTex, mists, scene, starGroups } from "./scene.js";
+import { cloudGroup, fireCfg, fireLight, mistTex, mists, scene, skyState, skyU, starGroups } from "./scene.js";
 
 export const sceneryGroup = new THREE.Group();
 scene.add(sceneryGroup);
@@ -310,6 +310,8 @@ export function sceneryTick(dt, t) {
     : 0;
   mistTex.offset.x += dt * 0.004;
   mists[1].rotation.z += dt * 0.01;
-  starGroups[0].material.opacity = 0.65 + 0.35 * Math.sin(t * 1.3);
-  starGroups[1].material.opacity = 0.65 + 0.35 * Math.sin(t * 1.3 + 2);
+  starGroups[0].material.opacity = (0.65 + 0.35 * Math.sin(t * 1.3)) * skyState.stars;
+  starGroups[1].material.opacity = (0.65 + 0.35 * Math.sin(t * 1.3 + 2)) * skyState.stars;
+  skyU.time.value = t;
+  cloudGroup.rotation.y += dt * 0.004;
 }

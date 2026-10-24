@@ -7,7 +7,7 @@ export const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0714);
 scene.fog = new THREE.FogExp2(0x0a0714, 0.035);
 
-export const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+export const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 220);
 camera.position.set(0, 17, 12);
 camera.lookAt(0, 0, 0);
 
@@ -64,34 +64,84 @@ for (const [x, z, w, d] of [[0, -ARENA, ARENA * 2, 0.14], [0, ARENA, ARENA * 2, 
   scene.add(b);
 }
 
-// gökyüzü: gradyan kubbe, ay, yıldızlar (kamera yukarıdan baktığı için çoğu zaman görünmez; ufuk gösteren bir açıda görünür)
-export const skyU = { top: { value: new THREE.Color(0x101030) }, bot: { value: new THREE.Color(0x0a0714) } };
-export const sky = new THREE.Mesh(new THREE.SphereGeometry(90, 16, 10), new THREE.ShaderMaterial({
+// gökyüzü: gradyan kubbe, aurora, ay, yıldızlar, bulutlar ve ufuk siluet halkası. Hepsi skyGroup içinde kameraya eşlik eder
+// (loop.js her kare konumunu kameraya taşır), böylece paralaks olmaz. Alçak kamera açılarında görünür; yukarıdan bakışta kadraja girmez.
+export const skyGroup = new THREE.Group();
+scene.add(skyGroup);
+export const skyU = {
+  top: { value: new THREE.Color(0x101030) }, bot: { value: new THREE.Color(0x0a0714) }, glow: { value: new THREE.Color(0x303060) },
+  aur: { value: new THREE.Color(0x5affc8) }, aurK: { value: 0 }, time: { value: 0 },
+};
+export const sky = new THREE.Mesh(new THREE.SphereGeometry(90, 24, 14), new THREE.ShaderMaterial({
   uniforms: skyU, side: THREE.BackSide, depthWrite: false, fog: false,
-  vertexShader: "varying float h; void main(){ h = normalize(position).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-  fragmentShader: "uniform vec3 top; uniform vec3 bot; varying float h; void main(){ gl_FragColor = vec4(mix(bot, top, smoothstep(0.0, 0.7, h)), 1.0);\n#include <colorspace_fragment>\n}",
+  vertexShader: "varying vec3 d; void main(){ d = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+  fragmentShader: [
+    "uniform vec3 top; uniform vec3 bot; uniform vec3 glow; uniform vec3 aur; uniform float aurK; uniform float time; varying vec3 d;",
+    "void main(){ float h = clamp(d.y, 0.0, 1.0); vec3 c = mix(bot, top, smoothstep(0.0, 0.65, h));",
+    "c += glow * exp(-h * 7.0) * 0.8;",
+    "float w = sin(d.x * 5.0 + sin(d.z * 3.0 + time * 0.15) * 2.0 + time * 0.2) * 0.5 + 0.5;",
+    "float band = smoothstep(0.12, 0.3, d.y) * (1.0 - smoothstep(0.45, 0.8, d.y));",
+    "c += aur * aurK * band * (0.3 + 0.7 * w);",
+    "gl_FragColor = vec4(c, 1.0);",
+    "#include <colorspace_fragment>",
+    "}",
+  ].join("\n"),
 }));
 sky.renderOrder = -10;
 sky.frustumCulled = false;
-scene.add(sky);
+skyGroup.add(sky);
 export const moonTex = canvasTex(128, 128, (g, w) => {
   g.fillStyle = "#f4f1e4"; g.beginPath(); g.arc(w / 2, w / 2, w * 0.42, 0, 6.3); g.fill();
   g.fillStyle = "rgba(150,150,170,.35)";
   for (const [x, y, r] of [[0.4, 0.4, 0.09], [0.6, 0.55, 0.12], [0.45, 0.68, 0.06], [0.62, 0.3, 0.05]]) { g.beginPath(); g.arc(w * x, w * y, w * r, 0, 6.3); g.fill(); }
 });
 export const moonSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: moonTex, fog: false, depthWrite: false }));
-moonSprite.scale.setScalar(12); moonSprite.position.set(-34, 40, -62);
-export const moonHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xb9c7ff, fog: false, depthWrite: false, transparent: true, blending: THREE.AdditiveBlending, opacity: 0.6 }));
-moonHalo.scale.setScalar(40); moonHalo.position.copy(moonSprite.position);
-scene.add(moonSprite, moonHalo);
+moonSprite.position.set(-34, 17.6, -62); // ufuktan ~14 derece yukarıda: alçak kamerada kadrajın üst kısmına girer
+moonSprite.scale.setScalar(11);
+export const moonHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xb9c7ff, fog: false, depthWrite: false, transparent: true, blending: THREE.AdditiveBlending, opacity: 0.7 }));
+moonHalo.scale.setScalar(36); moonHalo.position.copy(moonSprite.position);
+skyGroup.add(moonSprite, moonHalo);
 export const starGroups = [0, 1].map(() => {
-  const pts = [];
-  for (let i = 0; i < 110; i++) { const a = Math.random() * 6.28, e = 0.1 + Math.random() * 1.2, r = 85; pts.push(Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r); }
+  const pts = [], n = IS_TOUCH ? 90 : 130;
+  for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, e = 0.04 + Math.random() * 1.3, r = 85; pts.push(Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r); }
   const p = new THREE.Points(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(pts, 3)), new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false, fog: false, transparent: true, depthWrite: false }));
   p.frustumCulled = false;
-  scene.add(p);
+  skyGroup.add(p);
   return p;
 });
+// bulutlar: yumuşak kabarcık dokulu sprite halkası (az sayıda, mobilde daha az)
+export const cloudTex = canvasTex(128, 64, (g, w, h) => {
+  const R = mulberry(7);
+  for (let i = 0; i < 9; i++) {
+    const x = w * (0.2 + R() * 0.6), y = h * (0.4 + R() * 0.25), r = h * (0.22 + R() * 0.25);
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, "rgba(255,255,255,.7)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+});
+export const cloudGroup = new THREE.Group();
+export const cloudMats = [];
+{
+  const n = IS_TOUCH ? 7 : 11, R = mulberry(31);
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.SpriteMaterial({ map: cloudTex, fog: false, depthWrite: false, transparent: true, opacity: 0 });
+    const sp = new THREE.Sprite(m), a = (i / n) * Math.PI * 2 + R() * 0.3, r = 74 + R() * 8;
+    sp.position.set(Math.cos(a) * r, 10 + R() * 22, Math.sin(a) * r);
+    sp.scale.set(40 + R() * 24, 14 + R() * 6, 1);
+    cloudMats.push(m); cloudGroup.add(sp);
+  }
+  skyGroup.add(cloudGroup);
+}
+// ufuk siluet halkası: dağ/orman/harabe/kale çizimi themes.js'te canvas'a çizilir; renk tema rengine göre koyulaştırılır
+export const ridgeCanvas = document.createElement("canvas");
+ridgeCanvas.width = IS_TOUCH ? 1024 : 2048; ridgeCanvas.height = IS_TOUCH ? 64 : 128;
+export const ridgeTex = new THREE.CanvasTexture(ridgeCanvas);
+ridgeTex.wrapS = THREE.RepeatWrapping; ridgeTex.repeat.set(2, 1);
+export const ridgeMat = new THREE.MeshBasicMaterial({ map: ridgeTex, transparent: true, side: THREE.BackSide, fog: false, depthWrite: false, color: 0x05030a });
+export const skyState = { stars: 1 }; // tema başına yıldız parlaklığı çarpanı (scenery.js okur)
+export const ridge = new THREE.Mesh(new THREE.CylinderGeometry(70, 70, 22, 48, 1, true), ridgeMat);
+ridge.position.y = 9; ridge.renderOrder = -5; ridge.frustumCulled = false;
+skyGroup.add(ridge);
 
 // alçak sis katmanları (canvas gürültü dokusu, yavaş kayar)
 export const mistTex = canvasTex(256, 256, (g, w) => {

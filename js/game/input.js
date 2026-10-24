@@ -44,7 +44,7 @@ addEventListener("pointerdown", (e) => {
       joyEl.style.display = "block";
       joyEl.firstElementChild.style.transform = "";
     }
-  } else cast();
+  } else if (e.button === 0) cast(); // sağ tuş kamera döndürme içindir
 });
 export function endPointer(e) {
   if (INPUT.joy && e.pointerId === INPUT.joy.id) { INPUT.joy = null; joyEl.style.display = "none"; }

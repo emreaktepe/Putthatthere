@@ -16,7 +16,9 @@ Telefondan denemek için sunucunun yazdığı "Network" adresini (aynı Wi-Fi) k
 ## Kontroller
 
 - **Bilgisayar:** WASD / ok tuşları yürü · fare nişan · Boşluk veya tık büyü · 1–7 büyü seç · Q / E / R yetenekler
-- **Mobil:** ekranda sürükle = yürü · sağ alttaki ✦ butonu = ateş (nişan otomatik) · alttaki simgeler = büyü değiştir
+- **Mobil:** ekranda sürükle = yürü · sağ alttaki ✦ butonu = ateş (nişan otomatik) · alttaki simgeler = büyü değiştir · HUD'daki 📷 = kamera açısı
+- **Kamera:** V (veya 📷) açıyı değiştirir (Yukarıdan / Eğik / Omuz-alçak) · Z / C döndürür · fare tekerleği yakınlaştırır · sağ tuşla sürükleme döndürür. Yürüme kamera-görelidir; seçim `buyucu_kamera` anahtarında saklanır.
+- **Akış:** Menü → (giriş) → Harita → bölüm kartı → savaş → ödül/perk → Harita. Kayıt `buyucu_save`; tamamlanan bölümler haritadan "alıştırma" olarak tekrar oynanır (ilerleme değişmez).
 
 ## Proje yapısı
 

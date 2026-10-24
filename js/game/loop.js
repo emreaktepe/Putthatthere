@@ -11,7 +11,9 @@ import { isTouch, keys, mouse, ray } from "./input.js";
 import { cast, fireSpell, nearestEnemies } from "./weapons.js";
 import { liveCount, placePickup, spawnCrystal, spawnEnemy } from "./world.js";
 import { addCloud, addFx, burst, dropHazard, emit, removeObj, updateSparks } from "../render/fx.js";
-import { camera, renderer, ring, scene, updateWeather, view, wand } from "../render/scene.js";
+import { camera, renderer, ring, scene, updateWeather, wand } from "../render/scene.js";
+import { rig, updateCamera } from "../render/camera.js";
+import { rotateMove } from "./cameramath.js";
 import { sceneryTick } from "../render/scenery.js";
 import { animatePiril, animateWizard, guide, guideGeo, orbTip, piril, shieldBall, wizard } from "../render/wizard.js";
 import { renderHud, updateAbilityUi } from "../ui/hud.js";
@@ -50,6 +52,7 @@ export function update(dt, t) {
   if (INPUT.joy) { dx += INPUT.joy.dx; dz += INPUT.joy.dy; }
   const dir = new THREE.Vector3(dx, 0, dz);
   if (dir.lengthSq() > 1) dir.normalize();
+  { const m = rotateMove(dir.x, dir.z, rig.yaw); dir.set(m.x, 0, m.z); } // yürüme kamera-göreli: W/joystick yukarı = ekranda yukarı
   if (dir.lengthSq() > 0.01) moveDir.copy(dir).normalize();
   wizard.position.addScaledVector(dir, GAME.baseSpeed * PLAYER.speedMul * S.speedMul * dt);
   wizard.position.x = THREE.MathUtils.clamp(wizard.position.x, -ARENA + 0.5, ARENA - 0.5);
@@ -225,9 +228,7 @@ export function startLoop() {
   ring.rotation.z += dt * 0.3;
   const focus = wizard.position.clone().multiplyScalar(0.6);
   RT.shake = Math.max(RT.shake - dt * 2.5, 0);
-  camera.position.set(focus.x + rand(RT.shake), 17 * view.camK + rand(RT.shake * 0.5), focus.z + 12 * view.camK + rand(RT.shake));
-  camera.lookAt(focus);
-  camera.updateMatrixWorld();
+  updateCamera(dt, focus.x, focus.z, (k) => rand(RT.shake * k));
   animateWizard(dt, t);
   updateWeather(dt, t, wizard.position.x, wizard.position.z);
   sceneryTick(dt, t);
