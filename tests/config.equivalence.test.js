@@ -50,7 +50,7 @@ test("ABILITIES / ABILITY_ORDER eşdeğer (EK: params)", () => {
 });
 
 test("ENEMIES / ENEMY_NAMES eşdeğer (EK: name, shortName, scale, model, summon*)", () => {
-  const got = mapVals(A.ENEMIES, (e) => strip(e, ["name", "shortName", "scale", "model", "summon", "summons1", "summons2", "character"]));
+  const got = mapVals(A.ENEMIES, (e) => strip(e, ["name", "shortName", "scale", "model", "summon", "summons1", "summons2", "character", "image"]));
   assert.deepEqual(got, L.ENEMIES);
   assert.deepEqual(Object.keys(A.ENEMIES), Object.keys(L.ENEMIES));
   assert.deepEqual(A.ENEMY_NAMES, L.ENEMY_NAMES);

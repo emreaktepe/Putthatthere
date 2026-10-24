@@ -122,7 +122,11 @@ test("adapt: görsel alanları çalışma zamanı verisine geçer; yoksa alan ek
   assert.equal(A.LEVELS[0].image, "assets/art/bolum-forest.webp");
   assert.equal(A.LEVELS[0].nodeImage, "assets/art/dugum-forest.webp");
   assert.deepEqual(A.UI_ICONS, { camera: "assets/art/ui-kamera.webp" });
-  const B = adapt(validate(JSON.parse(fs.readFileSync(new URL("../data/game.config.json", import.meta.url), "utf8"))).sanitized);
+  const plain = JSON.parse(fs.readFileSync(new URL("../data/game.config.json", import.meta.url), "utf8"));
+  for (const o of [plain.perks, plain.enemies]) for (const v of Object.values(o)) delete v.image;
+  for (const v of Object.values(plain.levels)) { delete v.image; delete v.nodeImage; }
+  delete plain.ui;
+  const B = adapt(validate(plain).sanitized);
   assert.equal("image" in B.PERKS[0], false); assert.equal("image" in B.ENEMIES.ghost, false); assert.equal("image" in B.LEVELS[0], false);
   assert.deepEqual(B.UI_ICONS, {});
 });

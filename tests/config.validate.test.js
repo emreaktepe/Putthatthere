@@ -259,14 +259,15 @@ test("ui.icons: bilinmeyen ikon adı uyarı verir, kalp görseli tek başına uy
   assert.ok(has(run((c) => { c.ui = { icons: { heartFull: "assets/art/ui-kalp-dolu.webp" } }; }), "W_ART_PAIR", "/ui/icons/heartEmpty"));
   assert.ok(!has(run((c) => { c.ui = { icons: { heartFull: "assets/art/a.webp", heartEmpty: "assets/art/b.webp" } }; }), "W_ART_PAIR"));
 });
-test("varsayılan konfigürasyon: 7 büyü ve 3 yetenek görseli bağlı, dosyaları var; perk/düşman/bölüm/ui görselleri boş", () => {
+test("varsayılan konfigürasyon: tüm görseller (73 yol) bağlı ve dosyaları var", () => {
   for (const id of Object.keys(base.weapons)) { assert.equal(base.weapons[id].image, `assets/art/ikon-buyu-${id}.webp`); assert.equal(base.weapons[id].imageSmall, undefined); }
   for (const id of Object.keys(base.abilities)) { assert.equal(base.abilities[id].image, `assets/art/ikon-yetenek-${id}.webp`); assert.equal(base.abilities[id].imageSmall, `assets/art/ikon-yetenek-${id}-128.webp`); }
   const paths = [];
   const walk = (v) => { if (typeof v === "string" && /^assets\/art\//.test(v)) paths.push(v); else if (v && typeof v === "object") Object.values(v).forEach(walk); };
   walk(base);
-  assert.ok(paths.length === 20);
+  assert.equal(paths.length, 73);
   for (const p of paths) assert.ok(fs.existsSync(new URL("../" + p, import.meta.url)), p + " dosyası var");
-  assert.ok(Object.values(base.perks).every((x) => !x.image) && Object.values(base.enemies).every((x) => !x.image));
-  assert.ok(Object.values(base.levels).every((x) => !x.image && !x.nodeImage) && !base.ui);
+  assert.ok(Object.entries(base.perks).every(([id, x]) => x.image === `assets/art/ikon-perk-${id}.webp`) && Object.entries(base.enemies).every(([id, x]) => x.image === `assets/art/dusman-${id}.webp`));
+  assert.ok(Object.entries(base.levels).every(([id, x]) => x.image === `assets/art/bolum-${id}.webp` && x.nodeImage === `assets/art/dugum-${id}.webp`));
+  assert.equal(Object.keys(base.ui.icons).length, 14);
 });
