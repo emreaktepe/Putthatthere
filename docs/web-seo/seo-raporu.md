@@ -38,4 +38,4 @@ GitHub Pages proje sitesinde DNS erişimi yok, bu yüzden **URL öneki** mülkü
 - [ ] Ölçüm kurulumu (onay bekliyor)
 - [ ] Yayın ve doğrulama sonrası paylaşım önizleme testi (Facebook/LinkedIn debugger)
 - [ ] Mobil ve hız testi (yapılmadı)
-- [ ] demo/ için noindex (onay bekliyor)
+- [x] demo/ için noindex (demo/index.html içine eklendi)
