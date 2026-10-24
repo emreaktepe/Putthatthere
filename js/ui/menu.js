@@ -1,7 +1,8 @@
 // Ana menü ve sinematik giriş. Arka plan CSS gradyan + süzülen parçacıklar (DOM sayısı sınırlı), animasyonlar CSS'te.
-import { STRINGS } from "../core/data.js";
+import { GAME, MAP, STRINGS } from "../core/data.js";
 import { h, svg } from "../core/dom.js";
 import { $ } from "../core/util.js";
+import { artBg, warmArt } from "./art.js";
 import { icon } from "./icons.js";
 import { storyLines } from "./models.js";
 import { button, confirmButton, mount, reducedMotion, scope } from "./screens.js";
@@ -36,7 +37,9 @@ export function showMenu({ hasSave, saveInfo, notice, onContinue, onNew }) {
   if (hasSave) list.push(button(UI.menu.continue, onContinue, { ic: "play", small: saveInfo || "", autofocus: true }));
   list.push(hasSave ? confirmButton(UI.menu.newGame, UI.menu.confirmNew, onNew, sc, { kind: "ghost" }) : button(UI.menu.newGame, onNew, { ic: "play", autofocus: true }));
   list.push(sound);
-  const node = h("section", { class: "menu", "aria-label": STRINGS.title },
+  const bg = artBg(GAME.menuBackground, "menu-art");
+  const node = h("section", { class: "menu" + (bg ? " has-art" : ""), "aria-label": STRINGS.title },
+    bg, bg ? h("div", { class: "art-shade", "aria-hidden": "true" }) : null,
     ambient(36),
     h("div", { class: "menu-inner" },
       emblem(),
@@ -48,7 +51,9 @@ export function showMenu({ hasSave, saveInfo, notice, onContinue, onNew }) {
         h("p", null, STRINGS.controlsHelp), h("p", null, "Kamera: V açı değiştir · Z/C döndür · fare tekerleği yakınlaştır · sağ tuşla sürükle (📷)"), h("p", { class: "small" }, STRINGS.mobileHelp)),
       h("a", { class: "admin-link", href: "./admin.html" }, "Yönetim")),
     h("footer", { class: "ver" }, `${STRINGS.title} · v${UI.version}`));
+  if (bg) bg.addEventListener("error", () => { node.classList.remove("has-art"); const s = node.querySelector(".art-shade"); if (s) s.remove(); });
   mount(node, sc, { cls: "menu-stage" });
+  warmArt(MAP && MAP.background && MAP.background.image);
 }
 
 // Sinematik giriş: satırlar sırayla belirip kaybolur; Atla / dokunma / Enter / Boşluk / Esc ile geçilir.

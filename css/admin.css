@@ -174,3 +174,5 @@ input[type=range] { flex: 1 1 120px; accent-color: var(--gold); min-width: 80px;
   .pair { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.portrait-img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 28%; }
+.pcard-ic.has-img { overflow: hidden; padding: 0; border-color: #ffd98a; }

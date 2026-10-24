@@ -77,3 +77,9 @@ test("harita modeli: düğüm durumları, kenarlar, dikey ve yatay yerleşim", (
   const ser = mapPoints([{}, {}, {}, {}]);
   assert.equal(ser.pts.length, 4);
 });
+
+test("portraitOf: portrait yolu yalnızca karakterde varsa döner", () => {
+  const ch = { a: { name: "Aldemir", icon: "🧙", portrait: "assets/art/portre-aldemir.webp" } };
+  assert.equal(portraitOf(ch, "Aldemir").portrait, "assets/art/portre-aldemir.webp");
+  assert.equal("portrait" in portraitOf(ch, "Yok"), false);
+});

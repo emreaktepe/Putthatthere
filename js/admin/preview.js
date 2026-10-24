@@ -1,14 +1,15 @@
 // Yönetim sayfası: canlı örnek kartlar (renk, simge, ad). Three.js yüklenmez; js/ui/models.js yardımcıları yeniden kullanılır.
 // Renkler yalnızca doğrulanmış hex ise CSS değişkenine yazılır.
 import { h, safeHex } from "../core/dom.js";
+import { fillMedallion } from "../ui/art.js";
 import { RARITY_LABEL, enemyIcon, perkIcon, perkRarity, portraitOf } from "../ui/models.js";
 
 const col = (v, fb) => safeHex(v) || fb;
 const chip = (t) => h("span", { class: "chip" }, t);
 
-function card(kind, { icon, color, glow, title, sub, chips = [], text = "" }) {
+function card(kind, { icon, portrait, color, glow, title, sub, chips = [], text = "" }) {
   return h("article", { class: "pcard " + kind, style: { "--c": col(color, "#8e44ff"), "--e": col(glow, col(color, "#8e44ff")) }, "aria-label": "Önizleme: " + title },
-    h("div", { class: "pcard-ic", "aria-hidden": "true" }, icon),
+    portrait ? fillMedallion(h("div", { class: "pcard-ic" }), portrait, title, document.createTextNode(icon)) : h("div", { class: "pcard-ic", "aria-hidden": "true" }, icon),
     h("div", { class: "pcard-body" }, h("strong", null, title), sub ? h("small", null, sub) : null, chips.length ? h("div", { class: "chips" }, ...chips.map(chip)) : null, text ? h("p", null, text) : null));
 }
 
@@ -20,7 +21,7 @@ export function previewCard(coll, id, item, cfg) {
   switch (coll) {
     case "characters": {
       const p = portraitOf(cfg.characters, item.name);
-      return card("char", { icon: item.icon || p.icon, color: item.color, title: String(item.name || id), sub: ROLE[item.role] || String(item.role || ""), text: String(item.bio || "") });
+      return card("char", { icon: item.icon || p.icon, portrait: item.portrait, color: item.color, title: String(item.name || id), sub: ROLE[item.role] || String(item.role || ""), text: String(item.bio || "") });
     }
     case "enemies":
       return card("enemy", { icon: enemyIcon(item.model || id), color: item.color, glow: item.emissive, title: String(item.name || id), sub: "yapay zekâ: " + item.ai, chips: [`can ${item.hp}`, `hız ${item.speed}`, `puan ${item.score ?? 0}`, ...(item.character && cfg.characters && cfg.characters[item.character] ? ["karakter: " + cfg.characters[item.character].name] : [])] });

@@ -112,6 +112,10 @@ function walk(value, spec, path, ctx, key) {
         err("E_LENGTH", path, `${name} uzunluğu ${out.length}: ${spec.min}–${spec.max} karakter olmalı`, { value: out.length > 60 ? out.slice(0, 60) + "…" : out, expect: `str ${spec.min}..${spec.max}` });
         if (out.length > spec.max) out = out.slice(0, spec.max);
       }
+      if (spec.pattern && !spec.pattern.test(out)) {
+        err("E_FORMAT", path, `${name} geçersiz: ${spec.patHint || "izin verilen biçim"} biçiminde olmalı`, { value: out.length > 60 ? out.slice(0, 60) + "…" : out, expect: spec.patHint || String(spec.pattern) });
+        return spec.req ? out : undefined;
+      }
       for (const m of out.matchAll(/\{([^{}]*)\}/g)) {
         if (!spec.ph.includes(m[1])) {
           err("E_FORMAT", path, `${name} içinde izinsiz yer tutucu {${m[1]}}` + (spec.ph.length ? ` (izinli: ${spec.ph.map((p) => "{" + p + "}").join(", ")})` : " (bu alanda yer tutucu yok)"), { value: m[0], expect: spec.ph.length ? spec.ph.join("|") : "yer tutucu yok" });

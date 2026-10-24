@@ -23,6 +23,9 @@ export const WAVES = ["sine", "triangle", "square", "sawtooth"];
 export const LABEL_POS = ["below", "above", "left", "right"];
 export const MAP_PRESETS = ["night"];
 
+// görsel yolu: yalnızca assets/art/ altındaki .webp (harici URL, "..", data:, javascript: biçimleri eşleşmez)
+export const ART_RE = /^assets\/art\/[a-z0-9-]+\.webp$/;
+
 // yetenekler: kimlik = davranış (js/game/abilities.js). params: ad -> [min, max, varsayılan]
 export const ABILITY_KINDS = {
   shield: { key: "Q", code: "KeyQ", params: { duration: [0.5, 60, 8] } },

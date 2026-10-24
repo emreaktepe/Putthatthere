@@ -182,3 +182,44 @@ test("renkler küçük harfe normalize edilir; girdi değiştirilmez", () => {
   assert.equal(r.sanitized.themes.forest.bg, "#0a0714");
   assert.equal(JSON.stringify(c), frozen);
 });
+
+// ---- görsel yolları (assets/art/*.webp) ----
+const ART_OK = "assets/art/portre-aldemir.webp";
+test("görsel yolu: geçerli yol kabul edilir (portrait, menuBackground, map.background.image)", () => {
+  const r = run((c) => { c.characters.aldemir.portrait = ART_OK; c.game.menuBackground = "assets/art/menu-arkaplan.webp"; c.map.background.image = "assets/art/harita-arkaplan.webp"; });
+  assert.equal(r.ok, true);
+  assert.equal(r.sanitized.characters.aldemir.portrait, ART_OK);
+});
+test("görsel yolu: alanlar isteğe bağlı (yoksa hata yok)", () => {
+  const r = run((c) => { delete c.characters.aldemir.portrait; delete c.game.menuBackground; delete c.map.background.image; });
+  assert.equal(r.ok, true);
+});
+test("görsel yolu: harici URL, .., data:, javascript:, .png ve alt klasör E_FORMAT ile reddedilir", () => {
+  const bad = ["https://evil.example/a.webp", "//evil.example/a.webp", "assets/art/../x.webp", "../assets/art/a.webp", "data:image/webp;base64,AAAA", "javascript:alert(1)", "assets/art/a.png", "assets/art/sub/a.webp", "/assets/art/a.webp", "assets/art/A.webp", "assets/art/a.webp?x=1", "assets/art/a b.webp"];
+  for (const v of bad) {
+    for (const [name, fn, ptr] of [
+      ["portrait", (c) => { c.characters.aldemir.portrait = v; }, "/characters/aldemir/portrait"],
+      ["menuBackground", (c) => { c.game.menuBackground = v; }, "/game/menuBackground"],
+      ["map.image", (c) => { c.map.background.image = v; }, "/map/background/image"],
+    ]) {
+      const r = run(fn);
+      assert.equal(r.ok, false, `${name}: ${v} reddedilmeli`);
+      assert.ok(has(r, "E_FORMAT", ptr), `${name}: ${v} E_FORMAT vermeli`);
+    }
+  }
+});
+test("görsel yolu: lenient modda geçersiz yol atılır, oyun açılır", () => {
+  const c = clone(base); c.characters.aldemir.portrait = "https://evil.example/a.webp";
+  const r = validateLenient(c);
+  assert.equal(r.ok, true);
+  assert.equal(r.config.characters.aldemir.portrait, undefined);
+});
+test("varsayılan konfigürasyon: üç portre, menü ve harita görseli bağlı; Zerrin/Taşkın portresiz", () => {
+  for (const k of ["aldemir", "piril", "veyis"]) assert.match(base.characters[k].portrait, /^assets\/art\/portre-[a-z]+\.webp$/);
+  assert.equal(base.characters.zerrin.portrait, undefined);
+  assert.equal(base.characters.taskin.portrait, undefined);
+  assert.ok(base.game.menuBackground && base.map.background.image);
+  for (const p of [base.game.menuBackground, base.map.background.image, ...["aldemir", "piril", "veyis"].map((k) => base.characters[k].portrait)]) {
+    assert.ok(fs.existsSync(new URL("../" + p, import.meta.url)), p + " dosyası var");
+  }
+});

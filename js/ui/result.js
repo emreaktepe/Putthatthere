@@ -3,6 +3,7 @@
 import { ABILITIES, CHARACTERS, ENEMY_NAMES, LEVELS, STRINGS, TOTEM_ID, WEAPONS } from "../core/data.js";
 import { fmt, h, rich, safeHex } from "../core/dom.js";
 import { S } from "../core/state.js";
+import { fillMedallion } from "./art.js";
 import { icon } from "./icons.js";
 import { RARITY_LABEL, countValue, enemyIcon, perkIcon, perkRarity, portraitOf } from "./models.js";
 import { button, confirmButton, mount, reducedMotion, scope } from "./screens.js";
@@ -16,7 +17,7 @@ export function dialogView(lines) {
     const p = portraitOf(CHARACTERS, l.speaker), c = safeHex(l.color) || safeHex(p.color);
     if (c) d["--c"] = c;
     return h("div", { class: "bubble", style: d },
-      h("div", { class: "avatar", "aria-hidden": "true" }, p.icon),
+      fillMedallion(h("div", { class: "avatar", "aria-hidden": p.portrait ? null : "true" }), p.portrait, l.speaker, document.createTextNode(p.icon)),
       h("div", { class: "bubble-body" }, h("b", { class: "who" }, l.speaker), h("p", null, rich(l.text))));
   }));
 }

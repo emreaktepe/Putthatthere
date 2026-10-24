@@ -1,13 +1,14 @@
 // HUD: üst şerit (bölüm, süre halkası, puan), can kalpleri, hedef çubuğu, boss çubuğu; alt büyü slotları ve yetenek düğmeleri;
 // bildirim (toast) ve hasar parlaması. Tüm metinler DOM düğümü olarak basılır; sık çağrılan güncellemeler önbellekle yalnız değişince yazar.
 import { sfx } from "../audio/engine.js";
-import { ABILITIES, ABILITY_ORDER, LEVELS, STRINGS, WEAPONS, WEAPON_ORDER } from "../core/data.js";
+import { ABILITIES, ABILITY_ORDER, CHARACTERS, LEVELS, STRINGS, WEAPONS, WEAPON_ORDER } from "../core/data.js";
 import { fmt, h, svg } from "../core/dom.js";
 import { RT, S, abilCd } from "../core/state.js";
 import { $ } from "../core/util.js";
 import { useAbility } from "../game/abilities.js";
 import { cyclePreset, setCamListener } from "../render/camera.js";
 import { setWandColor } from "../render/wizard.js";
+import { fillMedallion } from "./art.js";
 import { icon } from "./icons.js";
 import { cooldownFrac, goalFrac, heartStates, timerModel } from "./models.js";
 import { UI } from "./text.js";
@@ -37,10 +38,11 @@ function buildHud() {
   el.goalText = h("span", { class: "goal-text" });
   el.goalIc = h("span", { class: "goal-ic" });
   el.goal = h("div", { class: "hud-goal" }, el.goalIc, h("div", { class: "goal-body" }, el.goalText, h("div", { class: "bar" }, el.goalFill)));
+  el.bossMed = h("div", { class: "boss-medal", hidden: true });
   el.bossName = h("b", { class: "boss-name" });
   el.bossFill = h("i", { class: "bar-fill" });
   el.bossShield = h("span", { class: "boss-shield", hidden: true }, icon("shield"));
-  el.boss = h("div", { class: "hud-boss", hidden: true }, el.bossName, h("div", { class: "bar boss-bar" }, el.bossFill), el.bossShield);
+  el.boss = h("div", { class: "hud-boss", hidden: true }, el.bossMed, el.bossName, h("div", { class: "bar boss-bar" }, el.bossFill), el.bossShield);
   hud.replaceChildren(
     h("div", { class: "hud-strip glass" },
       h("div", { class: "hud-level" }, el.lvNum, el.lvName), el.timer,
@@ -99,6 +101,8 @@ export function renderHud() {
   if (RT.bossRef) {
     const d = RT.bossRef.d;
     if (changed("bossName", d.shortName || d.name)) el.bossName.textContent = d.shortName || d.name;
+    const bp = d.character && CHARACTERS[d.character] ? CHARACTERS[d.character].portrait : null;
+    if (changed("bossPortrait", bp || "")) { el.bossMed.hidden = !bp; if (bp) fillMedallion(el.bossMed, bp, d.name, document.createTextNode("")); }
     const bf = Math.round(Math.max(bossFrac, 0) * 1000) / 10;
     if (changed("bossFill", bf)) el.bossFill.style.width = bf + "%";
     if (changed("bossShield", !!RT.bossRef.shielded)) { el.bossShield.hidden = !RT.bossRef.shielded; el.boss.classList.toggle("shielded", !!RT.bossRef.shielded); }

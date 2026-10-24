@@ -334,3 +334,38 @@ h3 { font-size: 17px; color: var(--violet-2); }
 .admin-link:hover { color: var(--gold-2); opacity: 1; }
 #devbar { position: fixed; top: 2px; left: 50%; transform: translateX(-50%); z-index: 8; max-width: 94vw; padding: 2px 10px; border-radius: 0 0 8px 8px; background: rgba(0, 0, 0, .65); color: var(--gold-2); font: 10px/1.4 var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 #devbar.warn { color: var(--danger); }
+
+/* ---------- Görsel varlıklar (assets/art/*.webp) ----------
+   Hepsi yedekli: <img> yüklenemezse düğümden kaldırılır ve eski CSS arka plan / emoji görünür. */
+.art-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
+.art-shade { position: absolute; inset: 0; pointer-events: none; }
+/* ana menü: başlık/düğmeler sol-üst karanlık alana, ay ve kale sağda açık kalır */
+.menu.has-art::before { opacity: .35; }
+.menu .menu-art { object-position: 62% 50%; }
+.menu.has-art .art-shade { background: linear-gradient(180deg, rgba(7, 4, 15, .55) 0%, rgba(7, 4, 15, .25) 35%, rgba(7, 4, 15, .7) 100%), rgba(7, 4, 15, .25); }
+.menu.has-art .menu-inner { text-shadow: 0 2px 12px rgba(5, 2, 12, .9); }
+.menu.has-art .ver { color: rgba(220, 205, 245, .75); }
+@media (min-width: 900px) and (orientation: landscape) {
+  .menu.has-art { justify-content: flex-start; }
+  .menu.has-art .menu-inner { margin-left: clamp(24px, 7vw, 120px); }
+  .menu.has-art .art-shade { background: linear-gradient(90deg, rgba(7, 4, 15, .86) 0%, rgba(7, 4, 15, .62) 32%, rgba(7, 4, 15, .12) 62%, rgba(7, 4, 15, 0) 100%), linear-gradient(0deg, rgba(7, 4, 15, .55), rgba(7, 4, 15, 0) 35%); }
+}
+/* harita: dikey ekranda görsel koyu ve bulanık zemin; yatayda SVG içindeki görsel net kalır */
+.map-screen .map-fill { filter: blur(3px) brightness(.42) saturate(.9); transform: scale(1.04); }
+.map-screen.has-art:not(.portrait) .map-fill { filter: blur(10px) brightness(.4); }
+.map-art { pointer-events: none; }
+.map-screen.has-art .map-scroll { background: linear-gradient(180deg, rgba(7, 4, 15, .25), rgba(7, 4, 15, 0) 25%, rgba(7, 4, 15, .2)); }
+.map-screen.has-art .link { stroke-width: 8; filter: drop-shadow(0 0 3px #000) drop-shadow(0 0 2px #000); }
+.map-screen.has-art .link.locked { stroke: rgba(255, 255, 255, .5); }
+.map-screen.has-art .link.open { stroke: #ffe08a; filter: drop-shadow(0 0 3px #000) drop-shadow(0 0 7px rgba(255, 217, 138, .9)); }
+.map-screen.has-art .link.done { stroke: #ffd98a; filter: drop-shadow(0 0 3px #000) drop-shadow(0 0 6px rgba(255, 217, 138, .8)); }
+.map-screen.has-art .node .disc { filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .9)); stroke-width: 5; }
+.map-screen.has-art .node.locked .disc { fill: #1a1236; stroke: #6c62a3; }
+.map-screen.has-art .node-label { stroke-width: 7px; fill: #fff4d6; }
+.map-screen.has-art .node.locked .node-label { opacity: .85; }
+/* portre madalyonları: altın çerçeve, yüze odaklı kırpma */
+.portrait-img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 28%; }
+.avatar.has-img, .boss-medal.has-img { padding: 0; overflow: hidden; background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .22), rgba(26, 12, 51, .9) 75%); border-color: var(--gold-2, #ffd98a); }
+.avatar.has-img { flex-basis: 58px; width: 58px; height: 58px; box-shadow: 0 0 14px var(--c, var(--violet)), inset 0 0 0 1px rgba(0, 0, 0, .4); }
+.boss-medal { flex: none; width: 38px; height: 38px; margin: -4px 0; border-radius: 50%; border: 2px solid var(--gold-2, #ffd98a); box-shadow: 0 0 10px rgba(255, 60, 90, .8); }
+.boss-medal:not(.has-img) { display: none; }

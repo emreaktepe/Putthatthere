@@ -1,0 +1,7 @@
+# Görsel orijinalleri (ChatGPT çıktısı PNG, 1,4-3 MB) yalnızca yerelde kalır: siteye ve repoya girmez.
+# Oyun ve siteye yalnızca küçültülmüş .webp sürümleri (~220-330 KB) girer; yol kuralı: assets/art/<ad>.webp
+assets/art/*.png
+
+# Geçici dosyalar (deneme betikleri, ara çıktılar)
+.ofis-tmp/
+node_modules/

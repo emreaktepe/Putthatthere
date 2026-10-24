@@ -7,7 +7,8 @@
     "perkChoices": 3,
     "clearHeal": 1,
     "scoreLevelBonus": 100,
-    "scoreTimeMul": 2
+    "scoreTimeMul": 2,
+    "menuBackground": "assets/art/menu-arkaplan.webp"
   },
   "strings": {
     "title": "Büyücünün Gecesi",
@@ -77,7 +78,8 @@
       "role": "player",
       "icon": "🧙",
       "color": "#d9b3ff",
-      "bio": "O gece uyuyakalan büyücü; Gece Kalbi'ni onarabilecek tek kişi."
+      "bio": "O gece uyuyakalan büyücü; Gece Kalbi'ni onarabilecek tek kişi.",
+      "portrait": "assets/art/portre-aldemir.webp"
     },
     "zerrin": {
       "name": "Zerrin",
@@ -91,14 +93,16 @@
       "role": "ally",
       "icon": "✨",
       "color": "#ffe9a8",
-      "bio": "Gün ışığına varamayan küçük bir ışık; Aldemir'in yoldaşı."
+      "bio": "Gün ışığına varamayan küçük bir ışık; Aldemir'in yoldaşı.",
+      "portrait": "assets/art/portre-piril.webp"
     },
     "veyis": {
       "name": "Veyis",
       "role": "villain",
       "icon": "👑",
       "color": "#ffe9a8",
-      "bio": "Vadinin son kralı; kızını geri isteyen Gölge Kral."
+      "bio": "Vadinin son kralı; kızını geri isteyen Gölge Kral.",
+      "portrait": "assets/art/portre-veyis.webp"
     },
     "taskin": {
       "name": "Taşkın",
@@ -255,6 +259,7 @@
       "noCap": true
     },
     "boss": {
+      "character": "veyis",
       "name": "Gölge Kral",
       "shortName": "Kral",
       "hp": 45,
@@ -683,7 +688,7 @@
       "goal": 6,
       "time": 50,
       "theme": "forest",
-      "map": { "x": 110, "y": 590, "icon": "🌲", "label": "above" },
+      "map": { "x": 577, "y": 547, "icon": "🌲", "label": "above" },
       "start": { "ghost": 3 },
       "spawn": [{ "ghost": 1 }],
       "every": 8,
@@ -706,7 +711,7 @@
       "goal": 8,
       "time": 55,
       "theme": "cave",
-      "map": { "x": 300, "y": 480, "icon": "🦇", "label": "above" },
+      "map": { "x": 201, "y": 520, "icon": "🦇", "label": "below" },
       "start": { "ghost": 2, "bat": 3 },
       "spawn": [{ "bat": 1, "ghost": 1 }],
       "every": 7,
@@ -728,7 +733,7 @@
       "goal": 10,
       "time": 60,
       "theme": "golems",
-      "map": { "x": 500, "y": 590, "icon": "🗿", "label": "below" },
+      "map": { "x": 201, "y": 243, "icon": "🗿", "label": "right" },
       "start": { "ghost": 2, "bat": 2, "golem": 2 },
       "spawn": [{ "golem": 1, "bat": 1 }],
       "every": 7,
@@ -751,7 +756,7 @@
       "goal": 12,
       "time": 65,
       "theme": "graveyard",
-      "map": { "x": 700, "y": 480, "icon": "🪦", "label": "above" },
+      "map": { "x": 331, "y": 393, "icon": "🪦", "label": "right" },
       "start": { "ghost": 3, "bat": 2, "golem": 2, "archer": 2 },
       "spawn": [{ "ghost": 1, "archer": 1 }],
       "every": 6,
@@ -775,7 +780,7 @@
       "goal": 45,
       "time": 45,
       "theme": "pass",
-      "map": { "x": 900, "y": 570, "icon": "❄️", "label": "below" },
+      "map": { "x": 884, "y": 167, "icon": "❄️", "label": "below" },
       "crystals": 2,
       "start": { "ghost": 3, "bat": 3, "wolf": 2 },
       "spawn": [{ "wolf": 2, "bat": 1 }],
@@ -797,7 +802,7 @@
       "goal": 3,
       "time": 75,
       "theme": "village",
-      "map": { "x": 830, "y": 340, "icon": "🔥", "label": "above" },
+      "map": { "x": 563, "y": 311, "icon": "🔥", "label": "below" },
       "crystals": 3,
       "start": { "ghost": 3, "golem": 2, "ember": 3 },
       "spawn": [{ "ember": 1, "ghost": 1 }],
@@ -820,7 +825,7 @@
       "goal": 14,
       "time": 80,
       "theme": "crystals",
-      "map": { "x": 610, "y": 330, "icon": "💎", "label": "below" },
+      "map": { "x": 829, "y": 342, "icon": "💎", "label": "below" },
       "start": { "ghost": 3, "bat": 3, "golem": 2, "archer": 2, "priest": 2 },
       "spawn": [{ "priest": 1, "bat": 1 }, { "archer": 1, "bat": 1 }],
       "every": 6,
@@ -844,7 +849,7 @@
       "goal": 1,
       "time": 85,
       "theme": "tower",
-      "map": { "x": 370, "y": 215, "icon": "🏰", "label": "below" },
+      "map": { "x": 242, "y": 147, "icon": "🏰", "label": "right" },
       "start": { "knight": 1, "archer": 2, "wolf": 2 },
       "spawn": [{ "archer": 1, "ghost": 1 }],
       "every": 6,
@@ -868,7 +873,7 @@
       "goal": 1,
       "time": 100,
       "theme": "castle",
-      "map": { "x": 150, "y": 110, "icon": "👑", "label": "right" },
+      "map": { "x": 645, "y": 109, "icon": "👑", "label": "right" },
       "start": { "boss": 1 },
       "spawn": [],
       "every": 6,
@@ -888,19 +893,19 @@
     "order": ["forest", "cave", "golems", "graveyard", "pass", "village", "crystals", "tower", "castle"],
     "start": "forest",
     "edges": [
-      { "from": "forest", "to": "cave", "via": [[190,560]], "style": "dotted" },
-      { "from": "cave", "to": "golems", "via": [[390,570]], "style": "dotted" },
-      { "from": "golems", "to": "graveyard", "via": [[600,520]], "style": "dotted" },
-      { "from": "graveyard", "to": "pass", "via": [[800,540]], "style": "dotted" },
-      { "from": "pass", "to": "village", "via": [[900,440]], "style": "dotted" },
-      { "from": "village", "to": "crystals", "via": [[720,350]], "style": "dotted" },
-      { "from": "crystals", "to": "tower", "via": [[490,250]], "style": "dotted" },
-      { "from": "tower", "to": "castle", "via": [[250,150]], "style": "dotted" }
+      { "from": "forest", "to": "cave", "via": [[400,570]], "style": "dotted" },
+      { "from": "cave", "to": "golems", "via": [[110,390]], "style": "dotted" },
+      { "from": "golems", "to": "graveyard", "via": [[290,310]], "style": "dotted" },
+      { "from": "graveyard", "to": "pass", "via": [[450,450],[700,420],[800,250]], "style": "dotted" },
+      { "from": "pass", "to": "village", "via": [[760,150],[640,250]], "style": "dotted" },
+      { "from": "village", "to": "crystals", "via": [[700,330]], "style": "dotted" },
+      { "from": "crystals", "to": "tower", "via": [[780,240],[520,215],[360,190]], "style": "dotted" },
+      { "from": "tower", "to": "castle", "via": [[420,120]], "style": "dotted" }
     ]
   },
   "map": {
     "viewBox": [1000, 700],
-    "background": { "preset": "night", "tint": "#1d1040" },
+    "background": { "preset": "night", "tint": "#1d1040", "image": "assets/art/harita-arkaplan.webp" },
     "nodeRadius": 38
   }
 }

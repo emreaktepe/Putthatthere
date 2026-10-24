@@ -4,6 +4,7 @@ import { ENEMY_NAMES, LEVELS, LEVEL_IDS, MAP, TOTEM_ID, WEAPONS } from "../core/
 import { h, svg } from "../core/dom.js";
 import { edges } from "../game/campaign.js";
 import { buildMapGraph, mapPoints } from "../game/progress.js";
+import { artBg, artPath } from "./art.js";
 import { icon, ICON_PATHS } from "./icons.js";
 import { ambient } from "./menu.js";
 import { enemyIcon } from "./models.js";
@@ -41,9 +42,13 @@ export function showMap(opts) {
     button(UI.map.back, opts.onBack, { kind: "ghost", ic: "back", aria: "Ana menüye dön" }),
     h("h2", null, UI.map.title),
     h("div", { class: "map-stats" }, h("span", { class: "chip" }, icon("check"), `${done}/${LEVEL_IDS.length}`), h("span", { class: "chip" }, icon("star"), String(opts.best.score || 0))));
+  const artSrc = artPath(MAP && MAP.background && MAP.background.image);
+  const fill = artBg(MAP && MAP.background && MAP.background.image, "map-fill"); // her yerleşimde arkada koyu/bulanık zemin
   const scroller = h("div", { class: "map-scroll" });
   const sheet = h("aside", { class: "level-sheet glass", hidden: true, "aria-live": "polite" });
-  root.append(ambient(26), header, scroller, sheet);
+  root.append(fill, ambient(26), header, scroller, sheet);
+  if (fill) fill.addEventListener("error", () => root.classList.remove("has-art"));
+  root.classList.toggle("has-art", !!fill);
 
   function renderSheet(focus = false) {
     root.classList.toggle("sheet-open", !!selected);
@@ -83,7 +88,15 @@ export function showMap(opts) {
     const R = MAP && MAP.nodeRadius ? MAP.nodeRadius : 38, g = buildMapGraph(LEVEL_IDS, edges(), opts.statuses, lay.pts, lay.useVia);
     const r = portrait ? 30 : R;
     const root3 = svg("svg", { class: "map-svg" + (portrait ? " tall" : ""), viewBox: `0 0 ${lay.W} ${lay.H}`, preserveAspectRatio: "xMidYMid meet", role: "group", "aria-label": UI.map.title });
-    if (!portrait) root3.append(backdrop(lay.W, lay.H));
+    root.classList.toggle("portrait", portrait);
+    if (!portrait) {
+      if (artSrc) { // görsel viewBox içinde: düğümler her ekran oranında görsele göre aynı yerde kalır; yüklenemezse dağ siluetine dönülür
+        const im = svg("image", { class: "map-art", href: artSrc, x: 0, y: 0, width: lay.W, height: lay.H, preserveAspectRatio: "xMidYMid slice", "aria-hidden": "true" });
+        const bd = backdrop(lay.W, lay.H);
+        im.addEventListener("error", () => { im.replaceWith(bd); });
+        root3.append(im);
+      } else root3.append(backdrop(lay.W, lay.H));
+    }
     for (const l of g.links) root3.append(svg("path", { d: l.d, class: "link " + l.state }));
     for (const n of g.nodes) {
       const L = LEVELS[n.index], st = n.status, big = r + 14;

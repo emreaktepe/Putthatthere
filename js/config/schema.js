@@ -4,7 +4,7 @@
 // Alan tanımı: { t: tür, req?: zorunlu, def?: varsayılan, label?: Türkçe etiket, ... türe özgü sınırlar }
 // Türler: int, num, str, hex, bool, enum, ref, arr, obj, map (id'li nesne), rec (ref anahtarlı nesne)
 
-import { ENUMS, ID_RE, WEATHER_MAX } from "./registry.js";
+import { ART_RE, ENUMS, ID_RE, WEATHER_MAX } from "./registry.js";
 
 export const CONFIG_SCHEMA_VERSION = 1;
 
@@ -20,6 +20,9 @@ export const arr = (item, min, max, x) => ({ t: "arr", item, min, max, ...o(x) }
 export const obj = (fields, x) => ({ t: "obj", fields, ...o(x) });
 export const map = (item, min, max, x) => ({ t: "map", item, min, max, ...o(x) }); // anahtar = yeni id (ID_RE)
 export const rec = (coll, item, x) => ({ t: "rec", coll, item, ...o(x) }); // anahtar = var olan id
+
+// görsel yolu: assets/art/<ad>.webp (kalıp doğrulayıcıda zorlanır; ihlal = E_FORMAT)
+export const art = (x) => ({ t: "str", min: 1, max: 80, ph: [], pattern: ART_RE, patHint: "assets/art/ad.webp", ...o(x) });
 
 export const R = (spec) => ({ ...spec, req: true });
 
@@ -80,6 +83,7 @@ export const SCHEMA = obj({
     clearHeal: num(0, 3, { def: 1, label: "Bölüm sonu can yenileme" }),
     scoreLevelBonus: int(0, 10000, { def: 100, label: "Bölüm puanı (bölüm no ile çarpılır)" }),
     scoreTimeMul: int(0, 50, { def: 2, label: "Kalan saniye puanı" }),
+    menuBackground: art({ label: "Ana menü arka plan görseli" }),
   }, { fill: true, label: "Oyun" }),
 
   strings: R(obj({
@@ -147,6 +151,7 @@ export const SCHEMA = obj({
     icon: str(1, 4, { label: "Simge" }),
     color: hex({ label: "Ad rengi" }),
     bio: str(1, 300, { label: "Kısa biyografi" }),
+    portrait: art({ label: "Portre görseli" }),
   }, { label: "Karakter" }), 1, 24, { label: "Karakterler" })),
 
   player: R(obj({
@@ -284,7 +289,7 @@ export const SCHEMA = obj({
 
   map: obj({
     viewBox: arr(num(100, 5000), 2, 2, { label: "Görünüm kutusu" }),
-    background: obj({ preset: enm("MAP_PRESETS"), tint: hex() }),
+    background: obj({ preset: enm("MAP_PRESETS"), tint: hex(), image: art({ label: "Harita arka plan görseli" }) }),
     nodeRadius: num(20, 48, { label: "Düğüm yarıçapı" }),
   }, { label: "Harita" }),
 }, { label: "Konfigürasyon" });
