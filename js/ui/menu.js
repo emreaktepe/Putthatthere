@@ -3,7 +3,7 @@ import { GAME, MAP, STRINGS } from "../core/data.js";
 import { h, svg } from "../core/dom.js";
 import { $ } from "../core/util.js";
 import { artBg, warmArt } from "./art.js";
-import { icon } from "./icons.js";
+import { icon, iconIfArt } from "./icons.js";
 import { storyLines } from "./models.js";
 import { button, confirmButton, mount, reducedMotion, scope } from "./screens.js";
 import { UI } from "./text.js";
@@ -49,7 +49,7 @@ export function showMenu({ hasSave, saveInfo, notice, onContinue, onNew }) {
       h("div", { class: "menu-btns" }, ...list),
       h("details", { class: "how" }, h("summary", null, "Nasıl oynanır?"),
         h("p", null, STRINGS.controlsHelp), h("p", null, "Kamera: V açı değiştir · Z/C döndür · fare tekerleği yakınlaştır · sağ tuşla sürükle (📷)"), h("p", { class: "small" }, STRINGS.mobileHelp)),
-      h("a", { class: "admin-link", href: "./admin.html" }, "Yönetim")),
+      h("a", { class: "admin-link", href: "./admin.html" }, iconIfArt("admin"), "Yönetim")),
     h("footer", { class: "ver" }, `${STRINGS.title} · v${UI.version}`));
   if (bg) bg.addEventListener("error", () => { node.classList.remove("has-art"); const s = node.querySelector(".art-shade"); if (s) s.remove(); });
   mount(node, sc, { cls: "menu-stage" });

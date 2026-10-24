@@ -12,6 +12,7 @@ import { applyTheme } from "./render/themes.js";
 import { initWizard } from "./render/wizard.js";
 import { devBar } from "./ui/devbar.js";
 import { renderHud, renderWeapons } from "./ui/hud.js";
+import { applyStaticIcons } from "./ui/icons.js";
 import { showFatal } from "./ui/screens.js";
 
 async function boot() {
@@ -29,6 +30,7 @@ async function boot() {
   for (const n of res.notices) console.warn("[config]", n);
   for (const w of res.warnings) console.warn("[config]", formatIssue(w, res.config));
   setData(adapt(res.config));
+  applyStaticIcons();
   setConfigInfo({ source: res.source, baseHash: res.baseHash, notices: res.notices, warnings: res.warnings });
   initState();
   initWizard();

@@ -4,10 +4,10 @@ import { ENEMY_NAMES, LEVELS, LEVEL_IDS, MAP, TOTEM_ID, WEAPONS } from "../core/
 import { h, svg } from "../core/dom.js";
 import { edges } from "../game/campaign.js";
 import { buildMapGraph, mapPoints } from "../game/progress.js";
-import { artBg, artPath } from "./art.js";
+import { artBg, artOr, artPath, pickArt } from "./art.js";
 import { icon, ICON_PATHS } from "./icons.js";
 import { ambient } from "./menu.js";
-import { enemyIcon } from "./models.js";
+import { coverImg, foeBadge } from "./result.js";
 import { button, mount, scope } from "./screens.js";
 import { UI, objectiveText } from "./text.js";
 
@@ -30,6 +30,18 @@ function starPath(cx, cy, r) {
   const pts = [];
   for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r; pts.push(`${(cx + Math.cos(a) * rr).toFixed(1)},${(cy + Math.sin(a) * rr).toFixed(1)}`); }
   return pts.join(" ");
+}
+
+// düğüm madalyonu: levels.<id>.nodeImage varsa daire içinde görsel (yüklenince düğüm "has-img" olur ve emoji gizlenir);
+// yüklenemezse görsel kaldırılır, mevcut simge kalır
+function nodeMedal(id, L, r) {
+  const src = artPath(L.nodeImage);
+  if (!src) return null;
+  const cid = "nclip-" + id;
+  const im = svg("image", { class: "node-img", href: src, x: -r, y: -r, width: r * 2, height: r * 2, preserveAspectRatio: "xMidYMid slice", "clip-path": `url(#${cid})`, "aria-hidden": "true" });
+  im.addEventListener("load", () => { const g = im.closest(".node"); if (g) g.classList.add("has-img"); });
+  im.addEventListener("error", () => im.remove());
+  return svg("g", null, svg("clipPath", { id: cid }, svg("circle", { r })), im);
 }
 
 // opts: { completed:Set, statuses, best, score, focusId, freshId, onPlay(id, practice), onBack }
@@ -55,7 +67,8 @@ export function showMap(opts) {
     if (!selected) { sheet.hidden = true; sheet.replaceChildren(); return; }
     const i = LEVEL_IDS.indexOf(selected), L = LEVELS[i], st = opts.statuses[selected], best = opts.best.levels[selected];
     const foes = foeList(L);
-    const rewardIcon = L.reward ? WEAPONS[L.reward].icon : null;
+    const rw = L.reward ? WEAPONS[L.reward] : null;
+    const rewardIcon = rw ? artOr(pickArt(rw, true), document.createTextNode(rw.icon), { cls: "chip-img", size: 22 }) : null;
     const play = st === "locked"
       ? h("p", { class: "lock-note" }, icon("lock"), UI.map.lockedNote)
       : h("div", { class: "btn-row" }, button(st === "completed" ? UI.map.practice : UI.map.play, () => opts.onPlay(selected, st === "completed"), { ic: "play", autofocus: true, small: st === "completed" ? UI.map.practiceNote : "" }));
@@ -65,12 +78,13 @@ export function showMap(opts) {
       h("div", { class: "sheet-top" },
         h("div", null, h("small", { class: "eyebrow" }, `${i + 1}/${LEVELS.length} · ${STATE_LABEL[st]}`), h("h3", null, L.name)),
         h("button", { class: "x-btn", type: "button", "aria-label": UI.map.close, onclick: () => select(null) }, "×")),
+      coverImg(L),
       h("p", { class: "sheet-obj" }, icon("target"), objectiveText(L)),
       h("div", { class: "sheet-meta" },
         h("span", { class: "chip" }, icon("hourglass"), `${L.time} ${UI.map.sec}`),
-        rewardIcon ? h("span", { class: "chip", title: UI.map.reward }, h("span", { "aria-hidden": "true" }, rewardIcon), WEAPONS[L.reward].name) : null,
+        rewardIcon ? h("span", { class: "chip", title: UI.map.reward }, h("span", { class: "chip-ic", "aria-hidden": "true" }, rewardIcon), WEAPONS[L.reward].name) : null,
         best ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(best.score)) : null),
-      h("ul", { class: "chips", "aria-label": UI.map.foes }, ...foes.map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, h("span", { "aria-hidden": "true" }, enemyIcon(k)), ENEMY_NAMES[k]))),
+      h("ul", { class: "chips", "aria-label": UI.map.foes }, ...foes.map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, foeBadge(k), ENEMY_NAMES[k]))),
       play);
     const f = sheet.querySelector("[data-autofocus]");
     if (f && focus) f.focus({ preventScroll: true });
@@ -109,6 +123,7 @@ export function showMap(opts) {
       },
         svg("circle", { class: "halo", r: r + 8 }),
         svg("circle", { class: "disc", r }),
+        nodeMedal(n.id, L, r),
         svg("text", { class: "node-ic", "text-anchor": "middle", "dominant-baseline": "central", "font-size": r * 0.95 }, st === "locked" ? "" : (L.map && L.map.icon) || "✦"),
         st === "locked" ? svg("path", { class: "node-lock", d: ICON_PATHS.lock[1], transform: `translate(${-r * 0.5} ${-r * 0.5}) scale(${(r * 1.0) / 24})` }) : null,
         svg("circle", { class: "num-bg", cx: -r * 0.72, cy: -r * 0.72, r: r * 0.38 }),

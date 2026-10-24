@@ -26,7 +26,7 @@ test("repo JSON'u doğrulayıcıdan hatasız ve uyarısız geçer", () => {
 test("LEVELS eşdeğer (EK: id, map; intro/outro satır nesnesi)", () => {
   assert.equal(A.LEVELS.length, L.LEVELS.length);
   A.LEVELS.forEach((lv, i) => {
-    const got = strip(lv, ["id", "map"]);
+    const got = strip(lv, ["id", "map", "image", "nodeImage"]);
     got.intro = got.intro.map((l) => strip(l, ["color"]));
     got.outro = got.outro.map((l) => strip(l, ["color"]));
     const want = { ...L.LEVELS[i], intro: L.LEVELS[i].intro.map(parseLine), outro: L.LEVELS[i].outro.map(parseLine) };
@@ -34,14 +34,14 @@ test("LEVELS eşdeğer (EK: id, map; intro/outro satır nesnesi)", () => {
   });
 });
 
-test("WEAPONS / WEAPON_ORDER eşdeğer", () => {
-  assert.deepEqual(A.WEAPONS, L.WEAPONS);
+test("WEAPONS / WEAPON_ORDER eşdeğer (EK: image, imageSmall)", () => {
+  assert.deepEqual(mapVals(A.WEAPONS, (w) => strip(w, ["image", "imageSmall"])), L.WEAPONS);
   assert.deepEqual(A.WEAPON_ORDER, L.WEAPON_ORDER);
   assert.deepEqual(Object.keys(A.WEAPONS), Object.keys(L.WEAPONS));
 });
 
 test("ABILITIES / ABILITY_ORDER eşdeğer (EK: params)", () => {
-  assert.deepEqual(mapVals(A.ABILITIES, (a) => strip(a, ["params"])), L.ABILITIES);
+  assert.deepEqual(mapVals(A.ABILITIES, (a) => strip(a, ["params", "image", "imageSmall"])), L.ABILITIES);
   assert.deepEqual(A.ABILITY_ORDER, L.ABILITY_ORDER);
   // koda gömülü süreler artık params'ta: eski sabit değerler
   assert.deepEqual(A.ABILITIES.shield.params, { duration: 8 });

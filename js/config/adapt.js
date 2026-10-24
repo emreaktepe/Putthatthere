@@ -42,6 +42,8 @@ export function adapt(cfg) {
   WEAPON_ORDER.forEach((id, i) => {
     const w = cfg.weapons[id];
     const o = { name: w.name, icon: w.icon, key: String(i + 1), color: hexInt(w.color), cd: w.cd, dmg: w.dmg };
+    if (w.image) o.image = w.image;
+    if (w.imageSmall) o.imageSmall = w.imageSmall;
     if (w.speed !== undefined) o.speed = w.speed;
     if (w.pierceable) o.pierceable = true;
     if (w.slow) o.slow = true;
@@ -58,6 +60,8 @@ export function adapt(cfg) {
   ABILITY_ORDER.forEach((id, i) => {
     const a = cfg.abilities[id], [key, code] = ABILITY_KEYS[i] || ["", ""];
     ABILITIES[id] = { name: a.name, icon: a.icon, key, code, cd: a.cd, params: { ...a.params } };
+    if (a.image) ABILITIES[id].image = a.image;
+    if (a.imageSmall) ABILITIES[id].imageSmall = a.imageSmall;
   });
 
   const ENEMIES = {}, ENEMY_NAMES = {};
@@ -74,6 +78,7 @@ export function adapt(cfg) {
     if (e.summons1) o.summons1 = [...e.summons1];
     if (e.summons2) o.summons2 = [...e.summons2];
     if (e.character) o.character = e.character;
+    if (e.image) o.image = e.image;
     ENEMIES[id] = o;
     ENEMY_NAMES[id] = e.name;
   }
@@ -84,7 +89,7 @@ export function adapt(cfg) {
     const p = cfg.perks[id], { kind, stat, value } = p.effect;
     const maxStacks = p.maxStacks, minLevel = p.minLevel || 0;
     return {
-      id, name: p.name, desc: p.desc,
+      id, name: p.name, desc: p.desc, ...(p.image ? { image: p.image } : {}),
       effect: { kind, stat, value }, maxStacks, // EK (yalnızca arayüz: simge/nadirlik); oyun mantığı kullanmaz
       ok: (S) => (maxStacks === undefined || ((S.perkCount && S.perkCount[id]) || 0) < maxStacks) && S.level >= minLevel,
       apply: (S) => {
@@ -110,6 +115,8 @@ export function adapt(cfg) {
     o.intro = L.intro.map(line);
     o.outro = L.outro.map(line);
     o.id = id;
+    if (L.image) o.image = L.image;
+    if (L.nodeImage) o.nodeImage = L.nodeImage;
     if (L.map) o.map = { ...L.map };
     return o;
   });
@@ -122,6 +129,6 @@ export function adapt(cfg) {
   return {
     META: { ...cfg.meta }, GAME, PLAYER, STRINGS, CHARACTERS: cfg.characters,
     LEVELS, LEVEL_IDS, WEAPONS, WEAPON_ORDER, ABILITIES, ABILITY_ORDER, ENEMIES, ENEMY_NAMES, TOTEM_ID,
-    PERKS, THEMES, VIS, MUSIC, MUSIC_P3, CAMPAIGN: cfg.campaign, MAP: cfg.map ? copy(cfg.map) : null,
+    PERKS, THEMES, VIS, MUSIC, MUSIC_P3, CAMPAIGN: cfg.campaign, UI_ICONS: { ...((cfg.ui && cfg.ui.icons) || {}) }, MAP: cfg.map ? copy(cfg.map) : null,
   };
 }

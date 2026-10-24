@@ -262,6 +262,11 @@ function semantic(c, raw, err, warn) {
   // oyun
   if (isObj(c.game) && c.game.startHp > c.game.maxHpCap) err("E_RANGE", ["game", "maxHpCap"], `maxHpCap (${c.game.maxHpCap}) startHp (${c.game.startHp}) değerinden küçük olamaz`, { value: c.game.maxHpCap, expect: `int ${c.game.startHp}..12` });
 
+  // arayüz ikonları: kalp görseli çift olarak verilir (biri yoksa SVG kalpler kullanılır)
+  if (isObj(c.ui) && isObj(c.ui.icons) && Boolean(c.ui.icons.heartFull) !== Boolean(c.ui.icons.heartEmpty)) {
+    warn("W_ART_PAIR", ["ui", "icons", c.ui.icons.heartFull ? "heartEmpty" : "heartFull"], "Kalp görseli için heartFull ve heartEmpty birlikte verilmeli; biri eksik olduğundan SVG kalpler kullanılır");
+  }
+
   // oyuncu
   if (isObj(c.player) && isObj(c.characters) && has(c.characters, c.player.character) && c.characters[c.player.character].role !== "player") {
     err("E_REF", ["player", "character"], `player.character rolü "player" olan bir karakter olmalı`, { value: c.player.character, expect: "role=player" });

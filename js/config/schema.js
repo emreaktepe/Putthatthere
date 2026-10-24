@@ -4,7 +4,7 @@
 // Alan tanımı: { t: tür, req?: zorunlu, def?: varsayılan, label?: Türkçe etiket, ... türe özgü sınırlar }
 // Türler: int, num, str, hex, bool, enum, ref, arr, obj, map (id'li nesne), rec (ref anahtarlı nesne)
 
-import { ART_RE, ENUMS, ID_RE, WEATHER_MAX } from "./registry.js";
+import { ART_RE, ENUMS, ID_RE, UI_ICON_KEYS, WEATHER_MAX } from "./registry.js";
 
 export const CONFIG_SCHEMA_VERSION = 1;
 
@@ -186,11 +186,14 @@ export const SCHEMA = obj({
     summon: ref("enemies", { label: "Doğurduğu düşman (totem)" }),
     summons1: arr(ref("enemies"), 0, 4, { label: "Boss faz 1 çağrısı" }),
     summons2: arr(ref("enemies"), 0, 4, { label: "Boss faz 2 çağrısı" }),
+    image: art({ label: "Düşman görseli (rozet, boss çubuğu)" }),
   }, { label: "Düşman" }), 1, 40, { label: "Düşmanlar" })),
 
   weapons: R(map(obj({
     name: str(1, 24, { req: true, label: "Ad" }),
     icon: str(1, 4, { req: true, label: "Simge" }),
+    image: art({ label: "İkon görseli" }),
+    imageSmall: art({ label: "Küçük ikon görseli (slot, 128 px)" }),
     color: hex({ req: true, label: "Renk" }),
     cd: num(0.1, 10, { req: true, label: "Bekleme (sn)" }),
     dmg: num(0.5, 20, { req: true, label: "Hasar" }),
@@ -208,6 +211,8 @@ export const SCHEMA = obj({
   abilities: R(map(obj({
     name: str(1, 24, { req: true, label: "Ad" }),
     icon: str(1, 4, { req: true, label: "Simge" }),
+    image: art({ label: "İkon görseli" }),
+    imageSmall: art({ label: "Küçük ikon görseli (slot, 128 px)" }),
     cd: num(1, 60, { req: true, label: "Bekleme (sn)" }),
     params: obj({
       duration: num(0.5, 60, { label: "Süre" }),
@@ -221,6 +226,7 @@ export const SCHEMA = obj({
   perks: R(map(obj({
     name: str(1, 30, { req: true, label: "Ad" }),
     desc: str(1, 90, { req: true, label: "Açıklama" }),
+    image: art({ label: "İkon görseli" }),
     maxStacks: int(1, 9, { label: "Azami yığın (boş = sınırsız)" }),
     minLevel: int(0, 20, { def: 0, label: "Asgari bölüm (0 tabanlı)" }),
     effect: R(obj({
@@ -269,6 +275,8 @@ export const SCHEMA = obj({
     reward: ref("weapons", { label: "Ödül büyü" }),
     ability: ref("abilities", { label: "Ödül yetenek" }),
     totems: arr(arr(num(-12, 12), 2, 2), 1, 6, { label: "Totem konumları [x,z]" }),
+    image: art({ label: "Bölüm kapak görseli (3:2)" }),
+    nodeImage: art({ label: "Harita düğümü madalyonu (kare)" }),
     intro: arr(dialogLine, 1, 4, { req: true, label: "Giriş anlatısı" }),
     outro: arr(dialogLine, 1, 4, { req: true, label: "Çıkış anlatısı" }),
     // 2. aşama (harita) için ayrılmış; şimdilik isteğe bağlı
@@ -286,6 +294,10 @@ export const SCHEMA = obj({
       via: arr(arr(num(0, 5000), 2, 2), 0, 12), style: enm(["dotted", "solid"]),
     }), 0, 60, { label: "Harita yolları" }),
   }, { label: "Kampanya" })),
+
+  ui: obj({
+    icons: obj(Object.fromEntries(UI_ICON_KEYS.map((k) => [k, art({ label: "İkon: " + k })])), { label: "Arayüz ikonları (görsel geçersiz kılma)" }),
+  }, { label: "Arayüz" }),
 
   map: obj({
     viewBox: arr(num(100, 5000), 2, 2, { label: "Görünüm kutusu" }),

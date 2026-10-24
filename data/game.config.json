@@ -284,6 +284,7 @@
     "fire": {
       "name": "Ateş Topu",
       "icon": "🔥",
+      "image": "assets/art/ikon-buyu-fire.webp",
       "color": "#ffa03a",
       "cd": 0.35,
       "dmg": 1,
@@ -293,6 +294,7 @@
     "frost": {
       "name": "Buz Oku",
       "icon": "❄️",
+      "image": "assets/art/ikon-buyu-frost.webp",
       "color": "#7fd6ff",
       "cd": 0.5,
       "dmg": 1,
@@ -303,6 +305,7 @@
     "arcane": {
       "name": "Üçlü Büyü",
       "icon": "✨",
+      "image": "assets/art/ikon-buyu-arcane.webp",
       "color": "#d27bff",
       "cd": 0.65,
       "dmg": 1,
@@ -313,6 +316,7 @@
     "lightning": {
       "name": "Yıldırım",
       "icon": "⚡",
+      "image": "assets/art/ikon-buyu-lightning.webp",
       "color": "#fff27a",
       "cd": 0.9,
       "dmg": 2,
@@ -321,6 +325,7 @@
     "poison": {
       "name": "Zehir Bulutu",
       "icon": "🧪",
+      "image": "assets/art/ikon-buyu-poison.webp",
       "color": "#6bff6b",
       "cd": 1.4,
       "dmg": 1,
@@ -330,6 +335,7 @@
     "meteor": {
       "name": "Meteor",
       "icon": "☄️",
+      "image": "assets/art/ikon-buyu-meteor.webp",
       "color": "#ff7a2a",
       "cd": 2.8,
       "dmg": 3,
@@ -338,6 +344,7 @@
     "nova": {
       "name": "Ay Işığı Halkası",
       "icon": "🌙",
+      "image": "assets/art/ikon-buyu-nova.webp",
       "color": "#cfe4ff",
       "cd": 4.5,
       "dmg": 1,
@@ -346,9 +353,9 @@
   },
   "weaponOrder": ["fire", "frost", "arcane", "lightning", "poison", "meteor", "nova"],
   "abilities": {
-    "shield": { "name": "Mana Kalkanı", "icon": "🛡️", "cd": 14, "params": { "duration": 8 } },
-    "blink": { "name": "Işınlan", "icon": "💨", "cd": 5, "params": { "dist": 5, "iframes": 0.4 } },
-    "timeslow": { "name": "Zaman Çatlağı", "icon": "⏳", "cd": 18, "params": { "duration": 3, "factor": 0.4 } }
+    "shield": { "name": "Mana Kalkanı", "icon": "🛡️", "image": "assets/art/ikon-yetenek-shield.webp", "imageSmall": "assets/art/ikon-yetenek-shield-128.webp", "cd": 14, "params": { "duration": 8 } },
+    "blink": { "name": "Işınlan", "icon": "💨", "image": "assets/art/ikon-yetenek-blink.webp", "imageSmall": "assets/art/ikon-yetenek-blink-128.webp", "cd": 5, "params": { "dist": 5, "iframes": 0.4 } },
+    "timeslow": { "name": "Zaman Çatlağı", "icon": "⏳", "image": "assets/art/ikon-yetenek-timeslow.webp", "imageSmall": "assets/art/ikon-yetenek-timeslow-128.webp", "cd": 18, "params": { "duration": 3, "factor": 0.4 } }
   },
   "abilityOrder": ["shield", "blink", "timeslow"],
   "perks": {

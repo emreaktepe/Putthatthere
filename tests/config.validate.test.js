@@ -221,3 +221,52 @@ test("varsayılan konfigürasyon: beş karakter portresi, menü ve harita görse
     assert.ok(fs.existsSync(new URL("../" + p, import.meta.url)), p + " dosyası var");
   }
 });
+
+// ---- ikon / kapak görselleri (image, imageSmall, nodeImage, ui.icons) ----
+const ART_FIELDS = [
+  ["weapons.fire.image", (c, v) => { c.weapons.fire.image = v; }, "/weapons/fire/image"],
+  ["weapons.fire.imageSmall", (c, v) => { c.weapons.fire.imageSmall = v; }, "/weapons/fire/imageSmall"],
+  ["abilities.blink.image", (c, v) => { c.abilities.blink.image = v; }, "/abilities/blink/image"],
+  ["abilities.blink.imageSmall", (c, v) => { c.abilities.blink.imageSmall = v; }, "/abilities/blink/imageSmall"],
+  ["perks.hp.image", (c, v) => { c.perks.hp.image = v; }, "/perks/hp/image"],
+  ["enemies.ghost.image", (c, v) => { c.enemies.ghost.image = v; }, "/enemies/ghost/image"],
+  ["levels.forest.image", (c, v) => { c.levels.forest.image = v; }, "/levels/forest/image"],
+  ["levels.forest.nodeImage", (c, v) => { c.levels.forest.nodeImage = v; }, "/levels/forest/nodeImage"],
+  ["ui.icons.hourglass", (c, v) => { c.ui = { icons: { hourglass: v } }; }, "/ui/icons/hourglass"],
+  ["ui.icons.heartFull", (c, v) => { c.ui = { icons: { heartFull: v, heartEmpty: "assets/art/ui-kalp-bos.webp" } }; }, "/ui/icons/heartFull"],
+];
+test("görsel alanları: geçerli yollar (-128 adı dahil) kabul edilir ve korunur", () => {
+  for (const [name, set, ptr] of ART_FIELDS) {
+    const r = run((c) => set(c, "assets/art/ikon-yetenek-blink-128.webp"));
+    assert.equal(r.ok, true, name);
+    assert.ok(!has(r, "E_FORMAT", ptr), name);
+  }
+  const r = run((c) => { c.weapons.fire.image = "assets/art/ikon-buyu-fire.webp"; c.ui = { icons: { camera: "assets/art/ui-kamera.webp" } }; });
+  assert.equal(r.sanitized.weapons.fire.image, "assets/art/ikon-buyu-fire.webp");
+  assert.equal(r.sanitized.ui.icons.camera, "assets/art/ui-kamera.webp");
+});
+test("görsel alanları: kötü yollar (harici URL, .., .png, data:) E_FORMAT", () => {
+  for (const v of ["https://evil.example/a.webp", "assets/art/../x.webp", "data:image/webp;base64,AAAA", "javascript:alert(1)", "assets/art/a.png", "assets/art/a.webp?x=1"]) {
+    for (const [name, set, ptr] of ART_FIELDS) {
+      const r = run((c) => set(c, v));
+      assert.equal(r.ok, false, `${name}: ${v}`);
+      assert.ok(has(r, "E_FORMAT", ptr), `${name}: ${v}`);
+    }
+  }
+});
+test("ui.icons: bilinmeyen ikon adı uyarı verir, kalp görseli tek başına uyarılır", () => {
+  assert.ok(has(run((c) => { c.ui = { icons: { nope: "assets/art/a.webp" } }; }), "W_UNKNOWN_FIELD", "/ui/icons/nope"));
+  assert.ok(has(run((c) => { c.ui = { icons: { heartFull: "assets/art/ui-kalp-dolu.webp" } }; }), "W_ART_PAIR", "/ui/icons/heartEmpty"));
+  assert.ok(!has(run((c) => { c.ui = { icons: { heartFull: "assets/art/a.webp", heartEmpty: "assets/art/b.webp" } }; }), "W_ART_PAIR"));
+});
+test("varsayılan konfigürasyon: 7 büyü ve 3 yetenek görseli bağlı, dosyaları var; perk/düşman/bölüm/ui görselleri boş", () => {
+  for (const id of Object.keys(base.weapons)) { assert.equal(base.weapons[id].image, `assets/art/ikon-buyu-${id}.webp`); assert.equal(base.weapons[id].imageSmall, undefined); }
+  for (const id of Object.keys(base.abilities)) { assert.equal(base.abilities[id].image, `assets/art/ikon-yetenek-${id}.webp`); assert.equal(base.abilities[id].imageSmall, `assets/art/ikon-yetenek-${id}-128.webp`); }
+  const paths = [];
+  const walk = (v) => { if (typeof v === "string" && /^assets\/art\//.test(v)) paths.push(v); else if (v && typeof v === "object") Object.values(v).forEach(walk); };
+  walk(base);
+  assert.ok(paths.length === 20);
+  for (const p of paths) assert.ok(fs.existsSync(new URL("../" + p, import.meta.url)), p + " dosyası var");
+  assert.ok(Object.values(base.perks).every((x) => !x.image) && Object.values(base.enemies).every((x) => !x.image));
+  assert.ok(Object.values(base.levels).every((x) => !x.image && !x.nodeImage) && !base.ui);
+});

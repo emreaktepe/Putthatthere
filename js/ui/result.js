@@ -1,9 +1,9 @@
 // Kart tabanlı bölüm ekranları: bölüm girişi, bölüm sonu (puan özeti, ödül kartı, perk kartları), yenilgi ve final.
 // Konfigürasyon metinleri yalnızca h()/rich() ile (textContent) basılır.
-import { ABILITIES, CHARACTERS, ENEMY_NAMES, LEVELS, STRINGS, TOTEM_ID, WEAPONS } from "../core/data.js";
+import { ABILITIES, CHARACTERS, ENEMIES, ENEMY_NAMES, LEVELS, STRINGS, TOTEM_ID, WEAPONS } from "../core/data.js";
 import { fmt, h, rich, safeHex } from "../core/dom.js";
 import { S } from "../core/state.js";
-import { fillMedallion } from "./art.js";
+import { artOr, fillMedallion, pickArt } from "./art.js";
 import { icon } from "./icons.js";
 import { RARITY_LABEL, countValue, enemyIcon, perkIcon, perkRarity, portraitOf } from "./models.js";
 import { button, confirmButton, mount, reducedMotion, scope } from "./screens.js";
@@ -28,8 +28,20 @@ function foeIds(L) {
   if (L.objective === "totem" && TOTEM_ID) ids.add(TOTEM_ID);
   return [...ids].filter((k) => ENEMY_NAMES[k]);
 }
+// düşman rozeti: enemies.<id>.image varsa küçük yuvarlak görsel, yoksa emoji simgesi
+export function foeBadge(k) {
+  const fb = document.createTextNode(enemyIcon(k));
+  const e = ENEMIES[k], im = e && artOr(e.image, null, { cls: "chip-img", size: 22 });
+  return h("span", { class: "chip-ic", "aria-hidden": "true" }, im || fb);
+}
 export function foeChips(L) {
-  return h("ul", { class: "chips", "aria-label": UI.map.foes }, ...foeIds(L).map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, h("span", { class: "chip-ic", "aria-hidden": "true" }, enemyIcon(k)), ENEMY_NAMES[k])));
+  return h("ul", { class: "chips", "aria-label": UI.map.foes }, ...foeIds(L).map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, foeBadge(k), ENEMY_NAMES[k])));
+}
+
+// bölüm kapak görseli (levels.<id>.image); yoksa/yüklenemezse hiçbir şey eklenmez
+export function coverImg(L) {
+  const im = artOr(L.image, null, { cls: "cover-img", lazy: false });
+  return im ? h("div", { class: "cover" }, im) : null;
 }
 
 // ---------- Bölüm girişi ----------
@@ -39,6 +51,7 @@ export function levelIntroScreen({ idx, practice, onEnter, onBack }) {
     h("header", { class: "card-head" },
       practice ? h("span", { class: "badge" }, UI.map.practice) : null,
       h("h2", null, fmt(T.title, { n: idx + 1, name: L.name }))),
+    coverImg(L),
     dialogView(L.intro),
     h("div", { class: "obj" }, icon("target"), h("span", null, objectiveText(L))),
     h("div", { class: "obj-foes" }, h("small", { class: "eyebrow" }, UI.map.foes), foeChips(L)),
@@ -62,13 +75,21 @@ function countUp(sc, elNode, to, { from = 0, delay = 0, dur = 900, prefix = "" }
   });
 }
 
+function rewardIcon(d) {
+  const im = artOr(pickArt(d), null, { cls: "reward-img", size: 96, lazy: false });
+  if (!im) return h("div", { class: "reward-ic", "aria-hidden": "true" }, d.icon);
+  const box = h("div", { class: "reward-ic has-art", "aria-hidden": "true" }, im);
+  im.addEventListener("error", () => { box.classList.remove("has-art"); box.textContent = d.icon; });
+  return box;
+}
+
 function rewardCard(kind, id) {
   const isW = kind === "weapon", d = isW ? WEAPONS[id] : ABILITIES[id], C = STRINGS.clear;
   const stat = isW ? `${UI.result.damage} ${d.dmg} · ${UI.result.cooldown} ${d.cd} ${UI.map.sec}` : `${UI.result.cooldown} ${d.cd} ${UI.map.sec}`;
   const col = isW ? "#" + d.color.toString(16).padStart(6, "0") : "#9ad7ff";
   return h("div", { class: "reward-card", style: { "--rc": col } },
     h("div", { class: "reward-glow", "aria-hidden": "true" }),
-    h("div", { class: "reward-ic", "aria-hidden": "true" }, d.icon),
+    rewardIcon(d),
     h("div", { class: "reward-txt" },
       h("small", { class: "eyebrow" }, isW ? UI.result.newSpell : UI.result.newAbility),
       h("b", { class: "reward-name" }, d.name),
@@ -77,11 +98,19 @@ function rewardCard(kind, id) {
       h("small", { class: "reward-stat" }, stat)));
 }
 
+function perkIconNode(p) {
+  const im = artOr(pickArt(p), null, { cls: "perk-img", size: 64, lazy: false });
+  if (!im) return h("span", { class: "perk-ic", "aria-hidden": "true" }, perkIcon(p.effect));
+  const box = h("span", { class: "perk-ic has-art", "aria-hidden": "true" }, im);
+  im.addEventListener("error", () => { box.classList.remove("has-art"); box.textContent = perkIcon(p.effect); });
+  return box;
+}
+
 function perkCard(p, onPick, locked) {
   const rar = perkRarity(p.maxStacks);
   const b = h("button", { class: "perk-card r-" + rar, type: "button", "aria-label": `${p.name}: ${p.desc} (${RARITY_LABEL[rar]})` },
     h("span", { class: "perk-rar" }, RARITY_LABEL[rar]),
-    h("span", { class: "perk-ic", "aria-hidden": "true" }, perkIcon(p.effect)),
+    perkIconNode(p),
     h("b", { class: "perk-name" }, p.name),
     h("span", { class: "perk-desc" }, p.desc));
   b.addEventListener("click", () => { if (locked.v) return; locked.v = true; b.classList.add("picked"); onPick(p); });

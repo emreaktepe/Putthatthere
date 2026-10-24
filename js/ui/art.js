@@ -24,8 +24,8 @@ export function portraitImg(path, name, cls = "") {
 }
 
 // madalyon: görsel varsa <img>, yoksa (ya da yüklenemezse) yedek düğüm. Kap elemanı çağırandan gelir.
-export function fillMedallion(box, path, name, fallback) {
-  const img = portraitImg(path, name);
+export function fillMedallion(box, path, name, fallback, cls = "") {
+  const img = portraitImg(path, name, cls);
   if (!img) { box.replaceChildren(fallback); return box; }
   box.classList.add("has-img");
   img.addEventListener("error", () => { box.classList.remove("has-img"); box.replaceChildren(fallback); });
@@ -41,4 +41,27 @@ export function warmArt(path) {
   warmed.add(src);
   const go = () => { const i = new Image(); i.decoding = "async"; i.src = src; };
   (window.requestIdleCallback || ((f) => setTimeout(f, 600)))(go);
+}
+
+// ---------- ikon / kapak görselleri (hepsi isteğe bağlı; yoksa ya da yüklenemezse yedek) ----------
+// Saf: bir öğenin (büyü, yetenek, perk...) görsel yolunu seçer. small=true -> imageSmall (yoksa image).
+export function pickArt(item, small = false) {
+  if (!item || typeof item !== "object") return null;
+  const first = small ? [item.imageSmall, item.image] : [item.image];
+  return first.find((p) => artPath(p)) || null;
+}
+
+// ui.icons: kalp görseli çift olarak geçerliyse { full, empty }, aksi halde null (SVG kalpler)
+export function heartPair(icons) {
+  const o = icons || {};
+  return artPath(o.heartFull) && artPath(o.heartEmpty) ? { full: o.heartFull, empty: o.heartEmpty } : null;
+}
+
+// yedeği olan görsel: yol geçerliyse <img> (hata olursa yedekle değişir; yedek null ise kaldırılır), değilse yedek düğüm
+export function artOr(path, fallback, { cls = "", size = 0, lazy = true, alt = "" } = {}) {
+  const src = artPath(path);
+  if (!src) return fallback;
+  const img = h("img", { class: "art-ic " + cls, src, alt, decoding: "async", draggable: "false", loading: lazy ? "lazy" : "eager", width: size || null, height: size || null });
+  img.addEventListener("error", () => { if (fallback) img.replaceWith(fallback); else img.remove(); });
+  return img;
 }

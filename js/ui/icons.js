@@ -1,5 +1,8 @@
 // Tek tip satır içi SVG ikon kümesi (harici dosya yok). Hepsi 24x24 görünüm kutusunda; renk CSS'ten (currentColor) gelir.
-import { svg } from "../core/dom.js";
+import { UI_ICONS } from "../core/data.js";
+import { h, svg } from "../core/dom.js";
+import { $ } from "../core/util.js";
+import { artPath, heartPair } from "./art.js";
 
 const FILL = { fill: "currentColor" };
 const LINE = { fill: "none", stroke: "currentColor", "stroke-width": 2.2, "stroke-linecap": "round", "stroke-linejoin": "round" };
@@ -17,8 +20,57 @@ const ICONS = {
   play: [FILL, "M7 4.5v15l12.5-7.5z"],
   skip: [LINE, "M5 5l9 7-9 7zM18 5v14"],
 };
-export function icon(name, cls = "") {
+function svgIcon(name, cls) {
   const [attrs, ...paths] = ICONS[name] || ICONS.star;
   return svg("svg", { viewBox: "0 0 24 24", class: "ic ic-" + name + (cls ? " " + cls : ""), "aria-hidden": "true", focusable: "false" }, ...paths.map((d) => svg("path", { d, ...attrs })));
+}
+// ui.icons[name] doğrulanmış yolla verilmişse görsel (yüklenemezse SVG'ye döner), yoksa SVG
+export function icon(name, cls = "") {
+  const src = artPath(UI_ICONS[name]);
+  if (!src) return svgIcon(name, cls);
+  const img = h("img", { class: "ic ic-img ic-" + name + (cls ? " " + cls : ""), src, alt: "", width: 24, height: 24, decoding: "async", draggable: "false", "aria-hidden": "true" });
+  img.addEventListener("error", () => img.replaceWith(svgIcon(name, cls)));
+  return img;
+}
+// yalnızca görsel geçersiz kılması varsa düğüm, yoksa null (SVG karşılığı olmayan ikonlar için)
+export const iconIfArt = (name, cls = "") => (artPath(UI_ICONS[name]) ? icon(name, cls) : null);
+
+// can kalbi: durum = full | half | empty. heartFull+heartEmpty görselleri varsa görselli, yoksa SVG kalpler.
+// Yarım kalp: dolu görsel CSS ile yarı genişlikte kırpılır (.heart.half .fg).
+export function heartCell(state) {
+  const pair = heartPair(UI_ICONS);
+  const cell = h("span", { class: "heart " + state + (pair ? " heart-img" : "") });
+  const svgs = () => [svgIcon("heart", "bg"), svgIcon("heart", "fg")];
+  if (!pair) return cell.append(...svgs()), cell;
+  const mk = (p, cls) => h("img", { class: "ic ic-img " + cls, src: "./" + p, alt: "", width: 26, height: 26, decoding: "async", draggable: "false", "aria-hidden": "true" });
+  const bg = mk(pair.empty, "bg"), fg = mk(pair.full, "fg");
+  const back = () => { cell.classList.remove("heart-img"); cell.replaceChildren(...svgs()); };
+  bg.addEventListener("error", back); fg.addEventListener("error", back);
+  cell.append(bg, fg);
+  return cell;
+}
+
+// sabit düğmeler (index.html): ateş, kamera, ses. Görsel yoksa/yüklenemezse mevcut emoji kalır.
+export function applyStaticIcons() {
+  const put = (btn, key, text) => {
+    const src = artPath(UI_ICONS[key]);
+    if (!btn || !src) return false;
+    const img = h("img", { class: "btn-art", src, alt: "", decoding: "async", draggable: "false" });
+    img.addEventListener("error", () => img.replaceWith(document.createTextNode(text)));
+    btn.replaceChildren(img);
+    return true;
+  };
+  put($("fire"), "fire", "✦");
+  put($("cam"), "camera", "📷");
+  const mute = $("mute");
+  if (!mute || !(artPath(UI_ICONS.sound) || artPath(UI_ICONS.mute))) return;
+  // ses motoru düğme metnini her geçişte yeniden yazar; görsel yeniden yerleştirilir (img varsa dokunulmaz: döngü olmaz)
+  const sync = () => {
+    const on = mute.getAttribute("aria-pressed") !== "true";
+    if (mute.firstElementChild && mute.firstElementChild.tagName === "IMG") return;
+    put(mute, on ? "sound" : "mute", on ? "🔊" : "🔇");
+  };
+  sync();
+  new MutationObserver(sync).observe(mute, { childList: true, attributes: true, attributeFilter: ["aria-pressed"] });
 }
 export const ICON_PATHS = ICONS;

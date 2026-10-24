@@ -26,6 +26,10 @@ export const MAP_PRESETS = ["night"];
 // görsel yolu: yalnızca assets/art/ altındaki .webp (harici URL, "..", data:, javascript: biçimleri eşleşmez)
 export const ART_RE = /^assets\/art\/[a-z0-9-]+\.webp$/;
 
+// arayüz ikonu geçersiz kılmaları (config ui.icons anahtarı -> beklenen görsel dosya adı gövdesi: assets/art/ui-<ad>.webp)
+export const UI_ICON_FILES = { hourglass: "sure", crystal: "kristal", star: "puan", target: "hedef", lock: "kilit", check: "onay", heartFull: "kalp-dolu", heartEmpty: "kalp-bos", shield: "kalkan", sound: "ses-acik", mute: "ses-kapali", camera: "kamera", fire: "ates", admin: "yonetim" };
+export const UI_ICON_KEYS = Object.keys(UI_ICON_FILES);
+
 // yetenekler: kimlik = davranış (js/game/abilities.js). params: ad -> [min, max, varsayılan]
 export const ABILITY_KINDS = {
   shield: { key: "Q", code: "KeyQ", params: { duration: [0.5, 60, 8] } },

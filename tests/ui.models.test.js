@@ -83,3 +83,46 @@ test("portraitOf: portrait yolu yalnızca karakterde varsa döner", () => {
   assert.equal(portraitOf(ch, "Aldemir").portrait, "assets/art/portre-aldemir.webp");
   assert.equal("portrait" in portraitOf(ch, "Yok"), false);
 });
+
+import { heartPair, pickArt } from "../js/ui/art.js";
+import { adapt } from "../js/config/adapt.js";
+import { validate } from "../js/config/validate.js";
+import fs from "node:fs";
+
+test("pickArt: küçük sürüm varsa küçük slotta o, yoksa büyük görsel; geçersiz/boş yol null", () => {
+  const w = { image: "assets/art/ikon-buyu-fire.webp" };
+  const a = { image: "assets/art/ikon-yetenek-blink.webp", imageSmall: "assets/art/ikon-yetenek-blink-128.webp" };
+  assert.equal(pickArt(w, true), w.image);
+  assert.equal(pickArt(a, true), a.imageSmall);
+  assert.equal(pickArt(a, false), a.image);
+  assert.equal(pickArt({ imageSmall: a.imageSmall }, false), null);
+  assert.equal(pickArt({ image: "https://evil.example/a.webp" }, true), null);
+  assert.equal(pickArt({ icon: "🔥" }, true), null);
+  assert.equal(pickArt(null), null);
+});
+
+test("heartPair: yalnızca iki görsel de geçerliyse kullanılır (yoksa SVG kalpler)", () => {
+  assert.deepEqual(heartPair({ heartFull: "assets/art/a.webp", heartEmpty: "assets/art/b.webp" }), { full: "assets/art/a.webp", empty: "assets/art/b.webp" });
+  assert.equal(heartPair({ heartFull: "assets/art/a.webp" }), null);
+  assert.equal(heartPair({ heartFull: "assets/art/a.webp", heartEmpty: "http://x/b.webp" }), null);
+  assert.equal(heartPair({}), null);
+  assert.equal(heartPair(undefined), null);
+});
+
+test("adapt: görsel alanları çalışma zamanı verisine geçer; yoksa alan eklenmez", () => {
+  const base = JSON.parse(fs.readFileSync(new URL("../data/game.config.json", import.meta.url), "utf8"));
+  base.perks.hp.image = "assets/art/ikon-perk-hp.webp"; base.enemies.ghost.image = "assets/art/dusman-ghost.webp";
+  base.levels.forest.image = "assets/art/bolum-forest.webp"; base.levels.forest.nodeImage = "assets/art/dugum-forest.webp";
+  base.ui = { icons: { camera: "assets/art/ui-kamera.webp" } };
+  const A = adapt(validate(base).sanitized);
+  assert.equal(A.WEAPONS.fire.image, "assets/art/ikon-buyu-fire.webp");
+  assert.equal(A.ABILITIES.blink.imageSmall, "assets/art/ikon-yetenek-blink-128.webp");
+  assert.equal(A.PERKS[0].image, "assets/art/ikon-perk-hp.webp");
+  assert.equal(A.ENEMIES.ghost.image, "assets/art/dusman-ghost.webp");
+  assert.equal(A.LEVELS[0].image, "assets/art/bolum-forest.webp");
+  assert.equal(A.LEVELS[0].nodeImage, "assets/art/dugum-forest.webp");
+  assert.deepEqual(A.UI_ICONS, { camera: "assets/art/ui-kamera.webp" });
+  const B = adapt(validate(JSON.parse(fs.readFileSync(new URL("../data/game.config.json", import.meta.url), "utf8"))).sanitized);
+  assert.equal("image" in B.PERKS[0], false); assert.equal("image" in B.ENEMIES.ghost, false); assert.equal("image" in B.LEVELS[0], false);
+  assert.deepEqual(B.UI_ICONS, {});
+});

@@ -369,3 +369,34 @@ h3 { font-size: 17px; color: var(--violet-2); }
 .avatar.has-img { flex-basis: 58px; width: 58px; height: 58px; box-shadow: 0 0 14px var(--c, var(--violet)), inset 0 0 0 1px rgba(0, 0, 0, .4); }
 .boss-medal { flex: none; width: 38px; height: 38px; margin: -4px 0; border-radius: 50%; border: 2px solid var(--gold-2, #ffd98a); box-shadow: 0 0 10px rgba(255, 60, 90, .8); }
 .boss-medal:not(.has-img) { display: none; }
+
+/* ---------- İkon görselleri (config: image / imageSmall / nodeImage / ui.icons); hepsi isteğe bağlı, yedek: emoji/SVG ---------- */
+.art-ic { display: block; object-fit: contain; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+.slot-ic .slot-img { width: 46px; height: 46px; filter: drop-shadow(0 0 6px var(--c, #b58cff)); }
+.aslot .slot-ic .slot-img { width: 44px; height: 44px; filter: drop-shadow(0 0 5px #7ec8ff); }
+.slot.locked .slot-img { filter: none; }
+.chip-img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; background: rgba(0, 0, 0, .35); }
+.chip-ic { display: inline-grid; place-items: center; }
+.reward-ic.has-art { width: 100px; height: 100px; font-size: 0; background: none; border: 0; box-shadow: none; }
+.reward-ic.has-art .reward-img { width: 100px; height: 100px; filter: drop-shadow(0 0 14px var(--rc)); }
+.perk-ic.has-art { display: grid; }
+.perk-ic .perk-img { width: 64px; height: 64px; filter: drop-shadow(0 0 10px var(--rc)); }
+.cover { margin: 0 -2px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); aspect-ratio: 3 / 2; max-height: 190px; background: rgba(0, 0, 0, .35); }
+.cover-img { width: 100%; height: 100%; object-fit: cover; }
+.level-sheet .cover { aspect-ratio: 3 / 1; max-height: 110px; }
+.node .node-img { pointer-events: none; }
+.node.locked .node-img { filter: grayscale(1) brightness(.45); }
+.node.has-img .node-ic { display: none; }
+.node.has-img .disc { fill: #1a1236; }
+.ic-img { object-fit: contain; }
+.btn-art { width: 1.25em; height: 1.25em; object-fit: contain; vertical-align: middle; pointer-events: none; }
+#fire .btn-art { width: 56px; height: 56px; }
+.heart-img.full .bg { opacity: 0; }
+.heart-img .fg { color: inherit; filter: drop-shadow(0 0 5px rgba(255, 77, 109, .75)); }
+.portrait-img.contain { object-fit: contain; object-position: center; }
+@media (max-width: 640px) {
+  .slot-ic .slot-img { width: 44px; height: 44px; }
+  .aslot .slot-ic .slot-img { width: 40px; height: 40px; }
+  .reward-ic.has-art, .reward-ic.has-art .reward-img { width: 76px; height: 76px; }
+  .perk-ic .perk-img { width: 48px; height: 48px; }
+}
