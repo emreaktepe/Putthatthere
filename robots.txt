@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /Putthatthere/demo/
+Disallow: /Putthatthere/admin.html
 
 Sitemap: https://emreaktepe.github.io/Putthatthere/sitemap.xml

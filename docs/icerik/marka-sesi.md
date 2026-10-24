@@ -1,43 +1,45 @@
 # Marka Sesi ve Ana Mesajlar (TASLAK)
 
-Durum: taslak, hiçbir şey yayınlanmadı. Dayanak: `docs/pazarlama-stratejisi/lansman-plani.md`, `docs/strateji/brief.md`, `docs/design/research.md`. Etiketler: (V) belgelerden doğrulanmış, (Varsayım) doğrulanmamış.
+Durum: taslak, hiçbir şey yayınlanmadı. Dayanak: `docs/pazarlama-stratejisi/lansman-plani.md`, `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md`, `data/game.config.json`. Etiketler: (V) belgelerden doğrulanmış, (Varsayım) doğrulanmamış.
 
 ## 1. Dürüstlük çerçevesi (her metinde geçerli)
 
-- Kurallar **ABD/uluslararası tarzı** rehberlere dayanır (ADA/PROWAG, MUTCD tarzı, NFPA 10 tarzı, toplu taşıma dokunsal paving rehberleri). Türkiye standartlarıyla (TS, yönetmelikler) karşılaştırılmadı (V, `research.md`).
-- Bu bir **resmi eğitim, sertifika veya mevzuat kaynağı değildir**. "Eğitim", "sertifika", "uyumlu", "yasal gereklilik" kelimeleri kullanılmaz. Doğru çerçeve: "eğlenceli ve öğretici bulmaca".
-- Oyunda hesap, ödeme, kayıt yok (V). "Ücretsiz, kurulumsuz" denebilir. Çerezsiz ölçüm henüz kurulmadı; "veri toplamıyoruz" denmez, hiç gizlilik iddiası kurulmaz.
-- Uydurma kullanıcı yorumu, oyuncu sayısı, istatistik, "binlerce kişi oynadı" yok.
-- Demo (Küre Toplayıcı) hiçbir metinde anılmaz; Emre tarayıcıda denemeden tanıtılmaz.
+- Anlatılan her şey oyunda gerçekten var olmalı: 9 bölüm, 7 büyü, 3 yetenek, patron Gölge Kral, mobil ve masaüstü kontrol, harita, kamera açıları (V).
+- Oyunda hesap, çok oyunculu mod, skor tablosu, bulut kaydı, mağaza uygulaması, ödeme yok (V). Bunlar vaat edilmez. İlerleme yalnızca o tarayıcıda saklanır.
+- "Ücretsiz, kurulumsuz" denebilir. Ölçüm henüz kurulmadı; gizlilikle ilgili iddia kurulmaz.
+- Uydurma yorum, oyuncu sayısı, istatistik, "binlerce kişi oynadı" yok.
+- Denge ayarı henüz oynanarak yapılmadı; "ideal zorluk" gibi iddialardan kaçınılır.
 
 ## 2. Ton
 
-Meraklı, hafif şakacı, kendinden emin ama alçakgönüllü. Ders vermez, "bak şuna" der. Kısa cümle, somut sayı, tek fikir. Okuyucuya "sen" denir.
+Gizemli, sıcak, hafif esprili; masalsı ama süssüz. Kısa cümle, somut ayrıntı (adlar, bölümler), tek fikir. Okuyucuya "sen" denir. Hikâyenin duygusu (suçluluktan sorumluluğa, baba ve kız) abartılmadan, tek cümleyle ima edilir.
 
 | Kullan | Kaçın |
 |---|---|
-| "Dahi testi", "bulmaca", "dene" | "Eğitim programı", "sertifikalı", "resmi" |
-| "ABD/uluslararası tarzı kurallara dayanır" | "Yasaya uygun", "standartlara %100 uyumlu" |
-| "Sapma: 38 cm" gibi somut geri bildirim | "Hayat kurtarır", "güvenliğini garanti eder" |
-| "Gözün ne kadar keskin?" | "Herkes bilmeli", "kimse bilmiyor" (abartı) |
-| "5 sahne, birkaç dakika" | "Binlerce oyuncu", "en iyi" (kanıtsız) |
+| "Şafak yüzyıldır doğmadı." | "En iyi", "efsane", "bağımlılık yapar" (kanıtsız) |
+| "9 bölüm, 7 büyü, 1 Gölge Kral" | "Sınırsız", "devasa açık dünya" |
+| "Tarayıcıda aç, oyna" | "İndir", "mağazada" |
+| "Telefonda da çalışır" | "Her cihazda kusursuz" (denenmedi) |
+| "Dene, ne düşündüğünü yaz" | "Herkes oynuyor" |
 
 ## 3. Ana mesajlar
 
-1. **Kanca:** "Sapma: 38 cm." Eksik nesneyi koy, ne kadar ıskaladığını santimetreyle gör.
-2. **Değer:** Her gün gördüğün peron şeridi, söndürücü, kaldırım rampası... nerede durması gerektiğini bilir misin?
-3. **Kolaylık:** Tarayıcıda, kayıtsız, kurulumsuz, ücretsiz. 5 sahne.
-4. **Dürüstlük:** Kurallar ABD/uluslararası tarzıdır; Türkiye'deki kurallar farklı olabilir.
+1. **Kanca:** "Şafak yüzyıldır doğmadı. Gece Kalbi çatladı. Bunu düzeltebilecek tek kişi, o gece uyuyakalan büyücü: sensin." (oyunun açılış metni, V)
+2. **Değer:** Mana kristali topla, ruhlara ve yaratıklara büyü yağdır, her bölümde yeni büyü ve yetenek kazan.
+3. **Kolaylık:** Tarayıcıda, kurulumsuz, ücretsiz. Bilgisayarda klavye/fare, telefonda joystick ve ateş butonu.
+4. **Dürüstlük:** Küçük, kişisel bir proje; denge ve cihaz uyumu iyileşiyor. Geri bildirim değerli.
 
-Kısa slogan adayları (Emre seçer): "Sapma: 38 cm. Senin gözün kaç?" / "Eksik nesneyi koy. Ne kadar ıskaladığını gör."
+Kısa slogan adayları (Emre seçer): "Şafağı geri getir." / "Gece Kalbi çatladı. Sıra sende."
 
 ## 4. Örnek cümleler
 
-- "Metro peronunda sarı şerit kenara ne kadar uzakta olmalı? Koy, sapmanı gör."
-- "Yangın söndürücüyü duvara mı astın, yere mi koydun? Oyun fark eder."
-- "Kurallar ABD/uluslararası tarzı rehberlere dayanır; resmi bir eğitim değil, bir bulmaca."
-- "5 sahne, birkaç dakika, kayıt yok."
+- "Aldemir kulede uyuyakaldı. Bütün vadi onun hatasının bedelini ödüyor."
+- "Yıldırım zincirleme düşmanlara çarpınca..." (oynanış videosuyla birlikte)
+- "9 bölüm, birkaç büyü, bir Gölge Kral. Telefondan da açılır."
+- Pırıl'ın kimliği gibi hikâye sürprizleri açıklanmaz.
 
 ## 5. Anlatılacak ürün gerçekleri (V)
 
-5 sahne (metro peronu, otopark, kaldırım rampası, yaya geçidi, koridor); 3B, gerçek ölçek; yıldız ve puan; rütbeler (Iskaladın, Yakındı, Keskin Göz, Dahi Göz; en üst: Şehir Gözü Ustası); TR/EN; adres https://emreaktepe.github.io/Putthatthere/. Kaynak ilham: MIT 1980 "Put-That-There" (Bolt).
+Bölümler: Fısıldayan Orman, Yarasa Mağarası, Taş Bekçiler, Hortlak Mezarlığı, Donmuş Geçit, Yanık Köy, Kristal Yatağı, Kemik Kule, Gölge Kalesi. Karakterler: Aldemir (oyuncu), Usta Zerrin, Pırıl, Taşkın, Gölge Kral Veyis. Düşmanlar: Ruh, Yarasa, Taş Bekçi, Kemik Okçu, Kurt Ruhu, Kor Hortlak, Karanlık Rahip, Lanet Totemi, Kemik Şövalye. Adres: https://emreaktepe.github.io/Putthatthere/.
+
+Spoiler kuralı: Pırıl'ın kimliği ve finalin sonu paylaşım metinlerinde açıklanmaz.

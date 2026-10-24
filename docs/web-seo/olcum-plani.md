@@ -1,8 +1,8 @@
-# Ölçüm Planı (ÖNERİ — canlı ölçüm eklenmedi, onay bekliyor)
+# Ölçüm Planı (ÖNERİ, canlı ölçüm eklenmedi, onay bekliyor)
 
-Durum: Koda hiçbir takip betiği eklenmedi. Gerçek ölçüm ID'si yok. Canlı ölçüm kişisel veri/yasal metin içerdiği için Emre'nin onayına tabidir (`onay_iste`). Dayanak: `docs/pazarlama-stratejisi/lansman-plani.md` (anonim, çerezsiz tercih), `docs/strateji/mvp-kapsami.md` H5.
+Durum: Koda hiçbir takip betiği eklenmedi. Gerçek ölçüm ID'si yok. Canlı ölçüm kişisel veri/yasal metin içerdiği için Emre'nin onayına tabidir (`onay_iste`). Dayanak: `docs/pazarlama-stratejisi/lansman-plani.md` (anonim, çerezsiz tercih). Ayrıntılı olay tablosu ve huni: `docs/analitik/olcum-plani.md`.
 
-Önemli teknik not: Site GitHub Pages'te statik ve HTTP başlığı/sunucu kodu yok. Depo Apache 2.0 olduğundan ve kaynak açık olduğundan, ölçüm domain/ID'leri herkese görünür olur (gizli değildir; yine de gizli API anahtarı koda girmemeli).
+Önemli teknik not: Site GitHub Pages'te statik ve HTTP başlığı/sunucu kodu yok. Depo herkese açıksa ölçüm domain/ID'leri de herkese görünür olur (gizli değildir; yine de gizli API anahtarı koda girmemeli).
 
 ## 1. Seçenekler
 
@@ -10,43 +10,39 @@ Durum: Koda hiçbir takip betiği eklenmedi. Gerçek ölçüm ID'si yok. Canlı 
 |---|---|---|---|---|---|---|
 | GoatCounter | Çerezsiz, kimlik yok | Kolay; yine de gizlilik notu önerilir | Kişisel olmayan kullanım için ücretsiz | Var (`goatcounter.count({event:true})`) | Sıfır maliyet, hafif | Huni/olay analizi sınırlı |
 | Plausible | Çerezsiz | Kolay | Ücretli (aylık) ya da kendi sunucu | Var (`plausible(ad, {props})`) | İyi olay ve hedef arayüzü, props | Bütçe kalemi; Emre onayı |
-| GA4 | Çerez + onay bandı şart | Zor: açık rıza, aydınlatma metni, yurt dışı aktarım | Ücretsiz | Çok güçlü | Reklam platformlarıyla entegre | Onay bandı oyunu bozar, veri kaybı, yasal yük |
+| GA4 | Çerez + onay bandı şart | Zor: açık rıza, aydınlatma metni, yurt dışı aktarım | Ücretsiz | Çok güçlü | Reklam platformlarıyla entegre | Onay bandı oyun deneyimini bozar, veri kaybı, yasal yük |
 
-**Öneri:** Önce GoatCounter (veya bütçe izin verirse Plausible). Çerezsiz olduğu için onay bandı gerekmez, ancak gizlilik metni (kısa bir "Anonim ölçüm yapılıyor" notu) onaylanmalı. GA4, yalnızca Hafta 3 ücretli reklam için dönüşüm izleme gerekirse ve açık rıza bandıyla düşünülür.
+**Öneri:** Önce GoatCounter (veya bütçe izin verirse Plausible). Çerezsiz olduğu için onay bandı gerekmez, ancak kısa bir "Anonim ölçüm yapılıyor" notu onaylanmalı. GA4 yalnızca ücretli reklam için dönüşüm izleme gerekirse ve açık rıza bandıyla düşünülür.
 
 ## 2. Yapılandırma (placeholder; gerçek değer Emre'den)
 
-- `GOATCOUNTER_KOD` — GoatCounter site kodu (ör. `kod.goatcounter.com`).
-- `PLAUSIBLE_ALAN_ADI` — Plausible'da kayıtlı alan adı.
-- `GA4_OLCUM_ID` — yalnızca GA4 seçilirse (`G-XXXXXXX`), onay bandına bağlı.
+- `GOATCOUNTER_KOD`: GoatCounter site kodu (ör. `kod.goatcounter.com`).
+- `PLAUSIBLE_ALAN_ADI`: Plausible'da kayıtlı alan adı.
+- `GA4_OLCUM_ID`: yalnızca GA4 seçilirse, onay bandına bağlı.
 - Hiçbiri depoya gerçek değerle yazılmaz; statik sitede değer HTML'e gömülecekse bunun herkese açık olduğu bilinmeli.
 
 ## 3. Olay adları (ortak sözlük, Türkçe, snake_case)
 
 | Olay | Ne zaman | Özellikler |
 |---|---|---|
-| `oturum_basladi` | "Başla" tıklanınca | `dil` (tr/en) |
-| `sahne_baslatildi` | Sahne yüklenince | `sahne_no` (1-5) |
-| `sahne_tamamlandi` | Yerleştirme onaylanıp sonuç gösterilince | `sahne_no`, `yildiz` (0-3), `sapma_cm` aralığı (kova) |
-| `oyun_bitti` | 5. sahne sonuç/kapanış ekranı | `toplam_puan` (kova), `rutbe` |
-| `skor_paylasildi` | "Skoru kopyala" tıklanınca (özellik henüz YOK) | `rutbe` |
-| `yeni_sahne_ilgi` | "Yeni sahneler" ilgi düğmesi (YOK) | — |
-| `dil_degistirildi` | TR/EN düğmesi | `dil` |
-| `webgl_yok` | WebGL başlatılamadı | — |
+| `oturum_basladi` | Başlat düğmesine basılınca | `cihaz` (mobil/masaustu) |
+| `bolum_baslatildi` | Bölüm kartından savaşa geçilince | `bolum_no` (1-9) |
+| `bolum_tamamlandi` | Bölüm hedefi tamamlanınca | `bolum_no`, `alistirma` (evet/hayir) |
+| `bolum_kaybedildi` | Can bitince ya da süre dolunca | `bolum_no` |
+| `oyun_bitti` | 9. bölüm (Gölge Kralı yenme) final ekranı | `cihaz` |
+| `kamera_degistirildi` | İsteğe bağlı: kamera açısı seçimi | `aci` |
 
-Kural: Ham sapma/skor yerine kovalar; kullanıcı, IP, kimlik, serbest metin göndermeyin.
+Kural: kullanıcı, IP, kimlik, serbest metin ya da kayıt içeriği göndermeyin; skor gibi değerler gerekirse kovalanır. Bu olayların hiçbiri bugün kodda yok (V).
 
 ## 4. Huni ve metrikler (lansman planı Bölüm 6 ile uyumlu)
 
-Ziyaret (sayfa görüntüleme) -> `oturum_basladi` -> `sahne_tamamlandi` (sahne_no=1) -> `oyun_bitti` -> `skor_paylasildi`.
-Tamamlama = `oyun_bitti` / `oturum_basladi`. Hedefler lansman planında (Varsayım).
+Ziyaret, başlama (`oturum_basladi`), 1. bölüm tamamlama, 3. bölüme ulaşma, final ekranı (`oyun_bitti`). Bölüm bazlı kayıp `bolum_kaybedildi`/`bolum_baslatildi` ile okunur ve denge ayarının veri kaynağıdır.
 
 ## 5. Uygulama adımları (onaydan sonra)
 
-1. Emre aracı seçer, hesap açar, kodu/alan adını verir.
-2. Gizlilik notu metni onaylanır (yasal metin).
-3. Küçük bir `js/analytics.js` sarmalayıcı: `olay(ad, props)`; araç yüklenmemişse sessizce hiçbir şey yapmaz. Ana oyun mantığına bu olay çağrıları eklenir (Geliştirme/Analitik odası; bu oda JS'e dokunmadı).
-4. UTM'li kampanya bağlantıları (ör. `?utm_source=reddit`) Hafta 3 öncesi tanımlanır.
-5. Doğrulama: tarayıcı ağ sekmesinde yalnızca beklenen istek, çerez yok.
+1. Emre aracı seçer ve onaylar; gizlilik notu metni onaylanır.
+2. Tek bir ölçüm modülü (`js/analytics.js`) eklenir; araç betiği `index.html`'e girer. `admin.html` ölçülmez.
+3. Olay çağrıları oyun akışındaki ilgili noktalara (bölüm başı/sonu, ölüm, final) eklenir; Node testleri etkilenmemeli (`npm test`).
+4. UTM'li deneme ziyareti panelde doğrulanır.
 
 Durum: **onay bekliyor**.

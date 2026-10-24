@@ -1,36 +1,32 @@
-# Görsel Brief'leri (TASLAK, üretilmedi, yayınlanmadı)
+# Görsel Brief'leri (TASLAK; OG görseli üretildi, videolar çekilmedi, hiçbiri yayınlanmadı)
 
-Kural: Yalnızca oyundaki gerçek sahneler gösterilir (ekran görüntüsü/kaydı). Üretken görsel araç yalnızca arka plan/doku için; oyunda olmayan bir özelliği gösteren görsel yapılmaz. Demo (Küre Toplayıcı) gösterilmez.
+Dayanak: `docs/icerik/marka-sesi.md`, `docs/gelistirme/ui-ux-atmosfer-notlari.md`, oyunun palet ve atmosferi (koyu mor gece, altın hilal, `#0a0714`).
 
-## 1. assets/og-image.png
+## 1. assets/og-image.png (HAZIR)
 
-- Boyut: **1200x630 px**, PNG, metinler ~60 px güvenli kenar boşluğu içinde (`seo-raporu.md` brief'iyle aynı). Yol: `assets/og-image.png`.
-- Ana mesaj: "Sapma: 38 cm." Alt mesaj: "Eksik nesneyi doğru yere koy."
-- Görsel: Oyundaki metro peronu sahnesinden gerçek ekran görüntüsü (sarı şerit ve peron kenarı görünür), sol-orta koyu yarı saydam gradyan; sağda sahne.
-- Metin üstü yazı: rozet "Sapma: 38 cm" (amber, büyük); oyun adı "Şunu Şuraya Koy"; küçük satır "Ücretsiz 3B güvenlik bulmacası. Kayıt yok."
-- Not: 38 cm örnek bir değerdir; ekran görüntüsünde gerçek bir sonuç paneli kullanılırsa sayı gerçek olmalıdır, aksi halde "örnek" etiketi gerekmez ama rozet oyun arayüzünü taklit etmemelidir.
-- Üretim istemi (görsel araç, yalnızca arka plan için): "dark blue-gray metro station platform, wide angle, soft overhead lights, empty, no text, no people, cinematic, 16:9 crop-safe, space on left for text". Nihai görüntü gerçek ekran görüntüsüyle birleştirilir.
-- Kontrol: LinkedIn/Facebook paylaşım hata ayıklayıcıyla önizleme (yayın sonrası).
+- 1200x630, `tools/make-og-image.mjs` ile üretildi (bağımlılıksız, kod çizimi). Yeniden üretmek: `node tools/make-og-image.mjs`.
+- İçerik: koyu mor gökyüzü, yıldızlar, altın hilal, büyücü şapkası, tepe silueti. Metin yok; başlık ve açıklama `index.html` içindeki `og:title`/`og:description` etiketlerinde.
+- Canlı adres (yayından sonra): https://emreaktepe.github.io/Putthatthere/assets/og-image.png
+- Not: Sosyal ağların önizleme önbelleği eski görseli tutabilir; yayından sonra Emre paylaşım önizlemesini kendi hesabında kontrol eder (denenmedi).
 
-## 2. Video/GIF 1: "Sapma: 38 cm" (15 sn, 9:16 ve 1:1)
+## 2. Video/GIF 1: "Şafak yüzyıldır doğmadı" (15 sn, 9:16 ve 1:1)
 
-- Ekran kaydı: peron sahnesi, nesne tepsiden alınır, şerit yerleştirilir, onaylanır, sonuç paneli "Sapma" gösterir.
-- Metin üstü: 0-3 sn "Şeridi doğru yere koy"; son 3 sn "Sapma: X cm" (kaydedilen gerçek değer) + "Senin gözün kaç?"; kapanış kartı adres.
-- Ses yok (ürünün sesi yok); isteğe bağlı telifsiz müzik.
+- Plan: 0-3 sn açılış ekranı metni; 3-12 sn Fısıldayan Orman'da Ateş Topu ile ruhlar ve kristal toplama; 12-15 sn bölüm kartı ve alt yazı "9 bölüm, tarayıcıda".
+- Kaynak: gerçek oyun ekran kaydı (telefonda dikey, joystick görünsün). Ses: oyunun kendi müziği.
 
-## 3. Video/GIF 2: "Söndürücüyü yere koydum" (12 sn, 9:16)
+## 3. Video/GIF 2: "Yıldırım zinciri" (12 sn, 9:16)
 
-- Ekran kaydı: koridor sahnesi, söndürücü kasıtlı olarak yere konur, sonuç sıfır puan; ardından doğru duvara konur.
-- Metin üstü: "Yangın söndürücü yere konur mu?" -> "Oyun fark ediyor." Gerçek sonuç ekranı kullanılır.
+- Plan: Taş Bekçiler veya Hortlak Mezarlığı'nda kalabalık düşmanlara Yıldırım ve Üçlü Büyü; ekran sarsıntısı ve vuruş efektleri görünsün.
+- Alt yazı: "7 büyü. Hangisi senin tarzın?"
 
-## 4. Video/GIF 3: "5 sahne, 60 saniye" (20 sn, 16:9 veya GIF döngü)
+## 4. Video/GIF 3: "Gölge Kral" (20 sn, 16:9 veya GIF döngü)
 
-- Beş sahnenin hızlı kesitleri (peron, otopark, rampa, yaya geçidi, koridor), her biri 3 sn, üstte sahne adı.
-- Metin üstü: "5 sahne. Kayıt yok. Tarayıcıda." Son kart: kapanış ekranı rütbesi (gerçek ekran) ve adres.
-- Not: "60 saniye" iddiası ölçülmedi (Varsayım); başlıkta kullanılmayacaksa kaldırılmalı, kayıt süresine göre güncellenir.
+- Plan: Gölge Kalesi girişi, Gölge Kral'ın belirişi, kısa dövüş. Finalin sonu ve Pırıl'ın sırrı GÖSTERİLMEZ (spoiler kuralı).
+- Not: Bu bölüme ulaşmak için oyun baştan oynanmalı; Emre ilerlemeyi kaydeder ya da yönetim sayfasındaki "Bu bölümden başlat" geliştirici modunu kullanır (V: README; bu mod kayda yazmaz).
 
 ## Ortak notlar
 
-- Ekran kaydını Emre veya test odası alır; ben (içerik) kayıt üretmedim.
-- Ekran görüntüsü/kayıt gerçek sürümden olmalı (WebGL gerektirir).
-- Yayın ve reklam kullanımı onaya tabidir.
+- Marka rengi: koyu mor (`#0a0714` zemin), altın vurgu. Yazı tipi oyunun yazı tipiyle uyumlu.
+- Gerçek ekran kaydı kullanılır; kurgu/uydurma özellik gösterilmez.
+- Erişilebilirlik: videolara alt yazı eklenir; ses kapalı izlenebilmeli.
+- Hiçbir görsel/video onaysız yayınlanmaz.
