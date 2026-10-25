@@ -37,3 +37,6 @@ assets/favicon/icon-1024.png
 assets/favicon/icon-144.png
 assets/favicon/icon-180.png
 assets/favicon/icon-256.png
+
+# Dış 3B varlık deposu (inceleme öncesi indirilenler, lisansı doğrulanmadan repoya girmez)
+assets/_incoming/
