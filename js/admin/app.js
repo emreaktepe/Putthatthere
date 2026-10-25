@@ -175,7 +175,7 @@ function build() {
   toastEl = h("div", { class: "toast", role: "status", "aria-live": "polite" });
   barEl = h("div", { class: "bar" }, statusEl, healthEl, btn("▶ Taslakla oyna", () => openGame(), "btn primary"), btn("⬇ Dışa aktar", () => { selectTab("genel"); document.getElementById("akis")?.scrollIntoView({ behavior: "smooth" }); }));
   $app.replaceChildren(
-    h("header", { class: "top" }, h("div", null, h("h1", null, "Büyücünün Gecesi · Yönetim"), h("p", { class: "muted" }, "Değişiklikler yalnız bu tarayıcıda taslak olarak kalır; repoya yazılmaz.")), h("a", { class: "btn", href: "./index.html" }, "← Oyuna dön")),
+    h("header", { class: "top" }, h("div", null, h("h1", null, "HEXORA · Yönetim"), h("p", { class: "muted" }, "Değişiklikler yalnız bu tarayıcıda taslak olarak kalır; repoya yazılmaz.")), h("a", { class: "btn", href: "./index.html" }, "← Oyuna dön")),
     bannerEl, tabsEl, panel, barEl, toastEl);
 }
 

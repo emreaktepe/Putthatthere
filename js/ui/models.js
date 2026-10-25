@@ -154,3 +154,59 @@ export function rewardStat(kind, d, labels) {
   const cd = `${labels.cooldown} ${d.cd} ${labels.sec}`;
   return kind === "weapon" ? `${labels.damage} ${d.dmg} · ${cd}` : cd;
 }
+
+// ---------- Mobil yerleşim modelleri ----------
+
+// büyü şeridi: yalnızca açılmış slotlar çizilir (sıra korunur); kilitliler yalnızca sayı olarak (küçük noktalar) gösterilir
+export function slotLayout(order = [], unlocked = []) {
+  const open = order.filter((id) => unlocked.includes(id));
+  return { open, locked: order.length - open.length };
+}
+
+// bildirim (toast) süresi: faz uyarısı gibi uzun bildirimler de en çok 3 sn kalır, çok kısalar en az 1,2 sn
+export const TOAST_MIN_MS = 1200, TOAST_MAX_MS = 3000;
+export function toastMs(ms) {
+  const v = Number(ms);
+  return Math.min(Math.max(Number.isFinite(v) ? v : TOAST_MAX_MS, TOAST_MIN_MS), TOAST_MAX_MS);
+}
+
+// harita bölüm kartı: varsayılan kompakt (dikeyde ekranın en çok %32'si), "Detay" ile genişler (en çok %55).
+// canExpand=false (kilitli bölüm gibi gösterecek detayı olmayan durum) her zaman kompakt kalır.
+export const SHEET_MAX_PCT = { compact: 32, expanded: 55 };
+export function sheetLayout({ expanded = false, canExpand = true } = {}) {
+  const open = !!expanded && !!canExpand;
+  return { expanded: open, maxPct: open ? SHEET_MAX_PCT.expanded : SHEET_MAX_PCT.compact };
+}
+
+// seçili düğümün kartın üstündeki görünür alanda kalması için kaydırma konumu.
+// nodeY: düğüm merkezi (kaydırılan içerikte px), viewH: görünür yükseklik, sheetH: kartın örttüğü alt yükseklik, at: görünür alanda hedef oran
+export function scrollForNode({ nodeY = 0, viewH = 0, sheetH = 0, at = 0.42 } = {}) {
+  const visible = Math.max(viewH - Math.max(sheetH, 0), 0);
+  return Math.max(Math.round(nodeY - visible * at), 0);
+}
+
+// ---------- Harita yerleşimi (saf; testli) ----------
+// mod: 'portrait' (alt sayfa), 'landscape-phone' (kısa yatay: kayan dar panel), 'tablet' ve 'wide' (iki sütun: harita | panel)
+export function mapLayout(width = 0, height = 0) {
+  const w = Math.max(+width || 0, 0), h = Math.max(+height || 0, 0);
+  const clamp = (lo, v, hi) => Math.round(Math.min(Math.max(v, lo), hi));
+  if (h > w * 1.1) return { mode: "portrait", panelW: 0, twoCol: false };
+  if (h <= 520) return { mode: "landscape-phone", panelW: clamp(210, w * 0.3, 320), twoCol: false };
+  if (w >= 1100) return { mode: "wide", panelW: clamp(340, w * 0.24, 440), twoCol: true };
+  return { mode: "tablet", panelW: clamp(320, w * 0.33, 360), twoCol: true };
+}
+
+// harita görünümü: sütuna (colW x colH) sığan en büyük yakınlaştırma; düğüm sınırları (pad dahil) hiçbir zaman kırpılmaz.
+// W,H: görsel/viewBox boyutu; items: [{x,y,l,r,t,b}] (düğüm + etiket payları). Dönen {x,y,w,h,scale,fill}: svg viewBox'ı.
+// scale en az "meet" (tüm görsel), en çok "slice" (sütun tamamen dolu) olur; mümkünse görsel dışına taşılmaz.
+export function mapView(colW, colH, W, H, items = []) {
+  const meet = Math.min(colW / W, colH / H), slice = Math.max(colW / W, colH / H);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of items) { x0 = Math.min(x0, p.x - (p.l || 0)); x1 = Math.max(x1, p.x + (p.r || 0)); y0 = Math.min(y0, p.y - (p.t || 0)); y1 = Math.max(y1, p.y + (p.b || 0)); }
+  const fit = items.length ? Math.min(colW / Math.max(x1 - x0, 1), colH / Math.max(y1 - y0, 1)) : meet;
+  const scale = Math.min(Math.max(fit, meet), slice);
+  const w = colW / scale, h = colH / scale;
+  const mid = (lo, hi, size, max) => (size >= max ? (max - size) / 2 : Math.min(Math.max((lo + hi) / 2 - size / 2, 0), max - size));
+  const x = items.length ? mid(x0, x1, w, W) : (W - w) / 2, y = items.length ? mid(y0, y1, h, H) : (H - h) / 2;
+  return { x, y, w, h, scale, fill: scale >= slice - 1e-6 };
+}

@@ -1,7 +1,7 @@
 {
-  "name": "Büyücünün Gecesi",
-  "short_name": "Büyücü",
-  "description": "Lanetli diyarlarda büyü yağdır, Gece Kalbi'ni kurtar.",
+  "name": "HEXORA: Büyücünün Gecesi",
+  "short_name": "HEXORA",
+  "description": "HEXORA: Büyücünün Gecesi. Karanlığın Kalbi. Tarayıcıda oynanan, 9 bölümlük hikâyeli büyücü oyunu: büyü yağdır, Gece Kalbi'ni kurtar.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

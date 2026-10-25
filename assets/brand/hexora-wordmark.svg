@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 612 170" role="img" aria-label="HEXORA">
+  <!-- HEXORA yazı logosu: marka kılavuzundan esinle elle çizildi (kılavuz paketindeki orijinal SVG repoda yok).
+       Harfler tek tek x konumuna ortalanır; yedek yazı tipi değişse de yerleşim bozulmaz. "O" bir halka + mor kristal elmastır. -->
+  <defs>
+    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="0" y1="28" x2="0" y2="120">
+      <stop offset="0" stop-color="#fff6cf"/>
+      <stop offset=".45" stop-color="#ffd87a"/>
+      <stop offset="1" stop-color="#ff9f1c"/>
+    </linearGradient>
+    <linearGradient id="gem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9ccff"/>
+      <stop offset=".5" stop-color="#a78bff"/>
+      <stop offset="1" stop-color="#6b3bff"/>
+    </linearGradient>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffd87a" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#ffd87a"/>
+      <stop offset="1" stop-color="#ffd87a" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#gold)" stroke="#8a5207" stroke-width="1.4" stroke-linejoin="round" font-family="Georgia, 'Times New Roman', 'Noto Serif', serif" font-weight="700" font-size="118" text-anchor="middle">
+    <text x="54" y="120">H</text>
+    <text x="152" y="120">E</text>
+    <text x="246" y="120">X</text>
+    <text x="450" y="120">R</text>
+    <text x="554" y="120">A</text>
+  </g>
+  <ellipse cx="346" cy="76" rx="37" ry="44" fill="none" stroke="url(#gold)" stroke-width="13"/>
+  <ellipse cx="346" cy="76" rx="43.5" ry="50.5" fill="none" stroke="#8a5207" stroke-width="1.2" opacity=".7"/>
+  <ellipse cx="346" cy="76" rx="30.5" ry="37.5" fill="none" stroke="#8a5207" stroke-width="1.2" opacity=".7"/>
+  <polygon points="346,42 362,76 346,110 330,76" fill="url(#gem)" stroke="#fff6cf" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M346 42v68M330 76h32" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1"/>
+  <rect x="46" y="147" width="520" height="1.6" fill="url(#rule)"/>
+  <path d="M306 133 l3.5 11.5 11.5 3.5 -11.5 3.5 -3.5 11.5 -3.5 -11.5 -11.5 -3.5 11.5 -3.5 z" fill="#ffd87a"/>
+</svg>

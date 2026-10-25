@@ -1,7 +1,7 @@
 // Oyun ekranı (HUD) saf modelleri: görevler, slot kilidi, duraklatma durum makinesi, kalpler, bekleme yüzdesi.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cooldownFrac, heartStates, isPaused, pauseReduce, questRows, slotModel, stepDt } from "../js/ui/models.js";
+import { TOAST_MAX_MS, TOAST_MIN_MS, cooldownFrac, heartStates, isPaused, pauseReduce, questRows, slotLayout, slotModel, stepDt, toastMs } from "../js/ui/models.js";
 
 test("questRows: kristal hedefi ilerlemesi ve yenilen düşman (en çok 2 satır)", () => {
   const rows = questRows({ objective: "crystal", goal: 8 }, { collected: 3 }, 5, { objective: "8 mana kristali topla", kills: "Yenilen düşman" });
@@ -62,4 +62,22 @@ test("isPaused ve stepDt: duraklatmada oyun saati 0", () => {
 test("HUD: yarım kalp ve bekleme yüzdesi", () => {
   assert.deepEqual(heartStates(2.5, 3), ["full", "full", "half"]);
   assert.equal(cooldownFrac(1, 4), 0.25);
+});
+
+test("slotLayout: yalnızca açılmış slotlar (sıra korunur), kilitliler sayı olarak", () => {
+  const order = ["fire", "frost", "arcane", "lightning"];
+  assert.deepEqual(slotLayout(order, ["fire", "arcane"]), { open: ["fire", "arcane"], locked: 2 });
+  assert.deepEqual(slotLayout(order, ["lightning", "fire", "frost", "arcane", "bilinmeyen"]), { open: order, locked: 0 });
+  assert.deepEqual(slotLayout(order, []), { open: [], locked: 4 });
+  assert.deepEqual(slotLayout(), { open: [], locked: 0 });
+});
+
+test("toastMs: faz uyarısı gibi uzun bildirimler en çok 3 sn, çok kısalar en az 1,2 sn; geçersiz değer varsayılan üst sınır", () => {
+  assert.equal(TOAST_MAX_MS, 3000);
+  assert.equal(toastMs(5000), 3000);
+  assert.equal(toastMs(3800), 3000);
+  assert.equal(toastMs(2000), 2000);
+  assert.equal(toastMs(300), TOAST_MIN_MS);
+  assert.equal(toastMs(undefined), TOAST_MAX_MS);
+  assert.equal(toastMs(NaN), TOAST_MAX_MS);
 });

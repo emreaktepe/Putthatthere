@@ -1,5 +1,5 @@
-// HUD: sol üstte marka, üst orta cam şerit (bölüm, süre halkası, puan) + kalpler + hedef çubuğu + boss çubuğu, solda görevler paneli;
-// altta büyü slotları ve yetenek düğmeleri; bildirim (toast) ve hasar parlaması. Düğmeler (durdur, kamera, ses, harita) index.html + ui/pause.js'te.
+// HUD: sol üstte marka, üst orta cam şerit (bölüm, süre halkası, puan) + kalpler + hedef çubuğu (boss varken yerine boss çubuğu), solda görevler paneli;
+// altta yalnızca açılmış büyü slotları ve yetenek düğmeleri (kilitli büyüler küçük noktalar); bildirim (toast) ve hasar parlaması. Düğmeler (durdur, kamera, ses, harita) index.html + ui/pause.js'te.
 // Tüm metinler DOM düğümü olarak basılır; sık çağrılan güncellemeler önbellekle yalnız değişince yazar.
 import { sfx } from "../audio/engine.js";
 import { ABILITIES, ABILITY_ORDER, CHARACTERS, LEVELS, STRINGS, WEAPONS, WEAPON_ORDER } from "../core/data.js";
@@ -11,8 +11,9 @@ import { cyclePreset, setCamListener } from "../render/camera.js";
 import { setWandColor } from "../render/wizard.js";
 import { artOr, fillMedallion, pickArt } from "./art.js";
 import { heartCell, icon } from "./icons.js";
-import { cooldownFrac, goalFrac, heartStates, questRows, slotModel, timerModel } from "./models.js";
+import { cooldownFrac, goalFrac, heartStates, questRows, slotLayout, slotModel, timerModel, toastMs } from "./models.js";
 import { UI, objectiveText } from "./text.js";
+import { BRAND } from "./brandmodel.js";
 
 const hurtEl = $("hurt");
 export function flashHurt() {
@@ -24,7 +25,7 @@ export function flashHurt() {
 // ---------- Üst HUD ----------
 const RING = 2 * Math.PI * 17;
 const el = {};
-const BRAND_IMG = "./assets/favicon/web/icon-192.webp"; // mevcut hafif amblem (15 KB); HUD'da 44 px gösterilir
+const BRAND_IMG = BRAND.emblem256; // HEXORA şeffaf amblemi (8 KB); HUD'da 44 px gösterilir
 const hexOf = (n) => "#" + n.toString(16).padStart(6, "0");
 function buildHud() {
   const hud = $("hud");
@@ -62,12 +63,12 @@ function buildHud() {
   hud.replaceChildren(
     h("div", { class: "hud-brand" }, logo, h("span", { class: "brand-name" }, T.brand)),
     el.quests,
-    h("div", { class: "hud-top" },
+    // boss çubuğu ikinci satırda hedef çubuğunun yerine geçer (boss varken hedef çubuğu zaten boss canıdır)
+    el.top = h("div", { class: "hud-top" },
       h("div", { class: "hud-strip panel gold-frame" },
         h("div", { class: "hud-level" }, el.lvNum, el.lvName), el.timer,
         h("div", { class: "hud-score" }, icon("star"), h("div", null, h("small", null, T.score), el.score))),
-      h("div", { class: "hud-row" }, el.hearts, el.goal),
-      el.boss));
+      h("div", { class: "hud-row" }, el.hearts, el.goal, el.boss)));
 }
 buildHud();
 
@@ -124,10 +125,11 @@ export function renderHud() {
   const gf = Math.round(goalFrac(L.objective, { collected: RT.collected, totemsDown: RT.totemsDown, goal: L.goal, timeLeft: RT.timeLeft, time: L.time, bossFrac }) * 100);
   if (changed("goalFill", gf)) el.goalFill.style.width = gf + "%";
   // boss
-  if (changed("boss", RT.bossRef ? 1 : 0)) el.boss.hidden = !RT.bossRef;
+  if (changed("boss", RT.bossRef ? 1 : 0)) { el.boss.hidden = !RT.bossRef; el.top.classList.toggle("boss-on", !!RT.bossRef); }
   if (RT.bossRef) {
     const d = RT.bossRef.d;
-    if (changed("bossName", d.shortName || d.name)) el.bossName.textContent = d.shortName || d.name;
+    const bn = (d.shortName || d.name) + (RT.bossRef.bp ? fmt(H.goalPhase, { phase: RT.bossRef.bp }) : ""); // ad + faz (hedef çubuğunun yerini aldığı için)
+    if (changed("bossName", bn)) el.bossName.textContent = bn;
     const bp = d.image || (d.character && CHARACTERS[d.character] ? CHARACTERS[d.character].portrait : null);
     if (changed("bossPortrait", bp || "")) { el.bossMed.hidden = !bp; if (bp) fillMedallion(el.bossMed, bp, d.name, document.createTextNode("")); }
     const bf = Math.round(Math.max(bossFrac, 0) * 1000) / 10;
@@ -165,8 +167,9 @@ export function renderWeapons() {
   bar.replaceChildren();
   for (const k of Object.keys(weaponEls)) delete weaponEls[k];
   let activeBtn = null;
-  for (const id of WEAPON_ORDER) {
-    const w = WEAPONS[id], open = S.unlocked.includes(id);
+  const lay = slotLayout(WEAPON_ORDER, S.unlocked); // yalnız açılmış slotlar; kilitliler küçük noktalar
+  for (const id of lay.open) {
+    const w = WEAPONS[id], open = true;
     const m = slotModel({ name: w.name, key: w.key, unlocked: open, selected: id === S.weapon });
     const { b, cd } = slotButton({ item: w, m, key: w.key, color: hexOf(w.color), size: 48 });
     if (open) b.setAttribute("aria-pressed", String(m.active));
@@ -175,6 +178,7 @@ export function renderWeapons() {
     weaponEls[id] = { b, cd, last: -1 };
     if (m.active) activeBtn = b;
   }
+  if (lay.locked > 0) bar.appendChild(h("span", { class: "slot-dots", role: "img", "aria-label": fmt(UI.hud.lockedSpells, { n: lay.locked }), title: fmt(UI.hud.lockedSpells, { n: lay.locked }) }, ...Array.from({ length: lay.locked }, () => h("i"))));
   if (WEAPONS[S.weapon]) $("fire").style.setProperty("--wc", hexOf(WEAPONS[S.weapon].color)); // ateş düğmesi halkası aktif büyünün rengi
   if (activeBtn) bar.scrollLeft = activeBtn.offsetLeft - bar.clientWidth / 2 + activeBtn.offsetWidth / 2;
 }
@@ -185,8 +189,8 @@ export function renderAbilities() {
   const box = $("abil");
   box.replaceChildren();
   for (const k of Object.keys(abilEls)) delete abilEls[k];
-  for (const id of ABILITY_ORDER) {
-    const a = ABILITIES[id], open = S.abilities.includes(id);
+  for (const id of slotLayout(ABILITY_ORDER, S.abilities).open) { // kilitli yetenekler gizli (açılınca belirir)
+    const a = ABILITIES[id], open = true;
     const m = slotModel({ name: a.name, key: a.key, unlocked: open, kind: "ability" });
     const { b, cd } = slotButton({ item: a, m, key: a.key, color: "#7ec8ff", size: 44, extra: " aslot" });
     const num = h("span", { class: "acd" });
@@ -213,7 +217,8 @@ export function updateAbilityUi() {
 
 // ---------- Bildirim ----------
 let toastTimer = 0;
-export function toast(text, ms = 3800, silent = false) {
+export function toast(text, ms = 2800, silent = false) {
+  ms = toastMs(ms); // uzun bildirimler de en çok 3 sn kalır (boss çubuğunu/oyun alanını uzun süre örtmesin)
   const t = $("toast");
   t.textContent = text;
   t.classList.add("show");
