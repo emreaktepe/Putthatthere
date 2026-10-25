@@ -12,6 +12,7 @@ import { releaseInput } from "../game/input.js";
 import { icon } from "./icons.js";
 import { isPaused, pauseReduce } from "./models.js";
 import { UI } from "./text.js";
+import { BRAND } from "./brandmodel.js";
 
 const T = UI.hud;
 let state = "play";
@@ -33,7 +34,7 @@ function build() {
   // kamera düğmesi kompakt (mobil) HUD'da üst çubuktan kalktı; burada erişilebilir (masaüstünde V / Z-C kısayolları da çalışır)
   camBtn = gbtn(camLabel(), () => { cyclePreset(); camBtn.querySelector(".gbtn-l").textContent = camLabel(); }, "ghost", "target");
   pauseView = h("div", { class: "pause-view" },
-    h("h2", { id: "pause-title" }, T.paused), h("p", { class: "hint" }, T.pauseNote),
+    h("img", { class: "pause-emb", src: BRAND.emblem256, alt: "", width: 40, height: 40, draggable: "false", "aria-hidden": "true" }), h("h2", { id: "pause-title" }, T.paused), h("p", { class: "hint" }, T.pauseNote),
     h("div", { class: "btn-row col" }, resumeBtn, soundBtn, camBtn, gbtn(T.toMap, () => apply("leave"), "ghost", "map")),
     h("p", { class: "hint keys" }, T.pauseKeys));
   cancelBtn = gbtn(T.cancel, () => apply("pause"), "primary", "back");

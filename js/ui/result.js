@@ -8,6 +8,7 @@ import { icon } from "./icons.js";
 import { RARITY_LABEL, countValue, enemyIcon, foeIdsOf, perkIcon, perkRarity, portraitOf, rewardStat, scoreRows } from "./models.js";
 import { button, confirmButton, divider, mount, ornaments, reducedMotion, scope } from "./screens.js";
 import { UI, objectiveText } from "./text.js";
+import { BRAND } from "./brandmodel.js";
 
 // anlatı satırları -> konuşmacı portreli diyalog balonları
 export function dialogView(lines) {
@@ -169,6 +170,7 @@ export function finalScreen({ outro, score, onMap, onReplay }) {
     h("p", { class: "final-score" }, rich(STRINGS.finalScore, { score })),
     h("div", { class: "btn-row" },
       button(UI.result.seeMap, onMap, { ic: "play", autofocus: true }),
-      confirmButton(STRINGS.replay, UI.result.confirm, onReplay, sc, { kind: "ghost" })));
+      confirmButton(STRINGS.replay, UI.result.confirm, onReplay, sc, { kind: "ghost" })),
+    h("p", { class: "final-sign" }, BRAND.full));
   mount(node, sc, { music: "menu", cls: "final card-stage" });
 }

@@ -1,10 +1,12 @@
 // Ana menü ve sinematik giriş. Arka plan CSS gradyan + süzülen parçacıklar (DOM sayısı sınırlı), animasyonlar CSS'te.
 import { ENEMY_NAMES, GAME, LEVELS, LEVEL_IDS, MAP, STRINGS, TOTEM_ID } from "../core/data.js";
-import { fmt, h, svg } from "../core/dom.js";
+import { fmt, h } from "../core/dom.js";
 import { $ } from "../core/util.js";
 import { QUALITY_LABELS, nextQuality, readQuality, writeQuality } from "../core/quality.js";
 import { setWizardQuality } from "../render/wizard.js";
 import { artBg, artOr, warmArt } from "./art.js";
+import { emblemImg, sparks, wordmark } from "./brand.js";
+import { BRAND } from "./brandmodel.js";
 import { icon, iconIfArt } from "./icons.js";
 import { careerStats, continueCardModel, storyLines } from "./models.js";
 import { button, confirmButton, mount, ornaments, reducedMotion, scope } from "./screens.js";
@@ -20,15 +22,6 @@ export function ambient(n = 34) {
     items.push(h("i", { class: kind, style: { "--x": (Math.random() * 100).toFixed(1) + "%", "--y": (Math.random() * 100).toFixed(1) + "%", "--s": (kind === "orb" ? 3 + Math.random() * 5 : 1 + Math.random() * 2).toFixed(1) + "px", "--t": (4 + Math.random() * 8).toFixed(1) + "s", "--d": (-Math.random() * 10).toFixed(1) + "s" } }));
   }
   return h("div", { class: "ambient", "aria-hidden": "true" }, ...items);
-}
-
-// amblem: hilal ay + yıldız (satır içi SVG)
-function emblem() {
-  return svg("svg", { viewBox: "0 0 120 120", class: "emblem", "aria-hidden": "true" },
-    svg("defs", null, svg("linearGradient", { id: "emb-g", x1: "0", y1: "0", x2: "1", y2: "1" }, svg("stop", { offset: "0", "stop-color": "#ffe9a8" }), svg("stop", { offset: "1", "stop-color": "#b07bff" }))),
-    svg("circle", { cx: 60, cy: 60, r: 54, fill: "none", stroke: "url(#emb-g)", "stroke-width": 2, "stroke-dasharray": "2 7", "stroke-linecap": "round" }),
-    svg("path", { d: "M72 22a38 38 0 1 0 22 62A30 30 0 0 1 72 22z", fill: "url(#emb-g)" }),
-    svg("path", { d: "M88 30l3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1z", fill: "#ffe9a8" }));
 }
 
 // devam edilen bölüm kartı: yalnızca bölümün gerçek verisi (kapak, ad, hedef metni, süre, düşman türü sayısı)
@@ -72,7 +65,10 @@ export function showMenu({ hasSave, saveInfo, saveName, save, notice, onContinue
       h("span", { class: "chip", title: UI.map.completed }, icon("check"), `${stats.done}/${stats.total}`),
       stats.best > 0 ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(stats.best)) : null) : null,
     h("div", { class: "menu-main" },
-      h("div", { class: "brand" }, emblem(), h("div", null, h("h1", { class: "logo" }, STRINGS.title), h("p", { class: "tagline" }, UI.menu.subtitle))),
+      h("div", { class: "brand" },
+        h("div", { class: "brand-emblem", "aria-hidden": "true" }, h("i", { class: "halo" }), emblemImg("brand-emb")),
+        h("div", { class: "brand-text" }, h("h1", { class: "logo" }, wordmark("menu-wm")), h("p", { class: "brand-sub" }, BRAND.sub), h("p", { class: "tagline" }, UI.menu.subtitle)),
+        sparks(16)),
       notice ? h("p", { class: "notice", role: "status" }, notice) : null,
       h("nav", { class: "menu-btns", "aria-label": STRINGS.title }, ...list)),
     card ? continueCard(card, LEVELS[idx]) : null,

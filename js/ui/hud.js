@@ -13,6 +13,7 @@ import { artOr, fillMedallion, pickArt } from "./art.js";
 import { heartCell, icon } from "./icons.js";
 import { cooldownFrac, goalFrac, heartStates, questRows, slotLayout, slotModel, timerModel, toastMs } from "./models.js";
 import { UI, objectiveText } from "./text.js";
+import { BRAND } from "./brandmodel.js";
 
 const hurtEl = $("hurt");
 export function flashHurt() {
@@ -24,7 +25,7 @@ export function flashHurt() {
 // ---------- Üst HUD ----------
 const RING = 2 * Math.PI * 17;
 const el = {};
-const BRAND_IMG = "./assets/favicon/web/icon-192.webp"; // mevcut hafif amblem (15 KB); HUD'da 44 px gösterilir
+const BRAND_IMG = BRAND.emblem256; // HEXORA şeffaf amblemi (8 KB); HUD'da 44 px gösterilir
 const hexOf = (n) => "#" + n.toString(16).padStart(6, "0");
 function buildHud() {
   const hud = $("hud");

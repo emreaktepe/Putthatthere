@@ -1,5 +1,5 @@
 {
-  "meta": { "schemaVersion": 1, "name": "Büyücünün Gecesi varsayılan", "notes": "" },
+  "meta": { "schemaVersion": 1, "name": "HEXORA: Büyücünün Gecesi varsayılan", "notes": "" },
   "game": {
     "startHp": 3,
     "maxHpCap": 6,
@@ -11,7 +11,7 @@
     "menuBackground": "assets/art/menu-arkaplan.webp"
   },
   "strings": {
-    "title": "Büyücünün Gecesi",
+    "title": "HEXORA: Büyücünün Gecesi",
     "opening": "Şafak yüzyıldır doğmadı. Gece Kalbi çatladı. Bunu düzeltebilecek tek kişi, o gece uyuyakalan büyücü: sensin.",
     "tagline": "{levelCount} lanetli bölümden geç. Mana kristallerini topla, totemleri yık, düşmanları büyüyle durdur, yeni büyüler ve yetenekler kazan.",
     "controlsHelp": "WASD / ok tuşları: yürü · Fare: nişan · Boşluk / tık: büyü · 1-7: büyü seç · Q / E / R: yetenekler",

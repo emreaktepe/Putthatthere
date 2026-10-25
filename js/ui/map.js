@@ -12,6 +12,7 @@ import { foeIdsOf, scrollForNode, sheetLayout, sheetModel } from "./models.js";
 import { coverImg, foeBadge } from "./result.js";
 import { button, mount, scope } from "./screens.js";
 import { UI, objectiveText } from "./text.js";
+import { BRAND } from "./brandmodel.js";
 
 const STATE_LABEL = { completed: UI.map.done, available: UI.map.open, locked: UI.map.locked };
 
@@ -47,7 +48,7 @@ export function showMap(opts) {
   const done = LEVEL_IDS.filter((id) => opts.statuses[id] === "completed").length;
   const header = h("header", { class: "map-head" },
     button(UI.map.back, opts.onBack, { kind: "ghost", ic: "back", aria: "Ana menüye dön" }),
-    h("h2", null, UI.map.title),
+    h("h2", null, h("img", { class: "map-emb", src: BRAND.emblem256, alt: "", width: 26, height: 26, draggable: "false", "aria-hidden": "true" }), UI.map.title),
     h("div", { class: "map-stats" }, h("span", { class: "chip", title: UI.map.completed }, icon("check"), `${done}/${LEVEL_IDS.length}`), opts.best.score > 0 ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(opts.best.score)) : null));
   const artSrc = artPath(MAP && MAP.background && MAP.background.image);
   const fill = artBg(MAP && MAP.background && MAP.background.image, "map-fill"); // her yerleşimde arkada koyu/bulanık zemin

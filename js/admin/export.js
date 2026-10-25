@@ -78,7 +78,7 @@ export function buildClaudePackage({ base, working, notes = {}, baseHash, now = 
   const by = (k) => rows.filter((r) => r.kind === k).length;
   const date = now.toISOString().slice(0, 10);
   const out = [];
-  out.push(`# Büyücünün Gecesi — Claude yönlendirme paketi (${date})`, "");
+  out.push(`# HEXORA: Büyücünün Gecesi — Claude yönlendirme paketi (${date})`, "");
   out.push("Bu dosyayı Emre yönetim sayfasından (admin.html) üretti. Aşağıdaki değişiklikler repodaki `data/game.config.json` üzerine uygulanacak taslaktır.", "");
 
   out.push("## 1. Özet", "");

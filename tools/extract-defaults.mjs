@@ -16,11 +16,11 @@ const line = (s) => {
 };
 
 const config = {};
-config.meta = { schemaVersion: 1, name: "Büyücünün Gecesi varsayılan", notes: "" };
+config.meta = { schemaVersion: 1, name: "HEXORA: Büyücünün Gecesi varsayılan", notes: "" };
 config.game = { startHp: L.START_HP, maxHpCap: 6, baseSpeed: L.BASE_SPEED, perkChoices: 3, clearHeal: 1, scoreLevelBonus: 100, scoreTimeMul: 2 };
 
 config.strings = {
-  title: "Büyücünün Gecesi",
+  title: "HEXORA: Büyücünün Gecesi",
   opening: L.OPENING,
   tagline: "{levelCount} lanetli bölümden geç. Mana kristallerini topla, totemleri yık, düşmanları büyüyle durdur, yeni büyüler ve yetenekler kazan.",
   controlsHelp: "WASD / ok tuşları: yürü · Fare: nişan · Boşluk / tık: büyü · 1-7: büyü seç · Q / E / R: yetenekler",

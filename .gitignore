@@ -24,3 +24,9 @@ son 3/
 # Emre'nin "3D Environment Complete v1" çevre paketi (kopya three + viewer + bat/sh/cjs betikleri + node_modules): yalnızca yerelde kalır, repoya girmez.
 # Oyunun kullandığı dosyalar js/render/decor/ ve js/render/floors/ altına kopyalandı (başlarında köken notu var).
 Buyucunun_Gecesi_3D_Environment_Complete_v1/
+
+# Yerel marka/tasarım kaynak klasörleri (büyük görseller, mockup, HEXORA marka paketi dışa aktarımları): repoya girmez.
+# Oyunun kullandığı küçültülmüş marka dosyaları assets/brand/ altındadır.
+assets/05_Sosyal_Medya/
+assets/sources/
+assets/UI Mockup/

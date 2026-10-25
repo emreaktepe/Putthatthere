@@ -12,6 +12,7 @@ import { applyTheme } from "./render/themes.js";
 import { initWizard } from "./render/wizard.js";
 import { devBar } from "./ui/devbar.js";
 import { renderHud, renderWeapons } from "./ui/hud.js";
+import { maybeSplash } from "./ui/brand.js";
 import { applyStaticIcons } from "./ui/icons.js";
 import { initPause } from "./ui/pause.js";
 import { showFatal } from "./ui/screens.js";
@@ -40,6 +41,7 @@ async function boot() {
   initPause();
   startLoop();
   showMainMenu();
+  maybeSplash();
   // ?dev=1 (+ &level=<id>): geliştirici şeridi ve bölümden başlatma; varsayılan oyun akışını etkilemez
   const q = new URLSearchParams(location.search);
   if (q.get("dev") === "1") {

@@ -5,11 +5,11 @@ import { fmt } from "../core/dom.js";
 
 export const UI = {
   version: "1.1",
-  menu: { continue: "Devam Et", startGame: "Başla", resumeLevel: "Devam edilen bölüm", kinds: "{n} çeşit", levelShort: "Bölüm", progress: "İlerleme", how: "Nasıl oynanır?", newGame: "Yeni Oyun", sound: "Ses", graphics: "Grafik", confirmNew: "Kayıt silinsin mi? Tekrar dokun", map: "Harita", subtitle: "Bir büyücü, bir gece, kırılmış bir kalp.", noSave: "Kayıt okunamadı; yeni oyun başlatıldı.", newer: "Kayıt daha yeni bir sürümden; yeni oyun başlatılacak." },
+  menu: { continue: "Devam Et", startGame: "Başla", resumeLevel: "Devam edilen bölüm", kinds: "{n} çeşit", levelShort: "Bölüm", progress: "İlerleme", how: "Nasıl oynanır?", newGame: "Yeni Oyun", sound: "Ses", graphics: "Grafik", confirmNew: "Kayıt silinsin mi? Tekrar dokun", map: "Harita", subtitle: "Bir büyü. Dokuz bölüm. Tek kader.", noSave: "Kayıt okunamadı; yeni oyun başlatıldı.", newer: "Kayıt daha yeni bir sürümden; yeni oyun başlatılacak." },
   intro: { skip: "Atla", next: "Devam" },
   map: { title: "Harita", back: "Menü", completed: "Tamamlanan", best: "En iyi", locked: "Kilitli", open: "Açık", done: "Tamamlandı", play: "Savaşa gir", practice: "Tekrar oyna", practiceNote: "Alıştırma: ilerleme değişmez", lockedNote: "Önceki bölümü tamamla", close: "Kapat", detail: "Detay", less: "Daha az", time: "Süre", reward: "Ödül", foes: "Düşmanlar", sec: "sn", goal: "Hedef" },
   hud: {
-    score: "Puan", cam: "Kamera", brand: "Büyücünün Gecesi", quests: "Görevler", kills: "Yenilen düşman",
+    score: "Puan", cam: "Kamera", brand: "HEXORA", quests: "Görevler", kills: "Yenilen düşman",
     pause: "Durdur", sound: "Ses", map: "Harita", resume: "Devam Et", paused: "Duraklatıldı", toMap: "Haritaya Dön", cancel: "Vazgeç",
     leaveTitle: "Haritaya dönülsün mü?", leaveNote: "Bölümü şimdi bırakırsan bu bölümdeki ilerleme (puan, kristal, yenilen düşman) kaybolur.",
     pauseNote: "Oyun donduruldu. Süre ve düşmanlar bekliyor.", soundOn: "Ses: Açık", soundOff: "Ses: Kapalı", pauseKeys: "Esc / P: Devam", weapons: "Büyüler", abilities: "Yetenekler", camera: "Kamera açısı", lockedSpells: "{n} kilitli büyü",
