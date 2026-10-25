@@ -1,7 +1,7 @@
 // Menü, harita, bölüm kartı ve bölüm sonu saf modelleri: menü kartı verisi, kariyer sayaçları, harita paneli çipleri, skor satırları, nadirlik.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { RARITY_LABEL, careerStats, continueCardModel, countValue, foeIdsOf, perkRarity, rewardStat, scoreRows, sheetModel } from "../js/ui/models.js";
+import { RARITY_LABEL, careerStats, continueCardModel, countValue, foeIdsOf, perkRarity, rewardStat, scoreRows, sheetModel, SHEET_MAX_PCT, scrollForNode, sheetLayout } from "../js/ui/models.js";
 
 const NAMES = { ghost: "Ruh", bat: "Yarasa", golem: "Taş Bekçi", totem: "Totem" };
 const LEVEL = { name: "Taş Bekçiler", time: 60, image: "assets/art/x.webp", objective: "crystal", start: { ghost: 2, bat: 1 }, spawn: [{ ghost: 1, golem: 2 }, { unknownfoe: 1 }] };
@@ -60,4 +60,20 @@ test("rewardStat: büyüde hasar + bekleme, yetenekte yalnız bekleme", () => {
   const lb = { damage: "Hasar", cooldown: "Bekleme", sec: "sn" };
   assert.equal(rewardStat("weapon", { dmg: 2, cd: 0.9 }, lb), "Hasar 2 · Bekleme 0.9 sn");
   assert.equal(rewardStat("ability", { cd: 8 }, lb), "Bekleme 8 sn");
+});
+
+test("sheetLayout: varsayılan kompakt (en çok %32), Detay ile genişler (en çok %55); detayı olmayan kart kompakt kalır", () => {
+  assert.deepEqual(sheetLayout(), { expanded: false, maxPct: 32 });
+  assert.deepEqual(sheetLayout({ expanded: true }), { expanded: true, maxPct: 55 });
+  assert.deepEqual(sheetLayout({ expanded: true, canExpand: false }), { expanded: false, maxPct: SHEET_MAX_PCT.compact });
+  assert.ok(SHEET_MAX_PCT.compact <= 32 && SHEET_MAX_PCT.expanded <= 55);
+});
+
+test("scrollForNode: seçili düğüm kartın üstündeki görünür alanda; sınır 0", () => {
+  // görünür alan 800, kart 200 -> 600; düğüm 1000'de, %42 hedef -> 1000 - 252
+  assert.equal(scrollForNode({ nodeY: 1000, viewH: 800, sheetH: 200 }), 748);
+  assert.equal(scrollForNode({ nodeY: 100, viewH: 800, sheetH: 200 }), 0);
+  assert.equal(scrollForNode({ nodeY: 500, viewH: 600, sheetH: 0, at: 0.5 }), 200);
+  assert.equal(scrollForNode({ nodeY: 500, viewH: 600, sheetH: 900 }), 500); // kart görünür alandan büyükse düğüm en üste
+  assert.equal(scrollForNode(), 0);
 });

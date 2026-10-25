@@ -1,5 +1,6 @@
 // Harita ekranı: satır içi SVG, noktalı yollarla bağlı düğümler (kilitli / açık / tamamlandı), düğüme dokununca bölüm kartı.
 // Durum türetmesi ve çizim modeli js/game/progress.js'te (saf, testli); burada yalnızca çizim ve etkileşim vardır.
+// Bölüm kartı varsayılan kompakttır (küçük kapak, süre/puan çipleri, tek düğme); "Detay" hedef, düşmanlar ve büyük kapağı açar.
 import { ENEMY_NAMES, LEVELS, LEVEL_IDS, MAP, TOTEM_ID, WEAPONS } from "../core/data.js";
 import { h, svg } from "../core/dom.js";
 import { edges } from "../game/campaign.js";
@@ -7,9 +8,9 @@ import { buildMapGraph, mapPoints } from "../game/progress.js";
 import { artBg, artOr, artPath, pickArt } from "./art.js";
 import { icon, ICON_PATHS } from "./icons.js";
 import { ambient } from "./menu.js";
-import { foeIdsOf, sheetModel } from "./models.js";
+import { foeIdsOf, scrollForNode, sheetLayout, sheetModel } from "./models.js";
 import { coverImg, foeBadge } from "./result.js";
-import { button, divider, mount, ornaments, scope } from "./screens.js";
+import { button, mount, scope } from "./screens.js";
 import { UI, objectiveText } from "./text.js";
 
 const STATE_LABEL = { completed: UI.map.done, available: UI.map.open, locked: UI.map.locked };
@@ -56,46 +57,65 @@ export function showMap(opts) {
   if (fill) fill.addEventListener("error", () => root.classList.remove("has-art"));
   root.classList.toggle("has-art", !!fill);
 
+  const isPortrait = () => innerHeight > innerWidth * 1.1;
+  let expanded = false;
+
   function renderSheet(focus = false) {
     root.classList.toggle("sheet-open", !!selected);
-    if (!selected) { sheet.hidden = true; sheet.replaceChildren(); return; }
+    if (!selected) { sheet.hidden = true; sheet.replaceChildren(); scroller.style.setProperty("--sheet-h", "0px"); return; }
     const i = LEVEL_IDS.indexOf(selected), L = LEVELS[i], st = opts.statuses[selected];
     const foes = foeIdsOf(L, ENEMY_NAMES, TOTEM_ID);
     const rw = L.reward ? WEAPONS[L.reward] : null;
     const m = sheetModel(L, st, opts.best.levels[selected], rw ? { id: L.reward, name: rw.name } : null);
+    const lay = sheetLayout({ expanded, canExpand: m.canPlay });
     const rewardIcon = rw ? artOr(pickArt(rw, true), document.createTextNode(rw.icon), { cls: "chip-img", size: 22 }) : null;
     const play = !m.canPlay
       ? h("p", { class: "lock-note" }, icon("lock"), UI.map.lockedNote)
       : h("div", { class: "sheet-act" }, button(m.practice ? UI.map.practice : UI.map.play, () => opts.onPlay(selected, m.practice), { ic: "play", autofocus: true }), m.practice ? h("small", { class: "hint" }, UI.map.practiceNote) : null);
+    const more = m.canPlay ? h("button", { class: "chip sheet-more", type: "button", "aria-expanded": String(lay.expanded), onclick: () => { expanded = !expanded; renderSheet(); layoutSheet(); const mb = sheet.querySelector(".sheet-more"); if (mb) mb.focus({ preventScroll: true }); } }, lay.expanded ? UI.map.less : UI.map.detail, h("span", { class: "caret", "aria-hidden": "true" }, lay.expanded ? "▴" : "▾")) : null;
     sheet.hidden = false;
-    sheet.className = "level-sheet panel gold-frame st-" + st;
+    sheet.className = "level-sheet panel gold-frame st-" + st + (lay.expanded ? " expanded" : "");
+    sheet.style.setProperty("--sheet-max", lay.maxPct + "%");
     sheet.setAttribute("aria-label", `${UI.map.title}: ${L.name}`);
+    const thumb = coverImg(L);
+    if (thumb) thumb.className = "sheet-thumb";
     sheet.replaceChildren(
-      ornaments(),
       h("div", { class: "sheet-top" },
-        h("div", null, h("small", { class: "eyebrow" }, `${i + 1}/${LEVELS.length} · ${STATE_LABEL[st]}`), h("h3", null, L.name)),
+        thumb,
+        h("div", { class: "sheet-title" }, h("small", { class: "eyebrow" }, `${i + 1}/${LEVELS.length} · ${STATE_LABEL[st]}`), h("h3", null, L.name)),
         h("button", { class: "x-btn", type: "button", "aria-label": UI.map.close, title: UI.map.close + " (Esc)", onclick: () => select(null) }, "×")),
-      coverImg(L),
-      h("p", { class: "sheet-obj" }, icon("target"), objectiveText(L)),
-      h("div", { class: "sheet-meta" },
-        h("span", { class: "chip", title: UI.map.time }, icon("hourglass"), `${m.time} ${UI.map.sec}`),
-        m.best ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(m.best)) : null,
-        m.reward ? h("span", { class: "chip", title: UI.map.reward }, h("span", { class: "chip-ic", "aria-hidden": "true" }, rewardIcon), m.reward.name) : null),
-      h("ul", { class: "chips", "aria-label": UI.map.foes }, ...foes.map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, foeBadge(k), ENEMY_NAMES[k]))),
-      divider(),
+      h("div", { class: "sheet-row" },
+        h("div", { class: "sheet-meta" },
+          h("span", { class: "chip", title: UI.map.time }, icon("hourglass"), `${m.time} ${UI.map.sec}`),
+          m.best ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(m.best)) : null,
+          m.reward ? h("span", { class: "chip", title: UI.map.reward }, h("span", { class: "chip-ic", "aria-hidden": "true" }, rewardIcon), m.reward.name) : null),
+        more),
+      h("div", { class: "sheet-detail" },
+        h("p", { class: "sheet-obj" }, icon("target"), objectiveText(L)),
+        h("ul", { class: "chips foe-row", "aria-label": UI.map.foes }, ...foes.map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, foeBadge(k), ENEMY_NAMES[k]))),
+        coverImg(L)),
       play);
     const f = sheet.querySelector("[data-autofocus]");
     if (f && focus) f.focus({ preventScroll: true });
   }
 
+  // dikey: kart yüksekliği kadar alt boşluk bırakılır ve seçili düğüm kartın üstündeki görünür alanda tutulur
+  function layoutSheet() {
+    if (!isPortrait()) return;
+    scroller.style.setProperty("--sheet-h", (selected ? sheet.offsetHeight : 0) + "px");
+    const n = scroller.querySelector(".node.sel .disc");
+    if (!selected || !n) return;
+    const nr = n.getBoundingClientRect(), sr = scroller.getBoundingClientRect();
+    const nodeY = scroller.scrollTop + (nr.top - sr.top) + nr.height / 2;
+    scroller.scrollTop = scrollForNode({ nodeY, viewH: scroller.clientHeight, sheetH: sheet.offsetHeight });
+  }
+
   function select(id, focus = false) {
+    if (id !== selected) expanded = false;
     selected = id;
     scroller.querySelectorAll(".node").forEach((n) => n.classList.toggle("sel", n.dataset.id === id));
     renderSheet(focus);
-    if (id && root.classList.contains("portrait")) { // alt sayfa düğümü örtmesin: seçili düğüm üst kısma kaydırılır
-      const n = scroller.querySelector(".node.sel");
-      if (n) scroller.scrollTop += n.getBoundingClientRect().top - scroller.getBoundingClientRect().top - scroller.clientHeight * 0.16;
-    }
+    layoutSheet();
   }
 
   // etiket: cam hap (metin ölçülünce çizilir); düğümün yanında
@@ -118,7 +138,7 @@ export function showMap(opts) {
     const portrait = innerHeight > innerWidth * 1.1;
     const lay = mapPoints(LEVELS, { portrait, viewBox: MAP ? MAP.viewBox : [1000, 700] });
     // ekrandaki ölçek (görünüm birimi -> piksel): yatayda detay paneli için ayrılan alan düşülür; düğüm ve etiketler küçük ekranda okunur/dokunulur kalsın diye büyütülür
-    const panelW = portrait ? 0 : Math.min(Math.max(innerWidth * 0.34, 220), 340) + 16;
+    const panelW = portrait ? 0 : Math.min(Math.max(innerWidth * 0.3, 210), 320) + 16;
     const aw = Math.max(scroller.clientWidth - panelW, 200), ah = Math.max(scroller.clientHeight, 160);
     const scale = portrait ? Math.min(aw / lay.W, 1.2) : Math.min(aw / lay.W, ah / lay.H);
     let dmin = Infinity;
@@ -173,7 +193,9 @@ export function showMap(opts) {
     if (portrait) { // seçili/odak düğüm ekranın ortasına gelsin (bölüm 1 altta olduğundan başlangıçta kaydırma gerekir)
       const idx = LEVEL_IDS.indexOf(selected || opts.focusId || LEVEL_IDS.find((id) => opts.statuses[id] === "available") || LEVEL_IDS[0]);
       const y = ((lay.pts[Math.max(idx, 0)].y) / lay.H) * root3.getBoundingClientRect().height;
-      scroller.scrollTop = Math.max(y - scroller.clientHeight * (selected ? 0.16 : 0.35), 0);
+      const sheetH = selected ? sheet.offsetHeight : 0;
+      scroller.style.setProperty("--sheet-h", sheetH + "px");
+      scroller.scrollTop = scrollForNode({ nodeY: y, viewH: scroller.clientHeight, sheetH, at: selected ? 0.42 : 0.35 });
     }
   }
 

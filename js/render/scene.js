@@ -203,12 +203,17 @@ export function updateWeather(dt, t, wx, wz) {
 // kamera/sis durumu (themes.js ve loop.js okur; resize yazar)
 export const view = { baseFog: 0.035, camK: 1, curTheme: -1 };
 export function resize() {
-  renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight;
+  // tuval CSS ile sabit ve tam ekran (css/game.css: iOS'ta alt güvenli alana kadar uzanır); çizim boyutu CSS kutusundan ölçülür
+  const el = renderer.domElement, box = el.getBoundingClientRect();
+  const w = Math.round(box.width) || innerWidth, hgt = Math.round(box.height) || innerHeight;
+  renderer.setSize(w, hgt, false);
+  camera.aspect = w / hgt;
   camera.updateProjectionMatrix();
   view.camK = camera.aspect < 1 ? Math.min(1.6, 0.9 / camera.aspect) : 1;
   scene.fog.density = view.baseFog / view.camK;
 }
 addEventListener("resize", resize);
+addEventListener("orientationchange", () => setTimeout(resize, 250)); // iOS: yön değişiminde ölçüler geç oturur
+addEventListener("load", resize);
 resize();
 

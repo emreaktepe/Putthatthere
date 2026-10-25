@@ -79,3 +79,36 @@ Stil: `css/screens.css` (game.css belirteçlerini yeniden kullanır; HUD'a dokun
 **Mockup'ta olup bilerek YAPILMAYANLAR**: Yetenekler/Envanter sekmeleri ve "Çıkış" (oyunda yok); kristal/yıldız genel sayaçları (oyunda toplam kristal yok; yalnızca tamamlanan bölüm ve en iyi puan gösterilir); zorluk etiketi (veri yok); "Olası ödüller" listesi (yalnızca bölümün gerçek `reward` büyüsü, çip olarak); 3'lü yıldız derecelendirme (oyunda eşik yok; yalnızca "tamamlandı" yıldızı ve en iyi puan); mini harita ve iksir (oyunda yok); menü sloganı config'teki metinle kalır (mockup metni farklı). Sürüm yazısı `UI.version` (js/ui/text.js) kaynaklıdır.
 
 **Ölçülemeyenler**: gerçek telefon dokunması ve GPU başarımı (görsel doğrulama masaüstü Chrome + SwiftShader, `body.touch` elle eklenerek); safe-area çentiği cihazda denenmedi.
+
+## Mobil yerleşim optimizasyonu
+
+Gerçek iPhone denemesinden (414x896) çıkan şikâyet: HUD ve kontroller görüş alanını yiyordu. Ölçüm: headless Chrome (SwiftShader), `getBoundingClientRect`; dokunmatik görünüm için `body.touch` elle eklendi (headless'ta `pointer: coarse` yok); güvenli alan (çentik) 0 kabul edildi. Üst oran = üst HUD'ın alt kenarı / yükseklik; alt oran = alt kontrollerin (büyü şeridi, yetenekler, ateş, joystick halkası) en üst kenarından ekran altına yükseklik. Bölüm `castle` (boss + faz uyarısı).
+
+| Boyut | Üst önce | Üst sonra | Alt önce | Alt sonra | Hedef |
+|---|---|---|---|---|---|
+| 414x896 (iPhone) | 25,4 % | **8,8 %** | 32,1 % | **17,0 %** | üst <= 12, alt <= 22 |
+| 390x844 | - | 9,4 % | - | 18,0 % | aynı |
+| 375x667 | - | 11,8 % | - | 21,0 % | aynı |
+| 896x414 (yatay) | 35,7 % | **10,1 %** | 62,8 % | **21,3 %** | üst <= 14, alt <= 25 |
+| 844x390 (yatay) | - | 10,8 % | - | 22,6 % | aynı |
+| 1280x720 (masaüstü) | 26,1 % (sol "Görevler" paneli dahil) | merkez HUD 15,3 % | 15,8 % | 10,0 % | dock slotu 48 px |
+
+Not: masaüstünde 26 % sol üstteki "Görevler" panelinin alt kenarıdır; ortadaki HUD (şerit + kalpler + boss) 110 px (15 %). Gerçek cihazda `env(safe-area-inset-top)` kadar (iPhone ~47-59 px) ek boşluk eklenir; HUD içeriğinin yüksekliği aynıdır (dikey: 73 px).
+
+**Karar ve değişiklikler**
+- *Üst bölge (kompakt HUD: dikey <= 700 px genişlik, yatay <= 500 px yükseklik)*: marka amblemi ve "Görevler" paneli gizli; üstte tek sıra: bölüm adı + "Bölüm n/9", 32 px süre halkası, puan, sağda yalnız Durdur düğmesi (40 px). İkinci ince sıra (28 px): kalpler + hedef çubuğu. Yatayda her şey tek satır (36 px).
+- *Boss çubuğu hedef çubuğunun yerini alır*: boss varken hedef çubuğu zaten boss canıdır (`goalFrac`), iki çubuk çift bilgiydi. Boss çubuğu ikinci sıraya girer (ince 7 px, ad + faz: "Kral · Faz 2"); ayrı satır kalktı. Masaüstünde de aynı (tek çubuk).
+- *Faz uyarısı (toast)*: en çok 3 sn (`toastMs`: 1,2-3 sn, eski 3,8-5 sn), yarı saydam (%60), 13-14 px, `pointer-events: none`, ve üst HUD'ın ALTINDA (`--toast-top` kırılma noktasına göre); boss çubuğunu örtmez. Metin config'teki haliyle (2 satıra sığar).
+- *Taşınan/gizlenen*: kamera, ses, harita düğmeleri kompakt HUD'da üst çubuktan kalktı. Ses ve harita zaten duraklatma kartındaydı; kamera düğmesi duraklatma kartına eklendi ("Kamera açısı: ..." döngüsel). Masaüstü kısayolları (V, Z/C, Esc/P, 1-7, Q/E/R) değişmedi; masaüstünde dört düğme aynen duruyor. Kompakt modda ses düğmesi menü/haritada hâlâ görünür.
+- *Alt kontroller (dokunmatik, dikey)*: büyü şeridi tek ince satır olarak en altta (slot 44 px: dokunma alanı >= 44; kilitli büyüler gizli, yerine küçük noktalar `slotLayout`; yalnız açılmış yetenekler görünür; ad ve tuş rozeti yok). Üstünde solda hayalet joystick halkası (80-88 px, boştayken %35, dokununca parmakta tam), sağda 70-78 px ateş düğmesi (aktif büyü ikonu ve halka rengi sürer), yanında soldan Q/E/R düğmeleri (44 px, sütun yerine yan yana, panelsiz). Joystick halkası ve ateş düğmesi şeridin üstünde: çakışma yok. Yatayda tek alt sıra: joystick | şerit | yetenekler | ateş.
+- *Masaüstü dock*: slot 48 px, ad yalnızca fare üzerine gelince / klavye odağında açılır etiket, tuş rozeti küçük.
+- *Dokunuş geçirgenliği*: `#hud`, `#actions` (yalnız düğmeler yakalar), `#toast` `pointer-events: none`; joystick halkası zaten etkileşimsiz. Görevler paneli <= 900 px genişlikte gizli (doğrulandı).
+- *Harita bölüm kartı*: varsayılan kompakt: 56 px kare küçük kapak + başlık/durum, tek satır çip (süre, puan, ödül; yatay kaydırma) + "Detay ▾", birincil düğme (48 px), altında tek satır alıştırma notu. Ölçü: 21-29 % (hedef <= 32). "Detay" hedef metni, düşman çipleri (tek satır yatay kaydırma) ve büyük kapağı açar: en çok %55. Seçili düğüm kartın üstündeki görünür alanın %42'sine kaydırılır (`scrollForNode`; kart yüksekliği `--sheet-h` ile alt boşluk olur). Yatay/masaüstü: sağ panel genişliği %25-30 (<= %32), detay hep açık, yatay telefonda büyük kapak gizli. Üst bar tek satır, 50 px.
+- *Menü (dikey)*: alt bilgi şeridi ("... v1.1 · Nasıl oynanır? · Yönetim") kartın DIŞINDA, akışta ayrı satır (güvenli alanın üstünde); "devam edilen bölüm" 73 px'lik ince şerit (64 px kapak + ad + tek satır hedef; süs elmasları/köşeler ve istatistik satırı gizli); düğmeler 52 px (birincil 56); üst %30 marka alanı için ayrıldı (kısa ekranda amblem/başlık küçülür, içeriğine dokunulmadı). 414x896, 390x844, 375x667'de kaydırma yok (`scrollHeight == clientHeight`), çakışma yok.
+
+**iOS tam ekran (alt koyu bant)**
+- Kök neden kesin değil (cihazda denenemedi). Tuval `body`'nin normal akışında, `setSize(innerWidth, innerHeight)` ile satır içi px boyutundaydı; ilk görünüm alanı kısa kalırsa (iOS araç çubuğu / güvenli alan) alt kenar `--bg`'ye düşüyordu.
+- Düzeltme: `html` arka planı tema koyusu (`#07040f`) ve `min-height` (`100%` -> `-webkit-fill-available`); `body` `min-height: 100dvh`; tuval `position: fixed; top: 0; width: 100%; height: 100lvh` (araç çubukları çekilmiş en büyük görünüm), çizim boyutu CSS kutusundan ölçülür (`resize`: `getBoundingClientRect`, `setSize(w, h, false)`), `orientationchange` ve `load` olaylarında da yeniden ölçülür. Joystick halkası artık `100dvh` yerine alt kenara (`bottom`) bağlı. Alt kontroller `env(safe-area-inset-bottom)` kadar yukarıda, arka plan en alta uzanır.
+- Headless'ta `html`/`body` yüksekliği = görünüm yüksekliği (6 boyutta), yatay kaydırma yok. iOS Safari/ana ekran uygulamasında elle denenmeli.
+
+**Ölçemediklerim / riskler**: gerçek iPhone dokunması, çentik/güvenli alan değerleri (0 kabul), iOS alt bant düzeltmesi. Kısa yatay telefonlarda (<= 600 px genişlik) 7 büyü + yetenekler sığmazsa şerit yatay kaydırılır. Yazılım WebGL yavaş olduğundan animasyonlu geçişler (kart girişi, toast soluşması) ekran görüntülerinde ara karede yakalanabilir.

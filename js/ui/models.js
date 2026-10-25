@@ -154,3 +154,33 @@ export function rewardStat(kind, d, labels) {
   const cd = `${labels.cooldown} ${d.cd} ${labels.sec}`;
   return kind === "weapon" ? `${labels.damage} ${d.dmg} · ${cd}` : cd;
 }
+
+// ---------- Mobil yerleşim modelleri ----------
+
+// büyü şeridi: yalnızca açılmış slotlar çizilir (sıra korunur); kilitliler yalnızca sayı olarak (küçük noktalar) gösterilir
+export function slotLayout(order = [], unlocked = []) {
+  const open = order.filter((id) => unlocked.includes(id));
+  return { open, locked: order.length - open.length };
+}
+
+// bildirim (toast) süresi: faz uyarısı gibi uzun bildirimler de en çok 3 sn kalır, çok kısalar en az 1,2 sn
+export const TOAST_MIN_MS = 1200, TOAST_MAX_MS = 3000;
+export function toastMs(ms) {
+  const v = Number(ms);
+  return Math.min(Math.max(Number.isFinite(v) ? v : TOAST_MAX_MS, TOAST_MIN_MS), TOAST_MAX_MS);
+}
+
+// harita bölüm kartı: varsayılan kompakt (dikeyde ekranın en çok %32'si), "Detay" ile genişler (en çok %55).
+// canExpand=false (kilitli bölüm gibi gösterecek detayı olmayan durum) her zaman kompakt kalır.
+export const SHEET_MAX_PCT = { compact: 32, expanded: 55 };
+export function sheetLayout({ expanded = false, canExpand = true } = {}) {
+  const open = !!expanded && !!canExpand;
+  return { expanded: open, maxPct: open ? SHEET_MAX_PCT.expanded : SHEET_MAX_PCT.compact };
+}
+
+// seçili düğümün kartın üstündeki görünür alanda kalması için kaydırma konumu.
+// nodeY: düğüm merkezi (kaydırılan içerikte px), viewH: görünür yükseklik, sheetH: kartın örttüğü alt yükseklik, at: görünür alanda hedef oran
+export function scrollForNode({ nodeY = 0, viewH = 0, sheetH = 0, at = 0.42 } = {}) {
+  const visible = Math.max(viewH - Math.max(sheetH, 0), 0);
+  return Math.max(Math.round(nodeY - visible * at), 0);
+}
