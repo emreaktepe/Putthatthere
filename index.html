@@ -39,18 +39,24 @@
 </head>
 <body>
 <div id="hud" aria-label="Oyun durumu"></div>
-<div id="weapons" role="toolbar" aria-label="Büyüler"></div>
-<div id="abil" role="toolbar" aria-label="Yetenekler"></div>
-<div id="joy"><i></i></div>
-<button id="fire" aria-label="Büyü yap">✦</button>
+<div id="dock">
+  <div id="weapons" role="toolbar" aria-label="Büyüler (1-7)"></div>
+  <div id="abil" role="toolbar" aria-label="Yetenekler (Q, E, R)"></div>
+</div>
+<div id="joy" class="idle" aria-hidden="true"><i></i></div>
+<button id="fire" aria-label="Büyü yap (Boşluk)">✦</button>
 <div id="tint"></div>
 <div id="haze"></div>
 <div id="hurt"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="stage" hidden></div>
 <div id="msg" hidden><h1 id="title"></h1><p id="sub"></p><div id="btns"></div></div>
-<button id="cam" class="round-btn" aria-label="Kamera açısını değiştir (V)" title="Kamera açısı (V) · Z/C döndür · tekerlek yakınlaştır">📷</button>
-<button id="mute" class="round-btn" aria-label="Sesi kapat" title="Sesi kapat">🔊</button>
+<nav id="actions" aria-label="Oyun düğmeleri">
+  <div class="act act-play"><button id="pause-btn" class="round-btn" type="button" aria-label="Durdur (Esc)" title="Durdur (Esc / P)"></button><span class="act-lbl" aria-hidden="true">Durdur</span></div>
+  <div class="act act-play" id="cam-act"><button id="cam" class="round-btn" aria-label="Kamera açısını değiştir (V)" title="Kamera açısı (V) · Z/C döndür · tekerlek yakınlaştır">📷</button><span class="act-lbl" aria-hidden="true">Kamera</span></div>
+  <div class="act"><button id="mute" class="round-btn" aria-label="Sesi kapat" title="Sesi kapat">🔊</button><span class="act-lbl" aria-hidden="true">Ses</span></div>
+  <div class="act act-play"><button id="leave-btn" class="round-btn" type="button" aria-label="Haritaya dön" title="Haritaya dön"></button><span class="act-lbl" aria-hidden="true">Harita</span></div>
+</nav>
 <!-- file:// ile açılırsa ES modülleri tarayıcıda yüklenmez; bu yüzden uyarı modül değil, bu küçük klasik betikten gelir
      (metin js/config/load.js FILE_PROTOCOL_MESSAGE ile aynı olmalı). -->
 <script>

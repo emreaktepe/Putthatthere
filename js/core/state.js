@@ -25,7 +25,7 @@ export const restoreSnapshot = () => { Object.assign(S, JSON.parse(JSON.stringif
 // bölüm içi değerler (eskiden modül düzeyinde let değişkenleriydi)
 export const RT = {
   running: false, cooldown: 0, invuln: 0, spawnTimer: 0, bossSummon: 0, bossRef: null, totemsDown: 0, collected: 0,
-  timeLeft: 0, shieldT: 0, timeslowT: 0, stoneReady: false, shake: 0,
+  timeLeft: 0, shieldT: 0, timeslowT: 0, stoneReady: false, shake: 0, paused: false, killBase: 0,
 };
 export const abilCd = {};
 export function resetAbilityCooldowns() { for (const id of ABILITY_ORDER) abilCd[id] = 0; }

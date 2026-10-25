@@ -19,6 +19,7 @@ import { sceneryTick } from "../render/scenery.js";
 import { tickProps } from "../render/props3d.js";
 import { animatePiril, animateWizard, guide, guideGeo, orbTip, piril, shieldBall, wizard } from "../render/wizard.js";
 import { renderHud, updateAbilityUi } from "../ui/hud.js";
+import { stepDt } from "../ui/models.js";
 
 export let trailTick = 0; // iz kıvılcımı sayacı
 export const _tip = new THREE.Vector3();
@@ -225,7 +226,8 @@ export function update(dt, t) {
 
 export function startLoop() {
   renderer.setAnimationLoop(() => {
-  const dt = Math.min(clock.getDelta(), 0.05);
+  const dt = stepDt(Math.min(clock.getDelta(), 0.05), RT.paused);
+  if (RT.paused) { renderer.render(scene, camera); return; } // duraklatma: oyun saati, zamanlayıcılar ve girdi donar; yalnızca son kare çizilir
   const t = clock.elapsedTime;
   ring.rotation.z += dt * 0.3;
   const focus = wizard.position.clone().multiplyScalar(0.6);
