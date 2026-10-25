@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { BRAND, ENTER_MAX_STEPS, ENTER_STAGGER_MS, SPLASH_KEY, enterDelay, sparkCount, splashModel } from "../js/ui/brandmodel.js";
+import { BRAND, ENTER_MAX_STEPS, ENTER_STAGGER_MS, SPLASH_KEY, enterDelay, sparkCount, splashModel, wordmarkSpec } from "../js/ui/brandmodel.js";
 import { validate } from "../js/config/validate.js";
 import { UI } from "../js/ui/text.js";
 
@@ -61,8 +61,8 @@ test("meta ve manifest: HEXORA adı, og görseli yeni dosya, tema renkleri tutar
   assert.match(html, /<title>HEXORA: Büyücünün Gecesi/);
   assert.match(html, /apple-mobile-web-app-title" content="HEXORA"/);
   assert.match(html, /og:site_name" content="HEXORA"/);
-  assert.match(html, /og:image" content="[^"]*assets\/brand\/hexora-og-1200x630\.jpg"/);
-  assert.match(html, /twitter:image" content="[^"]*assets\/brand\/hexora-og-1200x630\.jpg"/);
+  assert.match(html, /og:image" content="[^"]*assets\/favicon\/og-image-alternatif\.png"/);
+  assert.match(html, /twitter:image" content="[^"]*assets\/favicon\/og-image-alternatif\.png"/);
   assert.equal(man.name, BRAND.full);
   assert.equal(man.short_name, "HEXORA");
   assert.equal(man.theme_color, man.background_color);
@@ -70,14 +70,52 @@ test("meta ve manifest: HEXORA adı, og görseli yeni dosya, tema renkleri tutar
   assert.match(read("admin.html"), /<title>[^<]*HEXORA/);
 });
 
-test("marka varlıkları: dosyalar var, küçük ve SVG güvenli (betik yok)", () => {
+// ağacı gezer: [{ tag, attrs }]
+const walk = (n, out = []) => { if (typeof n === "string") return out; out.push(n); n.children.forEach((c) => walk(c, out)); return out; };
+const assetsIn = (text) => [...text.matchAll(/(?:\.\/|\/Putthatthere\/)?(assets\/[A-Za-z0-9_\-./]+\.(?:png|webp|jpg|svg|ico))/g)].map((m) => m[1]);
+const exists = (p) => existsSync(new URL("../" + p, import.meta.url));
+
+test("marka varlıkları: düz assets/favicon dosyaları var ve boyut bütçesi içinde", () => {
   const size = (p) => statSync(new URL("../" + p, import.meta.url)).size;
-  assert.ok(size("assets/brand/hexora-emblem-256.webp") <= 40 * 1024);
-  assert.ok(size("assets/brand/hexora-emblem-512.webp") <= 90 * 1024);
-  assert.ok(size("assets/brand/hexora-og-1200x630.jpg") < 300 * 1024);
-  const svgText = read("assets/brand/hexora-wordmark.svg");
-  assert.ok(svgText.length < 6000);
-  assert.match(svgText, /linearGradient/);
-  assert.doesNotMatch(svgText, /<script|onload|href=/i);
-  for (const p of [BRAND.emblem256, BRAND.emblem512, BRAND.wordmark]) assert.ok(existsSync(new URL("../" + p.slice(2), import.meta.url)), p);
+  assert.ok(size("assets/favicon/icon-256.webp") <= 40 * 1024);
+  assert.ok(size("assets/favicon/icon-512.webp") <= 90 * 1024);
+  assert.ok(size("assets/favicon/og-image-alternatif.png") <= 600 * 1024);
+  for (const p of [BRAND.emblem256, BRAND.emblem512]) { assert.match(p, /^\.\/assets\/favicon\/icon-\d+\.webp$/); assert.ok(exists(p.slice(2)), p); }
+});
+
+test("başvurular: index.html, admin.html, manifest ve kaynak kodundaki tüm assets/ yolları gerçek dosyaya çıkar", () => {
+  for (const f of ["index.html", "admin.html", "manifest.webmanifest", "js/ui/brandmodel.js", "js/ui/hud.js", "js/ui/map.js", "js/ui/pause.js", "css/screens.css", "css/game.css"]) {
+    for (const a of assetsIn(read(f))) assert.ok(exists(a), f + " -> " + a);
+  }
+  assert.doesNotMatch(read("index.html") + read("admin.html") + read("manifest.webmanifest"), new RegExp(["assets/br" + "and", "kurulum/", "logo-alterna" + "tifler/", "favicon/we" + "b/", "favicon/sosy" + "al/", "favicon\\.ico"].join("|")));
+  const head = read("index.html");
+  assert.match(head, /rel="icon"[^>]*sizes="96x96"[^>]*icon-96\.png/);
+  assert.match(head, /rel="apple-touch-icon"[^>]*apple-touch-icon\.png/);
+  assert.match(head, /rel="preload"[^>]*icon-512\.webp/);
+});
+
+test("manifest ikonları: 192 ve 512 PNG, purpose any (maskable sürüm yok)", () => {
+  const icons = JSON.parse(read("manifest.webmanifest")).icons;
+  assert.deepEqual(icons.map((i) => i.sizes), ["192x192", "512x512"]);
+  for (const i of icons) { assert.equal(i.purpose, "any"); assert.equal(i.type, "image/png"); assert.ok(exists(i.src), i.src); }
+});
+
+test("HEXORA yazı logosu üretici: HEXORA harfleri var; script/olay niteliği/dış başvuru yok; kimlikler uid ile ayrışır", () => {
+  const nodes = walk(wordmarkSpec("a"));
+  assert.equal(nodes[0].tag, "svg");
+  assert.equal(nodes.filter((n) => n.tag === "text").map((n) => n.children[0]).join(""), "HEXORA".replace("O", "") + "HEXORA".replace("O", ""), "harfler hem maskede hem çizimde (O halka olarak çizilir)");
+  assert.ok(nodes.some((n) => n.tag === "linearGradient"));
+  const allowed = new Set(["svg", "defs", "linearGradient", "stop", "mask", "g", "text", "ellipse", "polygon", "path", "rect"]);
+  for (const n of nodes) {
+    assert.ok(allowed.has(n.tag), n.tag);
+    for (const [k, v] of Object.entries(n.attrs)) {
+      assert.doesNotMatch(k, /^on|href/i, k);
+      assert.doesNotMatch(String(v), /javascript:|<script|https?:/i, k);
+      if (/url\(/.test(String(v))) assert.match(String(v), /^url\(#[\w-]+\)$/, "yalnızca belge içi başvuru");
+    }
+  }
+  const ids = (u) => walk(wordmarkSpec(u)).map((n) => n.attrs.id).filter(Boolean);
+  assert.equal(ids("a").filter((x) => ids("b").includes(x)).length, 0);
+  const tree = JSON.stringify(wordmarkSpec("a"));
+  for (const id of ids("a")) assert.ok(tree.includes("url(#" + id + ")"), id + " kullanılmıyor");
 });
