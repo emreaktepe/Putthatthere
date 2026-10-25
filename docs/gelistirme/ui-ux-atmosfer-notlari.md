@@ -57,3 +57,25 @@ Referans: `assets/UI Mockup/` (repoya kopyalanmadı). Palet belirteçleri `:root
 - Ölçülen boyutlar (headless Chrome, iframe ile gerçek görünüm alanı): 1280x720, 1024x600, 800x600, 844x390, 667x375, 390x844; bölüm `cave` ve `castle` (boss çubuğu). Hepsinde `documentElement.scrollWidth/Height` = görünüm alanı (sayfa kaydırması yok), HUD/dock/düğme öğeleri görünüm dışına taşmıyor; yalnız büyü şeridi (`#weapons`) bilerek yatay kaydırılır (çubuğu gizli).
 - Daha önce görülen yatay kaydırma çubuğu, test sayfasının (iframe) kendi çubuğuydu; oyun belgesinde `html, body { overflow: hidden }` var. Dokunmatik görünüm test sayfasında `body.touch` sınıfı elle eklenerek doğrulandı (headless Chrome'da `pointer: coarse` taklidi yok).
 - `?dev=1` şeridi (`#devbar`) yalnız geliştirmede üst şeridin kenarına 2-3 px biner; HUD'u kapatmaz.
+
+## Menü, harita, bölüm kartı ve bölüm sonu yeniden tasarımı
+
+Stil: `css/screens.css` (game.css belirteçlerini yeniden kullanır; HUD'a dokunulmaz). Saf modeller `js/ui/models.js` (`continueCardModel`, `careerStats`, `sheetModel`, `foeIdsOf`, `scoreRows`, `rewardStat`, `perkRarity`), testleri `tests/screens.models.test.js`. Tüm DOM `h()`/`svg()`/textContent ile kurulur; innerHTML yok.
+
+**Yerleşim**
+- Ana menü: tam ekran `menu-arkaplan` (tek `<img>`, `object-fit: cover`), solda amblem + başlık + slogan ve dikey düğme sütunu (birincil "Devam Et" kayıtlı bölüm adı ve puanıyla; Yeni Oyun [kayıt varsa iki dokunuşlu onay], Harita, Ses, Grafik), sağ altta "Devam edilen bölüm" kartı, sol altta sürüm + "Nasıl oynanır?" + Yönetim bağlantısı, sağ üstte gerçek sayaçlar.
+- Harita: üst bar (Menü, başlık, sayaçlar), tam harita görseli üstünde altın çerçeveli madalyon düğümler (numara rozeti, ad hapı, tamamlandı yıldızı), noktalı yollar; yatayda sağ detay paneli, dikeyde alt sayfa (seçilen düğüm üst kısma kaydırılır). Kapat: × düğmesi ve Esc.
+- Bölüm kartı / bölüm sonu / yenilgi / final: ortada süslü köşeli kart (`.screen-card`), uzun içerik sahne içinde kaydırılır, sayfa kaydırması yoktur.
+
+**Kırılma noktaları**
+- Geniş yatay (>520 px yükseklik): tek sütun kartlar, menü sol sütun + sağ alt kart, harita sağ panel (min-aspect 10/11).
+- Kısa yatay (`orientation: landscape` ve yükseklik <= 520): kartlar iki sütun, menü düğmeleri 2'li ızgara, kapak/ödül ayrıntıları sıkıştırılır; <800 px genişlikte "devam edilen bölüm" kartı gizlenir; kenar boşlukları ses düğmesi için 60 px.
+- Dikey (`orientation: portrait`): menü tek sütun, kart akışta; harita alt sayfa; bölüm kartları üstte ses düğmesi payı.
+- Dar (<560 px): perk kartları tek sütun yatay satır, düğmeler tam genişlik.
+- `prefers-reduced-motion`: amblem/ödül ışımaları durur, sayaç animasyonu kapanır. `backdrop-filter` bu ekranlarda kullanılmaz; yalnızca transform/opacity animasyonları.
+
+**Gerçek veri kaynakları**: sayaçlar = kayıt (`completed.length`, `best.score`; kayıt yoksa gösterilmez); devam kartı = kayıttaki `currentLevel` bölümünün `name`, `image`, `time`, düşman türü sayısı (`start` + `spawn` + totem hedefi), hedef metni; harita çipleri = bölüm `time`, kayıttaki bölüm en iyi puanı, bölümün `reward` büyüsü (varsa); skor satırları = oyunun hesapladığı süre/bölüm bonusu ve toplam; nadirlik = perk `maxStacks`; metinler `data/game.config.json` ve `js/ui/text.js`.
+
+**Mockup'ta olup bilerek YAPILMAYANLAR**: Yetenekler/Envanter sekmeleri ve "Çıkış" (oyunda yok); kristal/yıldız genel sayaçları (oyunda toplam kristal yok; yalnızca tamamlanan bölüm ve en iyi puan gösterilir); zorluk etiketi (veri yok); "Olası ödüller" listesi (yalnızca bölümün gerçek `reward` büyüsü, çip olarak); 3'lü yıldız derecelendirme (oyunda eşik yok; yalnızca "tamamlandı" yıldızı ve en iyi puan); mini harita ve iksir (oyunda yok); menü sloganı config'teki metinle kalır (mockup metni farklı). Sürüm yazısı `UI.version` (js/ui/text.js) kaynaklıdır.
+
+**Ölçülemeyenler**: gerçek telefon dokunması ve GPU başarımı (görsel doğrulama masaüstü Chrome + SwiftShader, `body.touch` elle eklenerek); safe-area çentiği cihazda denenmedi.

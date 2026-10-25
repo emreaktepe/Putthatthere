@@ -252,19 +252,7 @@ h3 { font-size: 17px; color: var(--violet-2); }
 .ambient .star { background: #fff; box-shadow: 0 0 6px #fff; animation: twinkle var(--t) ease-in-out var(--d) infinite; }
 .ambient .orb { background: radial-gradient(circle, #ffe9a8, rgba(255, 233, 168, 0) 70%); animation: floatUp var(--t) linear var(--d) infinite; }
 .menu, .intro { position: relative; flex: 1; min-height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.menu::before { content: ""; position: absolute; inset: -20%; background: conic-gradient(from 0deg at 50% 60%, rgba(142, 68, 255, 0), rgba(142, 68, 255, .22), rgba(255, 217, 138, .08), rgba(142, 68, 255, 0) 70%); animation: spin 40s linear infinite; pointer-events: none; }
-.menu-inner { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: max(24px, var(--safe-t)) 20px max(40px, var(--safe-b)); text-align: center; width: min(420px, 100%); box-sizing: border-box; }
-.emblem { width: 96px; height: 96px; filter: drop-shadow(0 0 18px rgba(176, 123, 255, .8)); animation: floaty 5s ease-in-out infinite; }
-.logo { font-size: clamp(34px, 9vw, 64px); line-height: 1.05; letter-spacing: .03em; max-width: 92vw; background: linear-gradient(180deg, #fff6d6, #ffd98a 45%, #b07bff); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 18px rgba(142, 68, 255, .75)); }
-.tagline { color: var(--muted); font-style: italic; margin-bottom: 14px; }
 .notice { color: #ffb3c0; font-size: 14px; }
-.menu-btns { display: flex; flex-direction: column; gap: 10px; width: min(320px, 100%); }
-.menu-btns .gbtn { width: 100%; }
-.how { margin-top: 12px; max-width: 420px; font-size: 14px; color: var(--muted); text-align: left; }
-.how summary { cursor: pointer; text-align: center; padding: 6px; }
-.how p { margin-top: 6px; font-size: 13px; }
-.how .small { opacity: .8; }
-.ver { position: absolute; left: 0; right: 0; bottom: max(10px, var(--safe-b)); text-align: center; font-size: 12px; color: rgba(185, 166, 220, .6); letter-spacing: .08em; }
 .intro-lines { position: relative; width: min(740px, 88%); height: 40vh; }
 .intro-line { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; margin: 0; max-width: none; font-family: Georgia, serif; font-size: clamp(20px, 3.8vw, 34px); line-height: 1.5; color: var(--gold-2); text-shadow: 0 0 22px rgba(142, 68, 255, .9); opacity: 0; animation: introLine calc(var(--step) * 1.12) ease-in-out both; animation-delay: calc(var(--i) * var(--step)); }
 .intro.still .intro-lines { height: auto; display: flex; flex-direction: column; gap: 14px; }
@@ -288,21 +276,14 @@ h3 { font-size: 17px; color: var(--violet-2); }
 .link.open { stroke: var(--gold); animation: dashFlow 1.2s linear infinite; filter: drop-shadow(0 0 4px rgba(255, 217, 138, .8)); }
 .link.done { stroke: #ffd98a; stroke-dasharray: 1 11; filter: drop-shadow(0 0 5px rgba(255, 217, 138, .7)); }
 .node { cursor: pointer; outline: none; }
-.node .disc { fill: #2a1458; stroke: #7a5fc0; stroke-width: 4; transition: stroke .2s, fill .2s; }
-.node.available .disc { fill: #44208c; stroke: var(--gold-2); }
-.node.completed .disc { fill: #3a2a6e; stroke: var(--gold); }
-.node.locked .disc { fill: #130d28; stroke: #3d3566; }
 .node .halo { fill: none; stroke: var(--gold); stroke-width: 3; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .node.available .halo { animation: haloPulse 1.8s ease-out infinite; }
-.node:hover .disc, .node.sel .disc, .node:focus-visible .disc { stroke: #fff; stroke-width: 6; }
 .node.fresh .disc { animation: freshPop 1s cubic-bezier(.2, 1.4, .4, 1) both; transform-box: fill-box; transform-origin: center; }
 .node-ic { pointer-events: none; }
 .node-lock { fill: #8f86b8; pointer-events: none; }
 .num-bg { fill: #0e0820; stroke: var(--gold); stroke-width: 2; }
 .node .num { fill: var(--gold-2); font-family: Georgia, serif; font-weight: 700; pointer-events: none; }
 .node-star { fill: var(--gold); stroke: #7a5a10; stroke-width: 1.5; filter: drop-shadow(0 0 4px rgba(255, 217, 138, .9)); pointer-events: none; }
-.node-label { fill: #eadfff; font-family: Georgia, serif; paint-order: stroke; stroke: #0a0714; stroke-width: 5px; stroke-linejoin: round; pointer-events: none; }
-.node.locked .node-label { opacity: .55; }
 .hit { fill: transparent; }
 .level-sheet { position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); bottom: max(10px, var(--safe-b)); width: min(560px, calc(100% - 20px)); box-sizing: border-box; padding: 14px 16px; border-radius: 18px; display: flex; flex-direction: column; gap: 10px; animation: sheetUp .3s ease-out both; max-height: 62%; overflow-y: auto; }
 .sheet-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
@@ -451,11 +432,8 @@ h3 { font-size: 17px; color: var(--violet-2); }
 .art-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
 .art-shade { position: absolute; inset: 0; pointer-events: none; }
 /* ana menü: başlık/düğmeler sol-üst karanlık alana, ay ve kale sağda açık kalır */
-.menu.has-art::before { opacity: .35; }
 .menu .menu-art { object-position: 62% 50%; }
 .menu.has-art .art-shade { background: linear-gradient(180deg, rgba(7, 4, 15, .55) 0%, rgba(7, 4, 15, .25) 35%, rgba(7, 4, 15, .7) 100%), rgba(7, 4, 15, .25); }
-.menu.has-art .menu-inner { text-shadow: 0 2px 12px rgba(5, 2, 12, .9); }
-.menu.has-art .ver { color: rgba(220, 205, 245, .75); }
 @media (min-width: 900px) and (orientation: landscape) {
   .menu.has-art { justify-content: flex-start; }
   .menu.has-art .menu-inner { margin-left: clamp(24px, 7vw, 120px); }
@@ -470,10 +448,6 @@ h3 { font-size: 17px; color: var(--violet-2); }
 .map-screen.has-art .link.locked { stroke: rgba(255, 255, 255, .5); }
 .map-screen.has-art .link.open { stroke: #ffe08a; filter: drop-shadow(0 0 3px #000) drop-shadow(0 0 7px rgba(255, 217, 138, .9)); }
 .map-screen.has-art .link.done { stroke: #ffd98a; filter: drop-shadow(0 0 3px #000) drop-shadow(0 0 6px rgba(255, 217, 138, .8)); }
-.map-screen.has-art .node .disc { filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .9)); stroke-width: 5; }
-.map-screen.has-art .node.locked .disc { fill: #1a1236; stroke: #6c62a3; }
-.map-screen.has-art .node-label { stroke-width: 7px; fill: #fff4d6; }
-.map-screen.has-art .node.locked .node-label { opacity: .85; }
 /* portre madalyonları: altın çerçeve, yüze odaklı kırpma */
 .portrait-img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 28%; }
 .avatar.has-img, .boss-medal.has-img { padding: 0; overflow: hidden; background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .22), rgba(26, 12, 51, .9) 75%); border-color: var(--gold-2, #ffd98a); }

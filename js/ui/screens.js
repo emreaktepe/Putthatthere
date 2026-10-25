@@ -67,6 +67,11 @@ export function confirmButton(label, confirmLabel, fn, sc, opts = {}) {
   return b;
 }
 
+// Köşe süsleri (CSS ile çizilir, ekran okuyucudan gizli): kenarlıklı bir kabın ilk çocuğu olarak eklenir
+export const ornaments = () => h("span", { class: "orn", "aria-hidden": "true" }, h("i", { class: "c tl" }), h("i", { class: "c tr" }), h("i", { class: "c bl" }), h("i", { class: "c br" }), h("i", { class: "gem top" }), h("i", { class: "gem bot" }));
+// süslü ayraç: ortada elmas
+export const divider = (cls = "") => h("div", { class: "divider " + cls, "aria-hidden": "true" }, h("i"));
+
 // Konfigürasyon yüklenemediğinde/geçersizken: ses, sahne ve oyun verisinden bağımsız hata ekranı.
 export function showFatal({ title, message, lines = [], retry = true }) {
   document.body.classList.remove("playing");

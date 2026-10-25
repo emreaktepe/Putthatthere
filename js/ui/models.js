@@ -104,3 +104,53 @@ export function pauseReduce(state, ev, running = true) {
 export const isPaused = (state) => state !== "play";
 // duraklatmada oyun saati ilerlemez
 export const stepDt = (dt, paused) => (paused ? 0 : dt);
+
+// ---------- Menü, harita, bölüm kartı ve bölüm sonu modelleri ----------
+
+// bölümde karşılaşılacak düşman kimlikleri (başlangıç + dalgalar + totem hedefi); yalnızca adı olanlar
+export function foeIdsOf(L, names = {}, totemId = null) {
+  const ids = new Set(Object.keys((L && L.start) || {}));
+  ((L && L.spawn) || []).forEach((w) => Object.keys(w).forEach((k) => ids.add(k)));
+  if (L && L.objective === "totem" && totemId) ids.add(totemId);
+  return [...ids].filter((k) => names[k]);
+}
+
+// ana menü "devam edilen bölüm" kartı: yalnızca bölümün gerçek verisi (ad, kapak, süre, düşman türü sayısı)
+export function continueCardModel(L, { index = 0, total = 0, names = {}, totemId = null } = {}) {
+  if (!L) return null;
+  return { n: index + 1, total, name: L.name, cover: L.image || null, time: L.time, foeCount: foeIdsOf(L, names, totemId).length };
+}
+
+// menü/harita üst sayaçları: yalnızca kayıttaki gerçek değerler (tamamlanan bölüm sayısı, en iyi toplam puan). Kayıt yoksa null.
+export function careerStats(save, total) {
+  if (!save) return null;
+  const done = Array.isArray(save.completed) ? save.completed.length : 0;
+  const best = Math.max(Math.floor(Number(save.best && save.best.score) || 0), 0);
+  return { done, total, best };
+}
+
+// harita detay paneli çipleri: süre, (varsa) en iyi puan, (varsa) bölüm ödülü büyüsü adı
+export function sheetModel(L, status, best, reward) {
+  return {
+    time: L.time,
+    best: best && best.score > 0 ? best.score : null,
+    reward: reward ? { id: reward.id, name: reward.name } : null,
+    canPlay: status !== "locked",
+    practice: status === "completed",
+  };
+}
+
+// bölüm sonu skor satırları (ekrandaki sayılar countUp ile animasyonla yazılır)
+export function scoreRows({ bonus = 0, levelBonus = 0, total = 0, prevTotal = 0 } = {}) {
+  return [
+    { id: "time", value: bonus, plus: true },
+    { id: "level", value: levelBonus, plus: true },
+    { id: "total", value: total, from: prevTotal, plus: false },
+  ];
+}
+
+// yeni büyü kartı istatistik satırı: büyüde hasar + bekleme, yetenekte yalnız bekleme
+export function rewardStat(kind, d, labels) {
+  const cd = `${labels.cooldown} ${d.cd} ${labels.sec}`;
+  return kind === "weapon" ? `${labels.damage} ${d.dmg} · ${cd}` : cd;
+}

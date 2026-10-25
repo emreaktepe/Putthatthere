@@ -5,8 +5,8 @@ import { fmt, h, rich, safeHex } from "../core/dom.js";
 import { S } from "../core/state.js";
 import { artOr, fillMedallion, pickArt } from "./art.js";
 import { icon } from "./icons.js";
-import { RARITY_LABEL, countValue, enemyIcon, perkIcon, perkRarity, portraitOf } from "./models.js";
-import { button, confirmButton, mount, reducedMotion, scope } from "./screens.js";
+import { RARITY_LABEL, countValue, enemyIcon, foeIdsOf, perkIcon, perkRarity, portraitOf, rewardStat, scoreRows } from "./models.js";
+import { button, confirmButton, divider, mount, ornaments, reducedMotion, scope } from "./screens.js";
 import { UI, objectiveText } from "./text.js";
 
 // anlatı satırları -> konuşmacı portreli diyalog balonları
@@ -22,12 +22,6 @@ export function dialogView(lines) {
   }));
 }
 
-function foeIds(L) {
-  const ids = new Set(Object.keys(L.start));
-  L.spawn.forEach((w) => Object.keys(w).forEach((k) => ids.add(k)));
-  if (L.objective === "totem" && TOTEM_ID) ids.add(TOTEM_ID);
-  return [...ids].filter((k) => ENEMY_NAMES[k]);
-}
 // düşman rozeti: enemies.<id>.image varsa küçük yuvarlak görsel, yoksa emoji simgesi
 export function foeBadge(k) {
   const fb = document.createTextNode(enemyIcon(k));
@@ -35,7 +29,7 @@ export function foeBadge(k) {
   return h("span", { class: "chip-ic", "aria-hidden": "true" }, im || fb);
 }
 export function foeChips(L) {
-  return h("ul", { class: "chips", "aria-label": UI.map.foes }, ...foeIds(L).map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, foeBadge(k), ENEMY_NAMES[k])));
+  return h("ul", { class: "chips", "aria-label": UI.map.foes }, ...foeIdsOf(L, ENEMY_NAMES, TOTEM_ID).map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, foeBadge(k), ENEMY_NAMES[k])));
 }
 
 // bölüm kapak görseli (levels.<id>.image); yoksa/yüklenemezse hiçbir şey eklenmez
@@ -47,18 +41,22 @@ export function coverImg(L) {
 // ---------- Bölüm girişi ----------
 export function levelIntroScreen({ idx, practice, onEnter, onBack }) {
   const L = LEVELS[idx], T = STRINGS.level, sc = scope();
-  const node = h("section", { class: "card screen-card intro-card", "aria-label": fmt(T.title, { n: idx + 1, name: L.name }) },
+  const title = fmt(T.title, { n: idx + 1, name: L.name });
+  const node = h("section", { class: "card screen-card intro-card gold-frame", "aria-label": title },
+    ornaments(),
     h("header", { class: "card-head" },
-      practice ? h("span", { class: "badge" }, UI.map.practice) : null,
-      h("h2", null, fmt(T.title, { n: idx + 1, name: L.name }))),
-    coverImg(L),
-    dialogView(L.intro),
-    h("div", { class: "obj" }, icon("target"), h("span", null, objectiveText(L))),
-    h("div", { class: "obj-foes" }, h("small", { class: "eyebrow" }, UI.map.foes), foeChips(L)),
-    h("p", { class: "stat-line" }, fmt(T.stats, { time: L.time, hp: Math.ceil(S.hp), maxHp: S.maxHp })),
-    h("p", { class: "hint" }, T.hint),
+      practice ? h("span", { class: "badge practice-chip" }, icon("refresh"), UI.map.practice) : null,
+      h("h2", null, title), divider()),
+    h("div", { class: "ic-grid" },
+      coverImg(L),
+      h("div", { class: "ic-info" },
+        dialogView(L.intro),
+        h("div", { class: "obj" }, icon("target"), h("span", null, objectiveText(L))),
+        h("div", { class: "obj-foes" }, h("small", { class: "eyebrow" }, UI.map.foes), foeChips(L)),
+        h("p", { class: "stat-line" }, icon("hourglass"), h("span", null, `${UI.map.time}: `, h("b", null, `${L.time} ${UI.map.sec}`)), h("i", { class: "dot", "aria-hidden": "true" }), icon("heart"), h("span", null, `${UI.result.hp}: `, h("b", null, `${Math.ceil(S.hp)}/${S.maxHp}`))),
+        h("p", { class: "hint" }, T.hint))),
     h("div", { class: "btn-row" }, button(T.enter, onEnter, { ic: "play", autofocus: true }), button(UI.result.back, onBack, { kind: "ghost", ic: "back" })));
-  mount(node, sc, { music: "menu", cls: "dim" });
+  mount(node, sc, { music: "menu", cls: "dim card-stage" });
 }
 
 // ---------- Sayı sayma animasyonu ----------
@@ -85,9 +83,10 @@ function rewardIcon(d) {
 
 function rewardCard(kind, id) {
   const isW = kind === "weapon", d = isW ? WEAPONS[id] : ABILITIES[id], C = STRINGS.clear;
-  const stat = isW ? `${UI.result.damage} ${d.dmg} · ${UI.result.cooldown} ${d.cd} ${UI.map.sec}` : `${UI.result.cooldown} ${d.cd} ${UI.map.sec}`;
+  const stat = rewardStat(kind, d, { damage: UI.result.damage, cooldown: UI.result.cooldown, sec: UI.map.sec });
   const col = isW ? "#" + d.color.toString(16).padStart(6, "0") : "#9ad7ff";
   return h("div", { class: "reward-card", style: { "--rc": col } },
+    ornaments(),
     h("div", { class: "reward-glow", "aria-hidden": "true" }),
     rewardIcon(d),
     h("div", { class: "reward-txt" },
@@ -122,29 +121,32 @@ function perkCard(p, onPick, locked) {
 export function levelClearScreen({ idx, bonus, levelBonus, total, prevTotal, rewards, practice, choices, onPick, onBack }) {
   const L = LEVELS[idx], C = STRINGS.clear, sc = scope(), locked = { v: false };
   const bonusNum = h("b", { class: "num" }), lvlNum = h("b", { class: "num" }), totalNum = h("b", { class: "num total" });
-  const [pre, post = ""] = String(C.bonus).split("{bonus}");
+  const [pre] = String(C.bonus).split("{bonus}");
+  const rows = Object.fromEntries(scoreRows({ bonus, levelBonus, total, prevTotal }).map((r) => [r.id, r]));
   const summary = h("div", { class: "summary" },
-    h("div", { class: "sum-row" }, h("span", null, pre.replace(/[:：]\s*\+?$/, "")), h("span", null, "+", bonusNum, post)),
-    h("div", { class: "sum-row" }, h("span", null, UI.result.levelBonus), h("span", null, "+", lvlNum)),
+    h("div", { class: "sum-row" }, h("span", null, icon("hourglass"), pre.replace(/[:：]\s*\+?$/, "") || UI.result.timeBonus), h("span", null, "+", bonusNum)),
+    h("div", { class: "sum-row" }, h("span", null, icon("star"), UI.result.levelBonus), h("span", null, "+", lvlNum)),
     h("div", { class: "sum-row total-row" }, h("span", null, UI.result.total), h("span", null, icon("star"), totalNum)));
-  const node = h("section", { class: "card screen-card clear-card", "aria-label": fmt(C.title, { n: idx + 1 }) },
+  const node = h("section", { class: "card screen-card clear-card gold-frame", "aria-label": fmt(C.title, { n: idx + 1 }) },
+    ornaments(),
     h("header", { class: "card-head" }, practice ? h("span", { class: "badge" }, UI.result.practiceDone) : null, h("h2", null, fmt(C.title, { n: idx + 1 }))),
-    summary,
-    ...rewards.map((r) => rewardCard(r.kind, r.id)),
-    dialogView(L.outro),
+    h("div", { class: "cl-grid" },
+      h("div", { class: "cl-left" }, summary, ...rewards.map((r) => rewardCard(r.kind, r.id))),
+      h("div", { class: "cl-right" }, dialogView(L.outro))),
     practice
       ? h("div", { class: "btn-row" }, button(UI.result.back, onBack, { ic: "back", autofocus: true }))
-      : h("div", { class: "perk-box" }, h("h3", null, C.pickPerk), h("div", { class: "perks" }, ...choices.map((p) => perkCard(p, onPick, locked)))));
-  countUp(sc, bonusNum, bonus, { delay: 250 });
-  countUp(sc, lvlNum, levelBonus, { delay: 700 });
-  countUp(sc, totalNum, total, { from: prevTotal, delay: 1150, dur: 1100 });
-  mount(node, sc, { music: "menu", cls: "dim" });
+      : h("div", { class: "perk-box" }, h("h3", { class: "perk-head" }, C.pickPerk, divider()), h("div", { class: "perks" }, ...choices.map((p) => perkCard(p, onPick, locked)))));
+  countUp(sc, bonusNum, rows.time.value, { delay: 250 });
+  countUp(sc, lvlNum, rows.level.value, { delay: 700 });
+  countUp(sc, totalNum, rows.total.value, { from: rows.total.from, delay: 1150, dur: 1100 });
+  mount(node, sc, { music: "menu", cls: "dim card-stage" });
 }
 
 // ---------- Yenilgi ----------
 export function gameOverScreen({ line, idx, practice, onRetry, onMap, onRestart }) {
   const T = STRINGS.gameOver, sc = scope();
-  const node = h("section", { class: "card screen-card over-card", "aria-label": "Yenilgi" },
+  const node = h("section", { class: "card screen-card over-card gold-frame", "aria-label": "Yenilgi" },
+    ornaments(),
     h("div", { class: "over-sigil", "aria-hidden": "true" }, "☠"),
     dialogView([line]),
     h("p", { class: "stat-line" }, fmt(T.stats, { n: idx + 1, score: S.score })),
@@ -152,13 +154,14 @@ export function gameOverScreen({ line, idx, practice, onRetry, onMap, onRestart 
       button(T.retry, onRetry, { small: T.retryNote, autofocus: true }),
       button(UI.result.back, onMap, { kind: "ghost", ic: "back" }),
       practice ? null : confirmButton(T.restart, UI.result.confirm, onRestart, sc, { kind: "ghost" })));
-  mount(node, sc, { music: "menu", cls: "dim dark" });
+  mount(node, sc, { music: "menu", cls: "dim dark card-stage" });
 }
 
 // ---------- Final ----------
 export function finalScreen({ outro, score, onMap, onReplay }) {
   const sc = scope();
-  const node = h("section", { class: "card screen-card final-card", "aria-label": STRINGS.finalTitle },
+  const node = h("section", { class: "card screen-card final-card gold-frame", "aria-label": STRINGS.finalTitle },
+    ornaments(),
     h("div", { class: "sun", "aria-hidden": "true" }),
     h("h2", { class: "final-title" }, STRINGS.finalTitle),
     dialogView(outro),
@@ -167,5 +170,5 @@ export function finalScreen({ outro, score, onMap, onReplay }) {
     h("div", { class: "btn-row" },
       button(UI.result.seeMap, onMap, { ic: "play", autofocus: true }),
       confirmButton(STRINGS.replay, UI.result.confirm, onReplay, sc, { kind: "ghost" })));
-  mount(node, sc, { music: "menu", cls: "final" });
+  mount(node, sc, { music: "menu", cls: "final card-stage" });
 }

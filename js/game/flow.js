@@ -33,10 +33,13 @@ export function showMainMenu() {
   const idx = sv ? Math.min(LEVEL_IDS.indexOf(sv.currentLevel) + 1, LEVELS.length) : 0;
   showMenu({
     hasSave: hasSave(),
+    save: sv,
+    saveName: sv && LEVELS[Math.max(idx, 1) - 1] ? LEVELS[Math.max(idx, 1) - 1].name : "",
     saveInfo: sv ? `${fmt(STRINGS.hud.level, { n: Math.max(idx, 1), total: LEVELS.length })} · ${sv.run.score}` : "",
     notice,
     onContinue: () => { if (continueGame()) openMap(); },
     onNew: () => showIntro(() => { newGame(); openMap(); }),
+    onMap: () => { if (continueGame()) openMap(); },
   });
   applyTheme(0);
 }
