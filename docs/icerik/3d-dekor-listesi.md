@@ -1,6 +1,16 @@
 # 3B dekor listesi (bölüm sahneleri)
 
-Durum: ÖNERİ. Hiçbir dekor modeli henüz üretilmedi. Liste, `js/render/scenery.js` içindeki mevcut dekorlar (şu an basit geometri: koni, silindir, kutu, oktahedron) ve `data/game.config.json` tema verilerinden çıkarıldı. Üçgen bütçeleri VARSAYIMDIR, gerçek telefonda ölçülmedi.
+Durum: **HAZIR ve oyuna bağlı.** P0–P3 dahil 37/37 dekor (`js/render/decor/`) ve 9/9 zemin (`js/render/floors/`) Emre'nin "3D Environment Complete v1" paketinden kopyalandı; bölüm yapıcıları `js/render/scenery.js` + yerleşim/bütçe planı `js/render/sceneryplan.js` ile bağlandı. Testler: `tests/decor.test.js`, `tests/floors.test.js`. Gerçek telefonda kare hızı ölçülmedi.
+
+| Öncelik | Durum |
+|---|---|
+| P0 (8 dekor) | HAZIR, bağlı |
+| P1 (18 dekor) | HAZIR, bağlı |
+| P2 (7 dekor) | HAZIR, bağlı |
+| P3 (4 dekor: taskin-statue, crypt, frozen-bridge, throne) | HAZIR, bağlı (harabe, mezarlık, geçit, kale) |
+| Zemin P0–P2 (9 tür) | HAZIR, bağlı (`FLOORS[floorKind]`, seed formülü aynı) |
+
+Tahmini dekor bütçesi (yüksek kalite; çağrı / üçgen): orman 10/13,6 bin · mağara 22/3,6 bin · harabe 17/5,4 bin · mezarlık 12/14,5 bin · geçit 14/6,6 bin · köy 21/3,2 bin · kristal 22/2,8 bin · kule 9/8,8 bin · kale 11/2,8 bin (hepsi hedefin altında; `tests/decor.test.js` ölçer). Süs dekorlar (grass-tuft, mushroom-glow, puddle, snow-mound, charred-stump, crystal-shard, log, rubble) yalnız Yüksek kalitede; Düşükte çok örnekli dekor yarıya iner.
 
 ## 1. Karakterlerden farkı
 
@@ -248,6 +258,6 @@ Karar verildi (Emre):
 2. Çim tutamı, küçük mantar gibi **süs dekorları yalnız Yüksek kalitede açılır**.
 3. **Zemin dokuları bu listeye dahil** (bölüm 9).
 
-Hâlâ açık:
-- Zemin için Seçenek A (canvas fonksiyonu) mı B (WebP görsel) mı? Önerim A.
-- Dekor için `js/render/decor/`, zemin için `js/render/floors/` klasörleri uygun mu?
+Kapandı:
+- Zemin: **Seçenek A (canvas fonksiyonu)** seçildi.
+- Klasörler: dekor `js/render/decor/`, zemin `js/render/floors/`.

@@ -20,3 +20,7 @@ Buyucunun_Gecesi_3D_Full12_Pro_v2/
 # Emre'nin "son 3" sahne figürü klasörü (zerrin, taskin, veyis-insan): yalnızca yerelde kalır, repoya girmez.
 # Oyunun kullandığı dosyalar js/render/models/ altına kopyalandı (başlarında köken notu var).
 son 3/
+
+# Emre'nin "3D Environment Complete v1" çevre paketi (kopya three + viewer + bat/sh/cjs betikleri + node_modules): yalnızca yerelde kalır, repoya girmez.
+# Oyunun kullandığı dosyalar js/render/decor/ ve js/render/floors/ altına kopyalandı (başlarında köken notu var).
+Buyucunun_Gecesi_3D_Environment_Complete_v1/
