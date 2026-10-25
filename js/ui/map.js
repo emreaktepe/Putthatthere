@@ -8,7 +8,7 @@ import { buildMapGraph, mapPoints } from "../game/progress.js";
 import { artBg, artOr, artPath, pickArt } from "./art.js";
 import { icon, ICON_PATHS } from "./icons.js";
 import { ambient } from "./menu.js";
-import { foeIdsOf, scrollForNode, sheetLayout, sheetModel } from "./models.js";
+import { foeIdsOf, mapLayout, mapView, scrollForNode, sheetLayout, sheetModel } from "./models.js";
 import { coverImg, foeBadge } from "./result.js";
 import { button, mount, scope } from "./screens.js";
 import { UI, objectiveText } from "./text.js";
@@ -60,9 +60,14 @@ export function showMap(opts) {
 
   const isPortrait = () => innerHeight > innerWidth * 1.1;
   let expanded = false;
+  let lay0 = mapLayout(innerWidth, innerHeight); // iki sütunda (tablet/geniş) panel sürekli açık ve kapatılamaz; seçim yoksa sıradaki açık bölüm seçilir
+  const defaultId = () => opts.focusId || LEVEL_IDS.find((id) => opts.statuses[id] === "available") || LEVEL_IDS[0];
+  // ilk cümle: bölümün giriş metninden (yalnız gerçek veri)
+  const teaser = (L) => { const t = L.intro && L.intro[0] && L.intro[0].text; if (!t) return ""; const m = String(t).match(/^.*?[.!?…](?=\s|$)/); return (m ? m[0] : String(t)).trim(); };
 
   function renderSheet(focus = false) {
     root.classList.toggle("sheet-open", !!selected);
+    if (selected && lay0.twoCol) return renderRich(focus);
     if (!selected) { sheet.hidden = true; sheet.replaceChildren(); scroller.style.setProperty("--sheet-h", "0px"); return; }
     const i = LEVEL_IDS.indexOf(selected), L = LEVELS[i], st = opts.statuses[selected];
     const foes = foeIdsOf(L, ENEMY_NAMES, TOTEM_ID);
@@ -100,6 +105,37 @@ export function showMap(opts) {
     if (f && focus) f.focus({ preventScroll: true });
   }
 
+  // iki sütunlu (tablet/geniş) panel: büyük kapak, büyük başlık, hedef kutusu, çipler, düşmanlar, kısa anlatı; eylem altta sabit
+  function renderRich(focus) {
+    const i = LEVEL_IDS.indexOf(selected), L = LEVELS[i], st = opts.statuses[selected];
+    const foes = foeIdsOf(L, ENEMY_NAMES, TOTEM_ID);
+    const rw = L.reward ? WEAPONS[L.reward] : null;
+    const m = sheetModel(L, st, opts.best.levels[selected], rw ? { id: L.reward, name: rw.name } : null);
+    const rewardIcon = rw ? artOr(pickArt(rw, true), document.createTextNode(rw.icon), { cls: "chip-img", size: 28 }) : null;
+    const play = !m.canPlay
+      ? h("p", { class: "lock-note" }, icon("lock"), UI.map.lockedNote)
+      : h("div", { class: "sheet-act" }, button(m.practice ? UI.map.practice : UI.map.play, () => opts.onPlay(selected, m.practice), { ic: "play", autofocus: true }), m.practice ? h("small", { class: "hint" }, UI.map.practiceNote) : null);
+    const tz = teaser(L);
+    sheet.hidden = false;
+    sheet.className = "level-sheet rich panel gold-frame st-" + st;
+    sheet.style.removeProperty("--sheet-max");
+    sheet.setAttribute("aria-label", `${UI.map.title}: ${L.name}`);
+    sheet.replaceChildren(
+      h("div", { class: "sheet-body" },
+        coverImg(L),
+        h("div", { class: "sheet-title" }, h("small", { class: "eyebrow" }, `${i + 1}/${LEVELS.length} · ${STATE_LABEL[st]}`), h("h3", null, L.name)),
+        h("div", { class: "sheet-meta" },
+          h("span", { class: "chip", title: UI.map.time }, icon("hourglass"), `${m.time} ${UI.map.sec}`),
+          m.best ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(m.best)) : null),
+        h("p", { class: "sheet-obj" }, icon("target"), h("span", null, h("small", null, UI.map.goal), objectiveText(L))),
+        m.reward ? h("div", { class: "sheet-reward", title: UI.map.reward }, h("span", { class: "chip-ic", "aria-hidden": "true" }, rewardIcon), h("span", { class: "rw-txt" }, h("small", null, UI.map.reward), h("b", null, m.reward.name)), rw && rw.key ? h("kbd", { class: "rw-key" }, String(rw.key)) : null) : null,
+        h("div", { class: "sheet-foes" }, h("small", null, UI.map.foes), h("ul", { class: "chips foe-row", "aria-label": UI.map.foes }, ...foes.map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, foeBadge(k), ENEMY_NAMES[k])))),
+        tz ? h("p", { class: "sheet-tease" }, tz) : null),
+      play);
+    const f = sheet.querySelector("[data-autofocus]");
+    if (f && focus) f.focus({ preventScroll: true });
+  }
+
   // dikey: kart yüksekliği kadar alt boşluk bırakılır ve seçili düğüm kartın üstündeki görünür alanda tutulur
   function layoutSheet() {
     if (!isPortrait()) return;
@@ -112,6 +148,7 @@ export function showMap(opts) {
   }
 
   function select(id, focus = false) {
+    if (!id && lay0.twoCol) return;
     if (id !== selected) expanded = false;
     selected = id;
     scroller.querySelectorAll(".node").forEach((n) => n.classList.toggle("sel", n.dataset.id === id));
@@ -136,19 +173,35 @@ export function showMap(opts) {
   }
 
   function draw() {
-    const portrait = innerHeight > innerWidth * 1.1;
+    const prev = lay0;
+    lay0 = mapLayout(innerWidth, innerHeight);
+    const portrait = lay0.mode === "portrait";
+    root.classList.toggle("two-col", lay0.twoCol);
+    root.classList.toggle("lp", lay0.mode === "landscape-phone");
+    root.style.setProperty("--panel-w", lay0.panelW + "px");
+    if (lay0.twoCol && !selected) selected = defaultId();
+    if (prev.twoCol !== lay0.twoCol || lay0.twoCol !== sheet.classList.contains("rich")) { expanded = false; renderSheet(); }
     const lay = mapPoints(LEVELS, { portrait, viewBox: MAP ? MAP.viewBox : [1000, 700] });
     // ekrandaki ölçek (görünüm birimi -> piksel): yatayda detay paneli için ayrılan alan düşülür; düğüm ve etiketler küçük ekranda okunur/dokunulur kalsın diye büyütülür
-    const panelW = portrait ? 0 : Math.min(Math.max(innerWidth * 0.3, 210), 320) + 16;
+    const panelW = portrait || lay0.twoCol ? 0 : lay0.panelW + 16;
     const aw = Math.max(scroller.clientWidth - panelW, 200), ah = Math.max(scroller.clientHeight, 160);
-    const scale = portrait ? Math.min(aw / lay.W, 1.2) : Math.min(aw / lay.W, ah / lay.H);
+    const sideOf = (L) => (portrait ? null : (L.map && L.map.label) || "below");
+    const labelPad = (L) => Math.round(L.name.length * 15 + 50);
+    // iki sütun: sütunu dolduran ama düğüm ve etiketleri kırpmayan yakınlaştırma (viewBox kayar; düğümler görselle hizalı kalır)
+    let view = null, scale = portrait ? Math.min(aw / lay.W, 1.2) : Math.min(aw / lay.W, ah / lay.H);
+    if (lay0.twoCol) {
+      const R0 = MAP && MAP.nodeRadius ? MAP.nodeRadius : 38;
+      const items = lay.pts.map((p, k) => { const sd = sideOf(LEVELS[k]), lp = labelPad(LEVELS[k]), vert = sd === "above" || sd === "below", hw = vert ? lp / 2 : 0; return { x: p.x, y: p.y, l: Math.max(R0 + 10, hw) + (sd === "left" ? lp : 0), r: Math.max(R0 + 10, hw) + (sd === "right" ? lp : 0), t: R0 + 10 + (sd === "above" ? 50 : 0), b: R0 + 10 + (sd === "below" ? 50 : 0) }; });
+      view = mapView(Math.max(scroller.clientWidth, 200), ah, lay.W, lay.H, items);
+      scale = view.scale;
+    }
     let dmin = Infinity;
     lay.pts.forEach((p, a) => lay.pts.forEach((q, b) => { if (a < b) dmin = Math.min(dmin, Math.hypot(p.x - q.x, p.y - q.y)); }));
     const R = MAP && MAP.nodeRadius ? MAP.nodeRadius : 38, g = buildMapGraph(LEVEL_IDS, edges(), opts.statuses, lay.pts, lay.useVia);
     const r = portrait ? 30 : Math.min(Math.max(R, 21 / scale), R * 1.5, dmin * 0.42);
     const hitR = Math.min(Math.max(r + 14, 22 / scale), Math.max(dmin / 2, r + 4));
     const fsz = portrait ? 17 : Math.max(22, 12 / scale);
-    const root3 = svg("svg", { class: "map-svg" + (portrait ? " tall" : ""), viewBox: `0 0 ${lay.W} ${lay.H}`, preserveAspectRatio: "xMidYMid meet", role: "group", "aria-label": UI.map.title });
+    const root3 = svg("svg", { class: "map-svg" + (portrait ? " tall" : ""), viewBox: view ? `${view.x.toFixed(1)} ${view.y.toFixed(1)} ${view.w.toFixed(1)} ${view.h.toFixed(1)}` : `0 0 ${lay.W} ${lay.H}`, preserveAspectRatio: "xMidYMid meet", role: "group", "aria-label": UI.map.title });
     root.classList.toggle("portrait", portrait);
     if (!portrait) {
       if (artSrc) { // görsel viewBox içinde: düğümler her ekran oranında görsele göre aynı yerde kalır; yüklenemezse dağ siluetine dönülür
@@ -162,7 +215,7 @@ export function showMap(opts) {
     const pills = [];
     for (const n of g.nodes) {
       const L = LEVELS[n.index], st = n.status;
-      const side = portrait ? (n.x < lay.W / 2 ? "right" : "left") : (L.map && L.map.label) || "below";
+      const side = portrait ? (n.x < lay.W / 2 ? "right" : "left") : sideOf(L);
       const gap = fsz * 0.5;
       const lx = side === "right" ? r + gap + 6 : side === "left" ? -r - gap - 6 : 0, ly = side === "above" ? -r - fsz * 0.9 : side === "below" ? r + fsz * 1.1 : 0;
       const anchor = side === "right" ? "start" : side === "left" ? "end" : "middle";
@@ -202,7 +255,7 @@ export function showMap(opts) {
 
   let rt = 0;
   sc.on(window, "resize", () => { clearTimeout(rt); rt = setTimeout(draw, 120); });
-  sc.on(window, "keydown", (e) => { if (e.key === "Escape" && selected) select(null); });
+  sc.on(window, "keydown", (e) => { if (e.key === "Escape" && selected && !lay0.twoCol) select(null); });
   mount(root, sc, { cls: "map-stage" });
   renderSheet();
   draw();

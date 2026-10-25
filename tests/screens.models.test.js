@@ -1,7 +1,7 @@
 // Menü, harita, bölüm kartı ve bölüm sonu saf modelleri: menü kartı verisi, kariyer sayaçları, harita paneli çipleri, skor satırları, nadirlik.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { RARITY_LABEL, careerStats, continueCardModel, countValue, foeIdsOf, perkRarity, rewardStat, scoreRows, sheetModel, SHEET_MAX_PCT, scrollForNode, sheetLayout } from "../js/ui/models.js";
+import { RARITY_LABEL, careerStats, continueCardModel, countValue, foeIdsOf, perkRarity, rewardStat, mapLayout, mapView, scoreRows, sheetModel, SHEET_MAX_PCT, scrollForNode, sheetLayout } from "../js/ui/models.js";
 
 const NAMES = { ghost: "Ruh", bat: "Yarasa", golem: "Taş Bekçi", totem: "Totem" };
 const LEVEL = { name: "Taş Bekçiler", time: 60, image: "assets/art/x.webp", objective: "crystal", start: { ghost: 2, bat: 1 }, spawn: [{ ghost: 1, golem: 2 }, { unknownfoe: 1 }] };
@@ -76,4 +76,35 @@ test("scrollForNode: seçili düğüm kartın üstündeki görünür alanda; sı
   assert.equal(scrollForNode({ nodeY: 500, viewH: 600, sheetH: 0, at: 0.5 }), 200);
   assert.equal(scrollForNode({ nodeY: 500, viewH: 600, sheetH: 900 }), 500); // kart görünür alandan büyükse düğüm en üste
   assert.equal(scrollForNode(), 0);
+});
+
+test("mapLayout: portrait / landscape-phone / tablet / wide ve panel genişliği", () => {
+  assert.equal(mapLayout(414, 896).mode, "portrait");
+  assert.equal(mapLayout(844, 390).mode, "landscape-phone");
+  assert.equal(mapLayout(667, 375).mode, "landscape-phone");
+  assert.equal(mapLayout(1024, 600).mode, "tablet");
+  const t = mapLayout(1024, 768);
+  assert.equal(t.mode, "tablet"); assert.ok(t.twoCol && t.panelW >= 320 && t.panelW <= 360);
+  for (const [w, h] of [[1912, 910], [1440, 900], [1280, 720], [1100, 600]]) {
+    const l = mapLayout(w, h);
+    assert.equal(l.mode, "wide"); assert.ok(l.twoCol && l.panelW >= 340 && l.panelW <= 440, `${w}x${h}: ${l.panelW}`);
+  }
+  assert.equal(mapLayout(1912, 910).panelW, 440);
+  assert.equal(mapLayout(1100, 700).panelW, 340);
+  assert.equal(mapLayout(844, 390).twoCol, false);
+});
+
+test("mapView: sütunu doldurur ama düğümleri kırpmaz; oran korunur", () => {
+  const items = [{ x: 645, y: 109, l: 48, r: 48, t: 48, b: 48 }, { x: 577, y: 547, l: 48, r: 48, t: 48, b: 48 }, { x: 884, y: 167, l: 48, r: 48, t: 48, b: 48 }, { x: 201, y: 520, l: 48, r: 48, t: 48, b: 48 }];
+  for (const [cw, ch] of [[1472, 860], [684, 718], [900, 500], [1000, 700]]) {
+    const v = mapView(cw, ch, 1000, 700, items);
+    assert.ok(Math.abs(v.w / v.h - cw / ch) < 1e-6, "oran");
+    for (const p of items) {
+      assert.ok(p.x - p.l >= v.x - 1e-6 && p.x + p.r <= v.x + v.w + 1e-6, `x ${cw}x${ch}`);
+      assert.ok(p.y - p.t >= v.y - 1e-6 && p.y + p.b <= v.y + v.h + 1e-6, `y ${cw}x${ch}`);
+    }
+  }
+  const wide = mapView(1472, 860, 1000, 700, items);
+  assert.ok(wide.scale > 1000 / 1000 && wide.x >= 0 && wide.x + wide.w <= 1000 + 1e-6);
+  assert.equal(mapView(1000, 700, 1000, 700, items).scale, 1);
 });

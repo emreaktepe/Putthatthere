@@ -134,3 +134,11 @@ Not: masaüstünde 26 % sol üstteki "Görevler" panelinin alt kenarıdır; orta
 **Diğer yerler**: HUD üst şeridindeki marka adı "HEXORA" ve amblem `hexora-emblem-256.webp`; duraklatma kartında ve harita başlığında (geniş ekranda) küçük amblem; final kartının en altında "HEXORA: Büyücünün Gecesi" imzası.
 
 **Ölçemediklerim**: gerçek cihaz (iPhone Safari/ana ekran, Android) dokunması ve ses başlatma; animasyon akıcılığı (yazılım WebGL yavaş, ekran görüntüleri ara karedir); farklı cihazlarda Georgia yedek yazı tipinin yazı logosundaki görünümü; sosyal ağların og görselini önbellekten yenilemesi.
+
+## Harita: geniş ekran yerleşimi
+
+- Karar modeli `mapLayout(w, h)` (js/ui/models.js, testli): `portrait` (yükseklik > 1,1 x genişlik: alt sayfa, ≤%32 / "Detay" ile %55), `landscape-phone` (yükseklik ≤ 520: kayan dar panel, kapatılabilir), `tablet` (iki sütun, panel 320-360 px), `wide` (genişlik ≥ 1100: iki sütun, panel `clamp(340, %24, 440)` px).
+- İki sütunda (tablet/geniş) panel sağda tam yükseklikte ve sürekli açıktır; kapatma düğmesi ve Esc yoktur, seçim yoksa sıradaki açık bölüm seçilir. İçerik panel içinde kaydırılır, ana düğme altta sabittir. İçerik: 16:9 kapak, büyük başlık, süre/en iyi puan, hedef kutusu, ödül büyüsü (ad + tuş), düşman çipleri, giriş metninin ilk cümlesi.
+- Harita görünümü `mapView`: svg `viewBox` sütunu dolduracak şekilde yakınlaştırılır ama düğüm ve etiketler hiçbir zaman kırpılmaz (en az "meet", en çok "slice"); düğümler görselle birlikte kaydığı için hizalı kalır. Kalan boşluk blur zemin katmanıdır.
+- Yatay telefonda etiketler çakıştığı için yalnızca seçili / hover / odaklı düğümün etiketi görünür (CSS `.lp`).
+- Etiket yönleri (levels.*.map.label): forest above, cave below, golems right, graveyard right, pass below, village right, crystals below, tower right, castle left.
