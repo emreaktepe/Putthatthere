@@ -6,8 +6,9 @@ import { readQuality, resolveQuality, detectEnv } from "../core/quality.js";
 import { ARENA } from "../core/util.js";
 import { BLOB_GEO, BLOB_MAT } from "./enemies.js";
 import { drawCalls } from "./enemyvis.js";
-import { NOD_ANGLE, PROP_SPECS, liftProp, ZERRIN_AWAY, angleDiff, damp, faceYaw, nodAmount, veyisGrow, visibleProps, zerrinMode, zerrinYawTarget } from "./propsvis.js";
+import { NOD_ANGLE, PROP_SPECS, taskinStatueVisible, liftProp, ZERRIN_AWAY, angleDiff, damp, faceYaw, nodAmount, veyisGrow, visibleProps, zerrinMode, zerrinYawTarget } from "./propsvis.js";
 import { scene } from "./scene.js";
+import { setTaskinStatue } from "./scenery.js";
 import { wizard } from "./wizard.js";
 
 const propsGroup = new THREE.Group();
@@ -45,6 +46,7 @@ function build(id) {
 export function setPropsPhase({ phase, levelId, levelIds, completed }) {
   const quality = resolveQuality(readQuality(globalThis.localStorage), detectEnv());
   const want = visibleProps({ phase, levelId, levelIds, completed, quality });
+  setTaskinStatue(taskinStatueVisible(completed)); // harabe dekorundaki Taşkın heykeli
   for (const id of Object.keys(built)) if (!want.includes(id)) built[id].root.visible = false;
   for (const id of want) {
     const p = built[id] || build(id);

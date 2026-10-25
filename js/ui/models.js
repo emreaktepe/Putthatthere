@@ -60,3 +60,97 @@ export function portraitOf(characters, speakerName) {
   if (c && c.portrait) out.portrait = c.portrait;
   return out;
 }
+
+// ---------- Oyun ekranı (HUD) modelleri ----------
+
+// görev paneli satırları: en çok 2 (bölüm hedefi + yenilen düşman). Yalnızca oyunda gerçekten izlenen değerler.
+// L: bölüm ({ objective, goal }), rt: { collected, totemsDown }, kills: bu bölümde yenilen düşman, labels: { objective, kills }
+export function questRows(L, rt = {}, kills = 0, labels = {}) {
+  const goal = Math.max(Number(L && L.goal) || 0, 1);
+  let value = "", done = false;
+  if (L && L.objective === "crystal") { const n = Math.max(rt.collected || 0, 0); value = `${Math.min(n, goal)}/${goal}`; done = n >= goal; }
+  else if (L && L.objective === "totem") { const n = Math.max(rt.totemsDown || 0, 0); value = `${Math.min(n, goal)}/${goal}`; done = n >= goal; }
+  const icon = L && L.objective === "crystal" ? "crystal" : L && L.objective === "survive" ? "hourglass" : "target";
+  return [
+    { id: "goal", icon, label: String(labels.objective || ""), value, done },
+    { id: "kills", icon: "skull", label: String(labels.kills || ""), value: String(Math.max(Math.floor(kills) || 0, 0)), done: false },
+  ];
+}
+
+// büyü/yetenek slotu: kilitli mi, seçili mi, ekran okuyucu etiketi
+export function slotModel({ name = "", key = "", unlocked = false, selected = false, kind = "weapon" } = {}) {
+  const open = !!unlocked;
+  return {
+    open,
+    active: open && !!selected,
+    label: open ? `${name} (${key})` : `${kind === "ability" ? "Yetenek" : "Büyü"} ${key}: kilitli`,
+  };
+}
+
+// duraklatma durum makinesi. durum: "play" | "pause" | "leave" (haritaya dönüş onayı).
+// olay: toggle (Esc/P) | pause | leave | resume | hide (sekme gizlendi) | exit (haritaya dönüldü).
+// running=false (bölüm dışı) ise her zaman "play": duraklatma yalnız savaşta anlamlıdır.
+export function pauseReduce(state, ev, running = true) {
+  if (!running) return "play";
+  switch (ev) {
+    case "toggle": return state === "play" ? "pause" : "play";
+    case "pause": return "pause";
+    case "hide": return state === "play" ? "pause" : state;
+    case "leave": return "leave";
+    case "resume": case "exit": return "play";
+    default: return state;
+  }
+}
+export const isPaused = (state) => state !== "play";
+// duraklatmada oyun saati ilerlemez
+export const stepDt = (dt, paused) => (paused ? 0 : dt);
+
+// ---------- Menü, harita, bölüm kartı ve bölüm sonu modelleri ----------
+
+// bölümde karşılaşılacak düşman kimlikleri (başlangıç + dalgalar + totem hedefi); yalnızca adı olanlar
+export function foeIdsOf(L, names = {}, totemId = null) {
+  const ids = new Set(Object.keys((L && L.start) || {}));
+  ((L && L.spawn) || []).forEach((w) => Object.keys(w).forEach((k) => ids.add(k)));
+  if (L && L.objective === "totem" && totemId) ids.add(totemId);
+  return [...ids].filter((k) => names[k]);
+}
+
+// ana menü "devam edilen bölüm" kartı: yalnızca bölümün gerçek verisi (ad, kapak, süre, düşman türü sayısı)
+export function continueCardModel(L, { index = 0, total = 0, names = {}, totemId = null } = {}) {
+  if (!L) return null;
+  return { n: index + 1, total, name: L.name, cover: L.image || null, time: L.time, foeCount: foeIdsOf(L, names, totemId).length };
+}
+
+// menü/harita üst sayaçları: yalnızca kayıttaki gerçek değerler (tamamlanan bölüm sayısı, en iyi toplam puan). Kayıt yoksa null.
+export function careerStats(save, total) {
+  if (!save) return null;
+  const done = Array.isArray(save.completed) ? save.completed.length : 0;
+  const best = Math.max(Math.floor(Number(save.best && save.best.score) || 0), 0);
+  return { done, total, best };
+}
+
+// harita detay paneli çipleri: süre, (varsa) en iyi puan, (varsa) bölüm ödülü büyüsü adı
+export function sheetModel(L, status, best, reward) {
+  return {
+    time: L.time,
+    best: best && best.score > 0 ? best.score : null,
+    reward: reward ? { id: reward.id, name: reward.name } : null,
+    canPlay: status !== "locked",
+    practice: status === "completed",
+  };
+}
+
+// bölüm sonu skor satırları (ekrandaki sayılar countUp ile animasyonla yazılır)
+export function scoreRows({ bonus = 0, levelBonus = 0, total = 0, prevTotal = 0 } = {}) {
+  return [
+    { id: "time", value: bonus, plus: true },
+    { id: "level", value: levelBonus, plus: true },
+    { id: "total", value: total, from: prevTotal, plus: false },
+  ];
+}
+
+// yeni büyü kartı istatistik satırı: büyüde hasar + bekleme, yetenekte yalnız bekleme
+export function rewardStat(kind, d, labels) {
+  const cd = `${labels.cooldown} ${d.cd} ${labels.sec}`;
+  return kind === "weapon" ? `${labels.damage} ${d.dmg} · ${cd}` : cd;
+}

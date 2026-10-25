@@ -15,8 +15,8 @@ Telefondan denemek için sunucunun yazdığı "Network" adresini (aynı Wi-Fi) k
 
 ## Kontroller
 
-- **Bilgisayar:** WASD / ok tuşları yürü · fare nişan · Boşluk veya tık büyü · 1–7 büyü seç · Q / E / R yetenekler
-- **Mobil:** ekranda sürükle = yürü · sağ alttaki ✦ butonu = ateş (nişan otomatik) · alttaki simgeler = büyü değiştir · HUD'daki 📷 = kamera açısı
+- **Bilgisayar:** WASD / ok tuşları yürü · fare nişan · Boşluk veya tık büyü · 1–7 büyü seç · Q / E / R yetenekler · **Esc / P duraklat** (Devam Et / Haritaya Dön / Ses; sekme gizlenince otomatik)
+- **Mobil:** ekranda sürükle = yürü · sağ alttaki ✦ butonu = ateş (nişan otomatik) · alttaki simgeler = büyü değiştir · sol alttaki halka = joystick (dokunduğun yerde belirir) · üst sağdaki düğmeler = Durdur, Kamera, Ses, Harita · HUD'daki 📷 = kamera açısı
 - **Kamera:** V (veya 📷) açıyı değiştirir (Yukarıdan / Eğik / Omuz-alçak) · Z / C döndürür · fare tekerleği yakınlaştırır · sağ tuşla sürükleme döndürür. Yürüme kamera-görelidir; seçim `buyucu_kamera` anahtarında saklanır.
 - **Akış:** Menü → (giriş) → Harita → bölüm kartı → savaş → ödül/perk → Harita. Kayıt `buyucu_save`; tamamlanan bölümler haritadan "alıştırma" olarak tekrar oynanır (ilerleme değişmez).
 
@@ -27,6 +27,7 @@ Ana menüdeki **Grafik: Otomatik / Yüksek / Düşük** düğmesi oyuncu görsel
 ## Proje yapısı
 
 - `index.html` — tüm oyun (sahne, düşmanlar, bölümler, hikâye, arayüz, ses); tek dosya
+- `js/render/decor/` + `js/render/floors/` — kodla üretilen 3B bölüm dekoru (37 tür, Environment Complete v1 paketi; `InstancedMesh`, ışıksız, çarpışmasız) ve 9 canvas zemin ressamı (gri tonlamalı, tema rengiyle çarpılır). Bölüm başına yerleşim/bütçe planı `js/render/sceneryplan.js` (saf veri, testli), kurucular `js/render/scenery.js`; süs dekor yalnız Yüksek grafik kalitesinde, Düşükte çok örnekli dekor yarıya iner.
 - `js/render/models/` — kodla üretilen 3B karakter modelleri (Core6 Pro + Full12 v2 paketleri: Pırıl, Ruh, Yarasa, Taş Bekçi, Gölge Kral, Kemik Okçu, Kurt Ruhu, Kor Hortlak, Karanlık Rahip, Lanet Totemi, Kemik Şövalye + ortak `common.js`); oyuna bağlantı `js/render/enemyvis.js` + `enemies.js` (düşmanlar) ve `wizard.js` (Pırıl). 10 düşmanın hepsi grafik kalitesinden bağımsız her zaman bu modellerle çizilir. Aldemir: `js/render/aldemir.js`. Sahne figürleri (Zerrin baykuş, Taşkın, Veyis'in insan hali; savaşa katılmayan, çarpışmasız) `models/zerrin.js`, `taskin.js`, `veyis-insan.js` + saf mantık `js/render/propsvis.js` + sahne yapıştırıcısı `js/render/props3d.js` (flow.js aşamayı bildirir, loop.js tick eder); Düşük kalitede yalnız finaldeki Veyis gösterilir
 - `vendor/` — Three.js r185 (MIT, yerel kopya; CDN bağımlılığı yok)
 - `docs/strateji/buyucu-oyunu-hikaye-ve-bolumler.md` — hikâye, bölüm, düşman, büyü, görsel ve müzik tasarım belgesi

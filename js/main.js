@@ -13,6 +13,7 @@ import { initWizard } from "./render/wizard.js";
 import { devBar } from "./ui/devbar.js";
 import { renderHud, renderWeapons } from "./ui/hud.js";
 import { applyStaticIcons } from "./ui/icons.js";
+import { initPause } from "./ui/pause.js";
 import { showFatal } from "./ui/screens.js";
 
 async function boot() {
@@ -36,6 +37,7 @@ async function boot() {
   initWizard();
   applyTheme(0);
   renderWeapons();
+  initPause();
   startLoop();
   showMainMenu();
   // ?dev=1 (+ &level=<id>): geliştirici şeridi ve bölümden başlatma; varsayılan oyun akışını etkilemez

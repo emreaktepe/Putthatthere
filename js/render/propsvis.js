@@ -24,6 +24,8 @@ export const reservedHit = (x, z) => RESERVED.some(([cx, cz, r]) => (x - cx) ** 
 
 export const TASKIN_UNLOCK = "golems"; // bu bölüm tamamlanınca Taşkın dost figür olur
 export const FINAL_LEVEL = "castle";
+// harabe sahnesindeki Taşkın heykeli (scenery.js) yalnız golems tamamlanmadan görünür; tamamlanınca canlı Taşkın figürü onun yerini alır
+export const taskinStatueVisible = (completed) => !(completed instanceof Set ? completed : new Set(completed || [])).has(TASKIN_UNLOCK);
 
 // phase: "none" (menü/harita) | "intro" (bölüm girişi) | "play" | "clear" (bölüm sonu) | "final" (zafer ekranı)
 // quality: resolveQuality sonucu ("pro" | "basic"). Düşük kalitede ekran yükünü azaltmak için yalnız finaldeki Veyis gösterilir.

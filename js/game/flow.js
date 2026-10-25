@@ -33,10 +33,13 @@ export function showMainMenu() {
   const idx = sv ? Math.min(LEVEL_IDS.indexOf(sv.currentLevel) + 1, LEVELS.length) : 0;
   showMenu({
     hasSave: hasSave(),
+    save: sv,
+    saveName: sv && LEVELS[Math.max(idx, 1) - 1] ? LEVELS[Math.max(idx, 1) - 1].name : "",
     saveInfo: sv ? `${fmt(STRINGS.hud.level, { n: Math.max(idx, 1), total: LEVELS.length })} · ${sv.run.score}` : "",
     notice,
     onContinue: () => { if (continueGame()) openMap(); },
     onNew: () => showIntro(() => { newGame(); openMap(); }),
+    onMap: () => { if (continueGame()) openMap(); },
   });
   applyTheme(0);
 }
@@ -91,6 +94,7 @@ export function startLevel() {
   RT.collected = 0; RT.totemsDown = 0; RT.timeLeft = L.time; RT.cooldown = 0; RT.invuln = 1; RT.spawnTimer = 0; RT.bossSummon = 5;
   resetAbilityCooldowns();
   RT.stoneReady = false;
+  RT.paused = false; RT.killBase = S.kills || 0; // görev paneli: bu bölümde yenilen düşman = S.kills - killBase
   if (S.stoneLevels > 0) { S.stoneLevels--; RT.stoneReady = true; }
   wizard.position.set(0, 0, 0);
   const crystals = L.crystals !== undefined ? L.crystals : (L.objective === "crystal" ? 5 : 0);
@@ -107,6 +111,16 @@ export function startLevel() {
   renderHud();
   renderWeapons();
   renderAbilities();
+}
+
+// Savaştan haritaya dönüş (duraklatma kartından). Ölümdeki "Haritaya dön" ile aynı kural: bölüm başındaki durum geri yüklenir,
+// bölümün ilerlemesi/puanı kaydedilmez (kayıt zaten bölüm girişinde yazılmıştı).
+export function quitToMap() {
+  if (!RT.running) return;
+  const id = LEVEL_IDS[S.level];
+  RT.running = false; RT.paused = false;
+  restoreSnapshot(); S.hp = S.maxHp;
+  openMap(id);
 }
 
 // ---------- Yenilgi ----------

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+<radialGradient id="bg" cx="60%" cy="40%" r="80%"><stop stop-color="#35227f"/><stop offset="0.55" stop-color="#190d48"/><stop offset="1" stop-color="#0b0a27"/></radialGradient>
+<linearGradient id="moon" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#fff3bc"/><stop offset=".52" stop-color="#ffd265"/><stop offset="1" stop-color="#ffac38"/></linearGradient>
+<linearGradient id="hat" x1="0" y1=".1" x2="1" y2=".9"><stop stop-color="#6c35de"/><stop offset=".35" stop-color="#3c1b95"/><stop offset=".74" stop-color="#201265"/><stop offset="1" stop-color="#110d3c"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2=".95"><stop stop-color="#ffe69a"/><stop offset=".45" stop-color="#ffc249"/><stop offset="1" stop-color="#f28a24"/></linearGradient>
+<linearGradient id="brim" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5330b4"/><stop offset="1" stop-color="#22105e"/></linearGradient>
+<filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="17"/></filter>
+<mask id="crescent"><circle cx="395" cy="362" r="262" fill="white"/><circle cx="524" cy="289" r="225" fill="black"/></mask>
+</defs>
+<!-- no background: standalone, transparent, scalable emblem -->
+<path d="M 401.8 100.1 A 262 262 0 1 0 623.0 491.0 A 225 225 0 0 1 401.8 100.1 Z" fill="#ffc85e" opacity=".26" filter="url(#softGlow)"/>
+<path d="M 401.8 100.1 A 262 262 0 1 0 623.0 491.0 A 225 225 0 0 1 401.8 100.1 Z" fill="url(#moon)"/>
+<g fill="#ffe29a"><path d="M784 190l11 26 26 11-26 11-11 26-11-26-26-11 26-11z"/><path d="M232 245l9 19 19 9-19 9-9 19-9-19-19-9 19-9z"/><circle cx="804" cy="468" r="10"/><circle cx="198" cy="487" r="7"/></g>
+<!-- Hat shadow depth -->
+<path d="M291 700 C391 582 415 501 519 341 C602 220 677 177 718 238 C741 270 725 299 691 310 C713 251 664 266 628 309 C603 345 568 397 556 462 C538 548 602 609 694 705 Z" fill="#0d0a39" stroke="#100b35" stroke-width="15" stroke-linejoin="round"/>
+<path d="M291 700 C391 582 415 501 519 341 C602 220 677 177 718 238 C741 270 725 299 691 310 C713 251 664 266 628 309 C603 345 568 397 556 462 C538 548 602 609 694 705 Z" fill="url(#hat)" stroke="#9251ed" stroke-width="9" stroke-linejoin="round"/>
+<path d="M357 637 Q430 515 512 396 Q471 574 545 636Z" fill="#8d45e6" opacity=".28"/>
+<path d="M539 361 Q615 240 682 237 Q704 241 705 272 Q663 247 624 307Z" fill="#a26afd" opacity=".48"/>
+<!-- Gold band -->
+<path d="M302 647 C420 610 548 609 693 663 L716 729 C558 689 416 698 280 713Z" fill="url(#gold)" stroke="#8e441e" stroke-width="13"/>
+<path d="M294 681 C448 647 575 658 700 697" stroke="#fff2b0" stroke-width="11" fill="none" opacity=".72"/>
+<!-- Brim -->
+<path d="M182 741 C308 699 426 697 550 707 C685 715 783 706 849 758 C806 836 702 807 570 800 C390 789 294 832 185 787 C146 773 148 753 182 741Z" fill="url(#brim)" stroke="#0f0a3a" stroke-width="20"/>
+<path d="M180 748 C302 701 422 706 550 716 C691 725 792 715 842 762" fill="none" stroke="#ffc358" stroke-width="20" stroke-linecap="round"/>
+<path d="M194 772 C343 736 450 760 571 767 C691 780 786 770 825 764" fill="none" stroke="#a95cf0" stroke-width="10" opacity=".6"/>
+<!-- Six-point stylized star medallion -->
+<g transform="translate(455 645)">
+<path d="M0-82 L20-33 L72-49 L42-8 L78 28 L24 31 L0 83 L-23 32 L-78 30 L-41-8 L-70-47 L-19-33Z" fill="#9e4d1a" stroke="#542153" stroke-width="13" stroke-linejoin="round"/>
+<path d="M0-73 L19-24 L64-41 L34-6 L67 22 L21 23 L0 74 L-21 23 L-67 22 L-34-6 L-64-41 L-19-24Z" fill="url(#gold)" stroke="#fff1ae" stroke-width="6" stroke-linejoin="round"/>
+<path d="M0-52 L14-16 L44-30 L26-2 L49 17 L14 17 L0 54 L-14 17 L-49 17 L-26-2 L-44-30 L-14-16Z" fill="#fff0ae" opacity=".7"/>
+<circle r="18" fill="#7835e2" stroke="#f6adff" stroke-width="7"/>
+</g>
+</svg>
