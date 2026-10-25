@@ -2,7 +2,7 @@
 
 **HEXORA** (alt başlık: *Büyücünün Gecesi*, "Karanlığın Kalbi"), tarayıcıda çalışan, Three.js tabanlı, 9 bölümlük hikâyeli bir büyücü aksiyon oyunudur. Büyücü Aldemir, çatlayan Gece Kalbi'ni kurtarmak için lanetli diyarları geçer: mana kristali toplar, ruhlara ve yaratıklara büyü yağdırır, yeni büyüler ve yetenekler kazanır, finalde Gölge Kral'la yüzleşir. Klavye/fare ve mobil (joystick + ateş butonu) ile oynanır. Müzik ve ses efektleri Web Audio ile kodla üretilir.
 
-> **Marka notu:** HEXORA adının tescil, alan adı ve mağaza (Steam/App Store/Play) uygunluğu **doğrulanmadı**; marka kılavuz kitinin kendi notu da bunu belirtir. Yayın öncesi ayrıca araştırılmalıdır. Marka dosyaları `assets/brand/` altındadır (amblem WebP, HEXORA yazı logosu SVG, paylaşım görseli).
+> **Marka notu:** HEXORA adının tescil, alan adı ve mağaza (Steam/App Store/Play) uygunluğu **doğrulanmadı**; marka kılavuz kitinin kendi notu da bunu belirtir. Yayın öncesi ayrıca araştırılmalıdır. Marka dosyaları `assets/favicon/` altında düz dosyalardır (uygulama ikonu PNG/WebP, paylaşım görseli); HEXORA yazı logosu dosya değil, kodda üretilir (`js/ui/brandmodel.js`).
 
 ## Çalıştırma
 

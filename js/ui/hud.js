@@ -25,7 +25,7 @@ export function flashHurt() {
 // ---------- Üst HUD ----------
 const RING = 2 * Math.PI * 17;
 const el = {};
-const BRAND_IMG = BRAND.emblem256; // HEXORA şeffaf amblemi (8 KB); HUD'da 44 px gösterilir
+const BRAND_IMG = BRAND.emblem256; // HEXORA uygulama ikonu (yuvarlak köşeli kare); HUD'da 32 px gösterilir
 const hexOf = (n) => "#" + n.toString(16).padStart(6, "0");
 function buildHud() {
   const hud = $("hud");
@@ -49,7 +49,7 @@ function buildHud() {
   el.bossShield = h("span", { class: "boss-shield", hidden: true }, icon("shield"));
   el.boss = h("div", { class: "hud-boss panel", hidden: true }, el.bossMed, el.bossName, h("div", { class: "bar boss-bar" }, el.bossFill), el.bossShield);
   // marka amblemi: yüklenemezse düğümden kalkar, yazı kalır
-  const logo = h("img", { class: "brand-img", src: BRAND_IMG, alt: "", width: 44, height: 44, decoding: "async", draggable: "false", "aria-hidden": "true" });
+  const logo = h("img", { class: "brand-img", src: BRAND_IMG, alt: "", width: 32, height: 32, decoding: "async", draggable: "false", "aria-hidden": "true" });
   logo.addEventListener("error", () => logo.remove());
   // görevler paneli: en çok 2 satır (bölüm hedefi + bu bölümde yenilen düşman); satır değerleri değişince yazılır
   el.qGoalIc = h("span", { class: "q-ic" });

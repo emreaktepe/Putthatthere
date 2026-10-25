@@ -26,7 +26,14 @@ son 3/
 Buyucunun_Gecesi_3D_Environment_Complete_v1/
 
 # Yerel marka/tasarım kaynak klasörleri (büyük görseller, mockup, HEXORA marka paketi dışa aktarımları): repoya girmez.
-# Oyunun kullandığı küçültülmüş marka dosyaları assets/brand/ altındadır.
+# Oyunun kullandığı marka dosyaları assets/favicon/ altında düz dosyalardır (ayrıntı: docs/gelistirme/ui-ux-atmosfer-notlari.md).
 assets/05_Sosyal_Medya/
 assets/sources/
 assets/UI Mockup/
+
+# assets/favicon/ içinde kullanılmayan büyük/yinelenen ikonlar siteye girmez (yalnızca yerelde kalır):
+# icon-1024.png 1,3 MB; icon-180.png apple-touch-icon.png ile aynı; icon-144.png ve icon-256.png hiçbir yerde kullanılmıyor.
+assets/favicon/icon-1024.png
+assets/favicon/icon-144.png
+assets/favicon/icon-180.png
+assets/favicon/icon-256.png

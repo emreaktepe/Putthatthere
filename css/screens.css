@@ -344,14 +344,14 @@
    Renkler marka kılavuzundan: büyü moru #6B3BFF, altın ışık #FFD87A, koyu altın #ff9f1c, gece laciverti #0B1029, mistik mor #2E1A59, parıltılı mor #A78BFF, camgöbeği #4DDCFF. */
 .brand { position: relative; --emb: 120px; --wm-w: 340px; }
 .brand-emblem { position: relative; z-index: 1; flex: none; width: var(--emb); height: var(--emb); display: grid; place-items: center; animation: floaty 5s ease-in-out infinite; }
-.brand-emblem .halo, .splash-emblem .halo { position: absolute; inset: -32%; border-radius: 50%; mix-blend-mode: screen; background: radial-gradient(circle, rgba(255, 216, 122, .3), rgba(107, 59, 255, .16) 46%, rgba(107, 59, 255, 0) 70%); animation: haloPulse 4.2s ease-in-out infinite; pointer-events: none; }
-.emblem-img { position: relative; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 10px rgba(0, 0, 0, .55)) drop-shadow(0 0 10px rgba(255, 216, 122, .3)); user-select: none; }
+.brand-emblem .halo, .splash-emblem .halo { position: absolute; inset: -32%; border-radius: 34%; mix-blend-mode: screen; background: radial-gradient(circle, rgba(255, 216, 122, .3), rgba(107, 59, 255, .16) 46%, rgba(107, 59, 255, 0) 70%); animation: haloPulse 4.2s ease-in-out infinite; pointer-events: none; }
+.emblem-img { position: relative; width: 100%; height: 100%; object-fit: cover; border-radius: 22%; box-shadow: 0 0 0 1px rgba(255, 216, 122, .6), 0 0 0 3px rgba(11, 16, 41, .5); filter: drop-shadow(0 3px 10px rgba(0, 0, 0, .55)) drop-shadow(0 0 10px rgba(255, 216, 122, .3)); user-select: none; }
 .brand-text { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .brand .logo { max-width: none; margin: 0; font-size: 0; line-height: 0; background: none; filter: none; -webkit-background-clip: border-box; background-clip: border-box; color: inherit; }
 .wordmark { position: relative; display: block; width: var(--wm-w); max-width: 100%; aspect-ratio: 612 / 170; pointer-events: none; user-select: none; }
 .wm-img { display: block; width: 100%; height: 100%; filter: drop-shadow(0 2px 10px rgba(107, 59, 255, .7)) drop-shadow(0 0 2px rgba(0, 0, 0, .6)); }
 .wm-text { font: 700 44px/1 Georgia, "Times New Roman", serif; letter-spacing: .08em; color: var(--gold-light); }
-.wm-shine { position: absolute; inset: 0; background: linear-gradient(105deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, .95) 50%, rgba(255, 255, 255, 0) 62%) no-repeat; background-size: 260% 100%; background-position: 150% 0; -webkit-mask: url(../assets/brand/hexora-wordmark.svg) center / 100% 100% no-repeat; mask: url(../assets/brand/hexora-wordmark.svg) center / 100% 100% no-repeat; animation: wmShine 7s 2s ease-in-out infinite; }
+.wm-sweep { animation: wmShine 7s 2s ease-in-out infinite backwards; }
 .wm-gem { position: absolute; width: 13%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(200, 180, 255, .95), rgba(107, 59, 255, .45) 40%, rgba(107, 59, 255, 0) 70%); mix-blend-mode: screen; animation: gemPulse 2.4s ease-in-out infinite; }
 .brand-sub { margin: 2px 0 0; font: 600 15px/1.2 Georgia, "Times New Roman", serif; letter-spacing: .14em; color: #ffe9a8; text-shadow: 0 1px 8px #000, 0 0 12px rgba(255, 159, 28, .35); }
 .brand .tagline { margin: 4px 0 0; font-size: 13px; font-style: normal; letter-spacing: .04em; color: #d9ccff; }
@@ -368,29 +368,29 @@
 .splash-shade { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 42%, rgba(11, 16, 41, .1), rgba(11, 16, 41, .74) 78%), linear-gradient(180deg, rgba(11, 16, 41, .5), rgba(11, 16, 41, .12) 42%, rgba(11, 16, 41, .88)); }
 #splash .brand-sparks { inset: 0; --rise: -62vh; }
 .splash-center { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 0 16px; transform: translateY(-4%); }
-.splash-emblem { position: relative; width: min(44vw, 32vh, 260px); aspect-ratio: 1; display: grid; place-items: center; margin-bottom: 4px; animation: emblemIn .9s .15s cubic-bezier(.2, .9, .3, 1.1) backwards, floaty 6s 1.1s ease-in-out infinite; }
+.splash-emblem { position: relative; width: clamp(120px, min(40vw, 30vh), 168px); aspect-ratio: 1; display: grid; place-items: center; margin-bottom: 4px; animation: emblemIn .9s .15s cubic-bezier(.2, .9, .3, 1.1) backwards, floaty 6s 1.1s ease-in-out infinite; }
 .splash-emblem .halo { inset: -42%; }
-.splash-emblem .rune-ring { position: absolute; left: -16%; top: -16%; width: 132%; height: 132%; opacity: .75; animation: spin 52s linear infinite; }
+.splash-emblem .rune-ring { position: absolute; left: -32%; top: -32%; width: 164%; height: 164%; opacity: .75; animation: spin 52s linear infinite; }
 .splash-emb { filter: drop-shadow(0 4px 14px rgba(0, 0, 0, .6)) drop-shadow(0 0 22px rgba(255, 216, 122, .5)); }
 .sparkle { position: absolute; width: 16px; height: 16px; background: #fff6cf; clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); animation: sparkleTw 2.6s ease-in-out infinite; }
 .sparkle.s1 { top: 4%; right: 2%; width: 20px; height: 20px; animation-delay: .9s; }
 .sparkle.s2 { top: 42%; left: -8%; animation-delay: 1.5s; }
 .sparkle.s3 { bottom: 10%; right: -6%; width: 12px; height: 12px; animation-delay: 2.1s; }
 .splash-wm { --wm-w: min(86vw, 480px); animation: fadeUp .8s .8s cubic-bezier(.2, .8, .2, 1) backwards; }
-.splash-wm .wm-shine { animation-delay: 1.5s; }
+.splash-wm .wm-sweep { animation-delay: 1.5s; }
 .splash-kicker { margin: 4px 0 0; padding-left: .42em; font: 600 clamp(12px, 3.2vmin, 17px)/1.2 var(--ui); letter-spacing: .42em; color: #cbbdff; text-shadow: 0 1px 8px #000; animation: fadeUp .6s 1.5s ease-out backwards; }
 .splash-sub { margin: 0; font: 600 clamp(15px, 3.4vmin, 20px)/1.2 Georgia, "Times New Roman", serif; letter-spacing: .12em; color: #ffe9a8; text-shadow: 0 1px 8px #000, 0 0 14px rgba(255, 159, 28, .35); animation: fadeUp .6s 1.75s ease-out backwards; }
 .splash-hint { position: absolute; z-index: 1; left: 0; right: 0; max-width: none; width: 100%; bottom: calc(max(24px, var(--safe-b)) + 18px); margin: 0; text-align: center; font: 600 15px/1 var(--ui); letter-spacing: .14em; color: #fff6cf; text-shadow: 0 1px 8px #000; animation: hintIn .5s 2.3s ease-out backwards, blinkSoft 2.2s 2.8s ease-in-out infinite; }
 #splash.still, #splash.still * { animation: none !important; transition: none !important; }
-#splash.still .wm-shine { display: none; }
+#splash.still .wm-sweep { display: none; }
 
-.pause-emb { display: block; width: 40px; height: 40px; margin: 0 auto 2px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(255, 216, 122, .4)); }
-.map-emb { width: 26px; height: 26px; margin-right: 8px; vertical-align: -6px; object-fit: contain; }
+.pause-emb { display: block; width: 40px; height: 40px; margin: 0 auto 2px; object-fit: cover; border-radius: 22%; box-shadow: 0 0 0 1px rgba(255, 216, 122, .55); filter: drop-shadow(0 0 8px rgba(255, 216, 122, .4)); }
+.map-emb { width: 28px; height: 28px; margin-right: 8px; vertical-align: -8px; object-fit: cover; border-radius: 22%; box-shadow: 0 0 0 1px rgba(255, 216, 122, .55); }
 .final-sign { margin: 2px 0 0; font: 600 12px/1.2 Georgia, "Times New Roman", serif; letter-spacing: .16em; color: var(--gold-2); opacity: .8; }
 
 @keyframes haloPulse { 0%, 100% { opacity: .65; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.06); } }
 @keyframes gemPulse { 0%, 100% { opacity: .45; transform: translate(-50%, -50%) scale(.8); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.25); } }
-@keyframes wmShine { 0% { background-position: 150% 0; } 18%, 100% { background-position: -50% 0; } }
+@keyframes wmShine { 0% { transform: translateX(0); } 18%, 100% { transform: translateX(900px); } }
 @keyframes sparkRise { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translate(var(--dx, 0), var(--rise)); opacity: 0; } }
 @keyframes menuIn { from { opacity: 0; transform: translateY(14px); } }
 @keyframes splashFade { from { opacity: 0; } }
@@ -431,7 +431,7 @@
   .brand .tagline { font-size: 14px; margin-top: 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .brand-sparks, .wm-shine { display: none; }
+  .brand-sparks, .wm-sweep { display: none; }
   .brand-emblem, .brand-emblem .halo, .wm-gem { animation: none; }
   .menu.entering * { animation: none !important; }
 }

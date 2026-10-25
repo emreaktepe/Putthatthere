@@ -4,7 +4,7 @@ import { h, svg } from "../core/dom.js";
 import { sfx } from "../audio/engine.js";
 import { readQuality } from "../core/quality.js";
 import { artBg } from "./art.js";
-import { BRAND, ENTER_MAX_STEPS, SPLASH_KEY, enterDelay, sparkCount, splashModel } from "./brandmodel.js";
+import { BRAND, ENTER_MAX_STEPS, SPLASH_KEY, enterDelay, sparkCount, splashModel, wordmarkSpec } from "./brandmodel.js";
 import { reducedMotion } from "./screens.js";
 
 export function emblemImg(cls = "", big = false) {
@@ -13,15 +13,13 @@ export function emblemImg(cls = "", big = false) {
   return img;
 }
 
-// HEXORA yazı logosu: <img> (SVG) + üstüne maske ile kırpılmış ışık süpürmesi + "O" içindeki elmasta nabız ışığı
+// HEXORA yazı logosu: kodda üretilen inline SVG (dosya yok; ışık süpürmesi SVG içinde) + "O" içindeki elmasta nabız ışığı
+let wmSeq = 0;
+const toNode = (n) => (typeof n === "string" ? n : svg(n.tag, n.attrs, ...n.children.map(toNode)));
 export function wordmark(cls = "") {
-  const img = h("img", { class: "wm-img", src: BRAND.wordmark, alt: BRAND.name, decoding: "async", draggable: "false" });
-  const wrap = h("span", { class: "wordmark " + cls },
-    img,
-    h("i", { class: "wm-shine", "aria-hidden": "true" }),
+  return h("span", { class: "wordmark " + cls },
+    toNode(wordmarkSpec("wm" + ++wmSeq)),
     h("i", { class: "wm-gem", "aria-hidden": "true", style: { left: BRAND.gem.x.toFixed(2) + "%", top: BRAND.gem.y.toFixed(2) + "%" } }));
-  img.addEventListener("error", () => { wrap.replaceChildren(h("span", { class: "wm-text" }, BRAND.name)); });
-  return wrap;
 }
 
 // dört köşeli minik yıldız (parıltı)
