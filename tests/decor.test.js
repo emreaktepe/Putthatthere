@@ -150,8 +150,8 @@ test("bölüm başına dekor bütçesi: <= 60 çizim çağrısı, <= 80 bin üç
 
 test("propsvis.taskinStatueVisible: heykel yalnız golems tamamlanmadan görünür", () => {
   assert.equal(PV.taskinStatueVisible([]), true);
-  assert.equal(PV.taskinStatueVisible(new Set(["forest", "cave"])), true);
-  assert.equal(PV.taskinStatueVisible(new Set(["golems"])), false);
-  assert.equal(PV.taskinStatueVisible(["forest", "golems"]), false);
+  assert.equal(PV.taskinStatueVisible(new Set(["w1-01", "w1-02"])), true);
+  assert.equal(PV.taskinStatueVisible(new Set(["w1-03"])), false);
+  assert.equal(PV.taskinStatueVisible(["w1-01", "w1-03"]), false);
   assert.equal(PV.taskinStatueVisible(undefined), true);
 });

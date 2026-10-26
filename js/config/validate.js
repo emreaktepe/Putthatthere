@@ -9,6 +9,7 @@
 // "strict" (CI/yönetim): her hata başarısızlık. "lenient" (oyun): `validateLenient` ile sanitize edilmiş sonuç kullanılır.
 
 import { SCHEMA, CONFIG_SCHEMA_VERSION, enumList } from "./schema.js";
+import { balanceIssues } from "./balance.js";
 import { ID_RE, HEX_RE, FORBIDDEN_KEYS, ABILITY_KINDS, PERK_STATS, WEAPON_BLOCKS } from "./registry.js";
 
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -209,7 +210,7 @@ function walk(value, spec, path, ctx, key) {
       if (keys.length < spec.min || keys.length > spec.max) err("E_LENGTH", path, `${name} öğe sayısı ${keys.length}: ${spec.min}–${spec.max} olmalı`, { value: keys.length, expect: `${spec.min}..${spec.max}` });
       const out = {};
       for (const k of keys) {
-        if (!ID_RE.test(k)) err("E_FORMAT", [...path, k], `Kimlik ${JSON.stringify(k)} geçersiz: küçük harfle başlayan, a-z 0-9 _ içeren 2–24 karakter olmalı`, { value: k, expect: String(ID_RE) });
+        if (!ID_RE.test(k)) err("E_FORMAT", [...path, k], `Kimlik ${JSON.stringify(k)} geçersiz: küçük harfle başlayan, a-z 0-9 _ - içeren 2–24 karakter olmalı`, { value: k, expect: String(ID_RE) });
         const r = walk(value[k], spec.item, [...path, k], ctx, k);
         if (r !== undefined) out[k] = r;
       }
@@ -306,6 +307,7 @@ function semantic(c, raw, err, warn) {
     if (!stats.includes(stat)) { err("E_ENUM", ["perks", id, "effect", "stat"], `${kind} etkisi için stat ${stats.join(" | ")} olmalı`, { value: stat, expect: stats.join("|") }); continue; }
     if (kind === "mul" && (value < 0.1 || value > 3)) err("E_RANGE", ["perks", id, "effect", "value"], `mul değeri 0.1–3 arası olmalı`, { value, expect: "num 0.1..3" });
     if (kind === "add" && (value <= 0 || value > 50)) err("E_RANGE", ["perks", id, "effect", "value"], `add değeri 0'dan büyük ve en çok 50 olmalı`, { value, expect: "num 0..50" });
+    if ((kind !== "flag" || stat === "stoneLevels") && p.maxStacks === undefined) warn("W_BALANCE", ["perks", id, "maxStacks"], `${id} perk'inde azami yığın (maxStacks) yok: sınırsız yığılma güç eğrisini bozar (plan B5)`);
     if (kind === "flag" && stat === "stoneLevels" && !(Number.isInteger(value) && value >= 1 && value <= 9)) err("E_RANGE", ["perks", id, "effect", "value"], `stoneLevels 1–9 arası tam sayı olmalı`, { value, expect: "int 1..9" });
   }
 
@@ -344,16 +346,15 @@ function semantic(c, raw, err, warn) {
     if (isObj(L.start)) {
       const total = Object.values(L.start).reduce((a, b) => a + (typeof b === "number" ? b : 0), 0);
       if (total > 30) err("E_RANGE", P("start"), `Başlangıç düşmanı toplamı ${total}: en çok 30 olabilir`, { value: total, expect: "<= 30" });
-      if (Number.isInteger(L.cap) && total > L.cap * 2) warn("W_BALANCE", P("start"), `Başlangıçta ${total} düşman var, cap ${L.cap} için fazla (cap x2 aşıldı)`);
       Object.keys(L.start).forEach((k) => usedEnemies.add(k));
     }
     if (Array.isArray(L.spawn)) L.spawn.forEach((w) => isObj(w) && Object.keys(w).forEach((k) => usedEnemies.add(k)));
-    if (Number.isInteger(L.cap) && L.cap > 14) warn("W_BALANCE", P("cap"), `cap ${L.cap}: mobil performans için 14 üstü önerilmez`);
-    if (L.objective === "crystal" && Number.isInteger(L.goal) && Number.isInteger(L.time) && L.goal * 3 > L.time) warn("W_BALANCE", P("goal"), `${L.goal} kristal x ~3 sn = ${L.goal * 3} sn, süre ${L.time} sn: yetişmesi zor olabilir`, { hint: "Süre 55 sn iken 8 kristal makul" });
     if (L.reward) rewarded.weapon.set(L.reward, (rewarded.weapon.get(L.reward) || 0) + 1);
     if (L.ability) rewarded.ability.set(L.ability, (rewarded.ability.get(L.ability) || 0) + 1);
     if (typeof L.theme === "string") usedThemes.add(L.theme);
   }
+  // denge bütçesi (plan §7.2, yaklaşık model): süre payı, mobil cap, başlangıç yoğunluğu, zorluk sıçraması / çok düşük geçme tahmini
+  for (const b of balanceIssues(c)) warn("W_BALANCE", b.path[2] === "time" ? [b.path[0], b.path[1], "goal"] : b.path, b.message);
   for (const [k, n] of rewarded.weapon) if (n > 1) warn("W_BALANCE", ["levels"], `${k} büyüsü ${n} bölümde ödül olarak veriliyor`);
   for (const [k, n] of rewarded.ability) if (n > 1) warn("W_BALANCE", ["levels"], `${k} yeteneği ${n} bölümde ödül olarak veriliyor`);
   if (Object.keys(lv).length && bossLevels !== 1) warn("W_BALANCE", ["levels"], `${bossLevels} boss bölümü var (1 önerilir)`);

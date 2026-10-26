@@ -14,6 +14,7 @@ import { buildClaudePackage, buildDraft, cleanNotes, exportPatch, formatConfig, 
 import { mapEditor } from "./mapedit.js";
 import { COLLECTIONS, TABS, abilityChoices, addItem, checkNewId, countByTab, duplicateItem, removeItem, routeOf } from "./model.js";
 import { lookStrip, previewCard } from "./preview.js";
+import { clearTelemetry, exportTelemetry, loadTelemetry, summarize } from "../core/telemetry.js";
 
 const $app = document.getElementById("app");
 const F = SCHEMA.fields;
@@ -381,7 +382,29 @@ function tabDogrulama() {
   const seg = h("div", { class: "seg", role: "group", "aria-label": "Filtre" }, ...[["all", `Tümü (${all.length})`], ["error", `Hatalar (${e})`], ["warning", `Uyarılar (${w})`]].map(([k, l]) => btn(l, () => { S.filter = filter = k; renderAll(); }, "btn" + (filter === k ? " on" : ""), { "aria-pressed": String(filter === k) })));
   draw();
   const pill = h("div", { class: "health big " + (e ? "bad" : w ? "warn" : "ok"), role: "status" }, e ? `✖ ${e} hata: taslak kaydedilmez, oyun taslağı uygulamaz` : w ? `⚠ ${w} uyarı: oyun çalışır, ama gözden geçirin` : "✔ Konfigürasyon sağlıklı");
-  return [section("Doğrulama / sağlık", pill, seg, listEl)];
+  return [section("Doğrulama / sağlık", pill, seg, listEl), telemetrySection()];
+}
+
+// Yerel telemetri özeti (Aşama 1): yalnız bu tarayıcıdaki oyun denemeleri; kişisel veri yok, dışarı gönderim yok. Oyuncuya gösterilmez.
+function telemetrySection() {
+  const pc = (x) => (x === null ? "–" : "%" + Math.round(x * 100)), sec = (x) => (x === null ? "–" : Math.round(x) + " sn");
+  const draw = () => {
+    const ids = S.working && S.working.campaign ? S.working.campaign.order : [];
+    const rows = summarize(loadTelemetry(), ids);
+    const total = rows.reduce((a, r) => a + r.attempts, 0);
+    const name = (id) => (S.working.levels[id] && S.working.levels[id].name) || id;
+    return h("div", null,
+      h("p", { class: "muted" }, total ? `Toplam ${total} deneme kaydı (bölüm başına son 20 deneme; <50 KB).` : "Henüz kayıt yok: oyunu bu tarayıcıda oynayınca burada görünür."),
+      h("div", { class: "tablewrap" }, h("table", { class: "chg" },
+        h("thead", null, h("tr", null, ...["Bölüm", "Deneme", "Geçme oranı", "İlk deneme", "Ort. süre (kazanç)", "Ölüm", "Süre aşımı", "Yarıda bıraktı", "Ort. vuruş"].map((t) => h("th", { scope: "col" }, t)))),
+        h("tbody", null, ...rows.map((r) => h("tr", null, h("td", null, name(r.id)), h("td", null, String(r.attempts)), h("td", null, pc(r.passRate)), h("td", null, pc(r.firstTryRate)), h("td", null, sec(r.avgWinSec)), h("td", null, String(r.deaths)), h("td", null, String(r.timeouts)), h("td", null, String(r.quits)), h("td", null, r.avgHits === null ? "–" : r.avgHits.toFixed(1))))))));
+  };
+  const box = h("div", null, draw());
+  const refresh = () => box.replaceChildren(draw());
+  return section("Yerel telemetri (oyun denemeleri)", box, h("div", { class: "row" },
+    btn("⬇ JSON dışa aktar", () => download("telemetri.json", exportTelemetry(loadTelemetry()), "application/json")),
+    btn("Yenile", refresh),
+    btn("Telemetriyi sıfırla", () => { if (confirm("Bu tarayıcıdaki tüm telemetri kaydı silinsin mi? Bu geri alınamaz. Oyun kaydına dokunulmaz.")) { clearTelemetry(); refresh(); } }, "btn danger")));
 }
 
 function goto(pointer) {

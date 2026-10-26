@@ -1,13 +1,18 @@
 // Kayıt modülü (docs/mimari §7.3). Saf: DOM ve Three.js'e dokunmaz, Node'da test edilir (depolama parametre olarak verilir).
-// Anahtar: buyucu_save (ses tercihi buyucu_ses ayrıdır). Şema v1:
-//   { v, configHash, updatedAt, completed[], currentLevel, run, best: { score, levels: { id: { score, time } } } }
+// Anahtar: buyucu_save (ses tercihi buyucu_ses ayrıdır). Şema v2:
+//   { v, configHash, updatedAt, completed[], currentLevel, run, best: { score, levels: { id: { score, time, stars? } } } }
+// v1 -> v2: bölüm kimlikleri 27 bölümlük plana göç etti (forest -> w1-01 ...; js/core/legacyids.js) ve best.levels.<id>.stars (0-3, isteğe bağlı) eklendi.
+// Göç sessizdir ve kayıpsızdır: eski ham metin BACKUP_KEY altına bir kez yedeklenir, göç eden kayıt hemen yeniden yazılır.
 // Bölümler dizin yerine kimlikle adreslenir; S.level dizini yüklemede currentLevel kimliğinden hesaplanır.
 // Kayıt güvenilmez girdi sayılır (kullanıcı localStorage'ı değiştirebilir): her alan tür/aralık/kimlik açısından süzülür, oyun çökmez.
 
-export const SAVE_KEY = "buyucu_save";
-export const SAVE_SCHEMA_VERSION = 1;
+import { mapIdKeys, mapIdList, newLevelId } from "./legacyids.js";
 
-const ID_RE = /^[a-z][a-z0-9_]{1,23}$/;
+export const SAVE_KEY = "buyucu_save";
+export const SAVE_SCHEMA_VERSION = 2;
+export const BACKUP_KEY = "buyucu_save_backup_v1";
+
+const ID_RE = /^[a-z][a-z0-9_-]{1,23}$/;
 const FORBIDDEN = new Set(["__proto__", "constructor", "prototype"]);
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const num = (v, lo, hi, def) => (typeof v === "number" && Number.isFinite(v) ? Math.min(Math.max(v, lo), hi) : def);
@@ -19,8 +24,17 @@ function defaultStorage() {
   try { return globalThis.localStorage || null; } catch (e) { return null; } // özel mod / erişim engeli
 }
 
-// Sürüm zinciri: SAVES[n] kaydı n -> n+1 yükseltir (şimdilik v1 tek sürüm).
-const MIGRATIONS = {};
+// Sürüm zinciri: MIGRATIONS[n] kaydı n -> n+1 yükseltir. Girdiyi değiştirmez; bozuk alanlara dokunmadan geçirir (süzme sanitizeSave'dedir).
+const mergeBest = (a, b) => (isObj(a) && isObj(b) ? { ...a, ...b, score: Math.max(+a.score || 0, +b.score || 0), time: Math.max(+a.time || 0, +b.time || 0) } : a);
+export const MIGRATIONS = {
+  1: (raw) => {
+    const out = { ...raw, v: 2 };
+    if (Array.isArray(raw.completed)) out.completed = mapIdList(raw.completed);
+    if (typeof raw.currentLevel === "string") out.currentLevel = newLevelId(raw.currentLevel);
+    if (isObj(raw.best) && isObj(raw.best.levels)) out.best = { ...raw.best, levels: mapIdKeys(raw.best.levels, mergeBest) };
+    return out;
+  },
+};
 export function migrateSave(raw) {
   if (!isObj(raw)) return { ok: false, reason: "corrupt" };
   let v = raw.v;
@@ -82,7 +96,12 @@ export function sanitizeSave(raw, ctx) {
     if (isObj(raw.best.levels)) {
       for (const id of Object.keys(raw.best.levels)) {
         const b = raw.best.levels[id];
-        if (own(raw.best.levels, id) && ids.includes(id) && isObj(b)) best.levels[id] = { score: Math.floor(num(b.score, 0, 1e9, 0)), time: Math.floor(num(b.time, 0, 9999, 0)) };
+        if (own(raw.best.levels, id) && ids.includes(id) && isObj(b)) {
+          const e = { score: Math.floor(num(b.score, 0, 1e9, 0)), time: Math.floor(num(b.time, 0, 9999, 0)) };
+          const st = Math.floor(num(b.stars, 0, 3, 0));
+          if (st > 0) e.stars = st;
+          best.levels[id] = e;
+        }
       }
     }
   }
@@ -109,12 +128,22 @@ export function loadSave(ctx, storage = defaultStorage()) {
   if (text === null || text === undefined) return { status: "none", notices: [] };
   if (text.length > 200000) return { status: "corrupt", notices: ["kayıt çok büyük"] };
   let raw;
-  try { raw = JSON.parse(text); } catch (e) { return { status: "corrupt", notices: ["kayıt JSON değil"] }; }
+  try { raw = JSON.parse(text); } catch (e) { backupOnce(text, storage); return { status: "corrupt", notices: ["kayıt JSON değil"] }; }
   const m = migrateSave(raw);
   if (!m.ok) return { status: m.reason, notices: [] };
   const s = sanitizeSave(m.save, ctx);
-  if (!s) return { status: "corrupt", notices: ["kayıt alanları geçersiz"] };
+  if (!s) { backupOnce(text, storage); return { status: "corrupt", notices: ["kayıt alanları geçersiz"] }; }
+  if (raw.v < SAVE_SCHEMA_VERSION) { // eski sürüm: ham metni yedekle, göç etmiş kaydı hemen yaz (kayıpsız ve sessiz)
+    backupOnce(text, storage);
+    writeSave(s.save, storage);
+    s.notices.push(`kayıt v${raw.v} -> v${SAVE_SCHEMA_VERSION} göç etti`);
+  }
   return { status: "ok", save: s.save, notices: s.notices };
+}
+
+// yedek anahtarı yalnızca yoksa yazılır (ilk eski kayıt korunur); depolama hatasında sessiz
+function backupOnce(text, storage) {
+  try { if (storage.getItem(BACKUP_KEY) === null) storage.setItem(BACKUP_KEY, text); } catch (e) { /* kota / özel mod */ }
 }
 
 export function writeSave(save, storage = defaultStorage()) {

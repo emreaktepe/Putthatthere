@@ -2,7 +2,7 @@
 // Oyun koduna yeni davranış/model/dekor eklenince buraya da eklenir; admin formu seçenekleri buradan alır.
 // DOM ve Three.js'e dokunmaz (Node'da çalışır).
 
-export const ID_RE = /^[a-z][a-z0-9_]{1,23}$/;
+export const ID_RE = /^[a-z][a-z0-9_-]{1,23}$/; // tire: bölüm/tema kimlikleri (w1-01, forest-dusk)
 export const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 export const FORBIDDEN_KEYS = ["__proto__", "constructor", "prototype"];
 export const MAX_CONFIG_BYTES = 1024 * 1024;

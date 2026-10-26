@@ -9,6 +9,7 @@ import { RARITY_LABEL, countValue, enemyIcon, foeIdsOf, perkIcon, perkRarity, po
 import { button, confirmButton, divider, mount, ornaments, reducedMotion, scope } from "./screens.js";
 import { UI, objectiveText } from "./text.js";
 import { BRAND } from "./brandmodel.js";
+import { starText } from "../game/stars.js";
 
 // anlatı satırları -> konuşmacı portreli diyalog balonları
 export function dialogView(lines) {
@@ -39,14 +40,21 @@ export function coverImg(L) {
   return im ? h("div", { class: "cover" }, im) : null;
 }
 
+// DDA bilgi satırı: yardım kademesi varsa ne değiştiğini söyler (şeffaflık; metin config strings.dda). Kademe 1+ için kademe-1 anahtarı: notice<tier+1>
+export function ddaNote(dda) {
+  const t = dda && dda.tier > 0 && STRINGS.dda ? STRINGS.dda["notice" + (dda.tier + 1)] : "";
+  return t ? h("p", { class: "dda-note", role: "status" }, icon("shield"), h("span", null, t)) : null;
+}
+
 // ---------- Bölüm girişi ----------
-export function levelIntroScreen({ idx, practice, onEnter, onBack }) {
+export function levelIntroScreen({ idx, practice, onEnter, onBack, dda = null }) {
   const L = LEVELS[idx], T = STRINGS.level, sc = scope();
   const title = fmt(T.title, { n: idx + 1, name: L.name });
   const node = h("section", { class: "card screen-card intro-card gold-frame", "aria-label": title },
     ornaments(),
     h("header", { class: "card-head" },
       practice ? h("span", { class: "badge practice-chip" }, icon("refresh"), UI.map.practice) : null,
+      L.world ? h("small", { class: "eyebrow world" }, L.world) : null,
       h("h2", null, title), divider()),
     h("div", { class: "ic-grid" },
       coverImg(L),
@@ -55,6 +63,7 @@ export function levelIntroScreen({ idx, practice, onEnter, onBack }) {
         h("div", { class: "obj" }, icon("target"), h("span", null, objectiveText(L))),
         h("div", { class: "obj-foes" }, h("small", { class: "eyebrow" }, UI.map.foes), foeChips(L)),
         h("p", { class: "stat-line" }, icon("hourglass"), h("span", null, `${UI.map.time}: `, h("b", null, `${L.time} ${UI.map.sec}`)), h("i", { class: "dot", "aria-hidden": "true" }), icon("heart"), h("span", null, `${UI.result.hp}: `, h("b", null, `${Math.ceil(S.hp)}/${S.maxHp}`))),
+        ddaNote(dda),
         h("p", { class: "hint" }, T.hint))),
     h("div", { class: "btn-row" }, button(T.enter, onEnter, { ic: "play", autofocus: true }), button(UI.result.back, onBack, { kind: "ghost", ic: "back" })));
   mount(node, sc, { music: "menu", cls: "dim card-stage" });
@@ -119,7 +128,17 @@ function perkCard(p, onPick, locked) {
 
 // ---------- Bölüm sonu ----------
 // rewards: [{ kind: "weapon" | "ability", id }]; choices: perk listesi; onPick(perk) | onBack (alıştırma)
-export function levelClearScreen({ idx, bonus, levelBonus, total, prevTotal, rewards, practice, choices, onPick, onBack }) {
+// stars: 0-3 (alıştırmada 0 = satır gösterilmez); bossLevel: ★2 açıklaması "üç vuruş" olur
+export function starsRow(stars, bossLevel = false) {
+  const B = UI.stars.badges, n = Math.min(Math.max(stars | 0, 0), B.length);
+  if (!n) return null;
+  const desc = (i) => (i === 1 && bossLevel ? UI.stars.bossDesc : B[i].desc);
+  return h("div", { class: "sum-row stars-row", role: "group", "aria-label": fmt(UI.stars.count, { n }) },
+    h("span", { class: "stars-name" }, icon("star"), h("b", null, B[n - 1].name), h("small", null, desc(n - 1))),
+    h("span", { class: "stars-glyph", "aria-hidden": "true", title: B.map((b, i) => `${i < n ? "★" : "☆"} ${b.name}: ${desc(i)}`).join(" · ") }, starText(n)));
+}
+
+export function levelClearScreen({ idx, bonus, levelBonus, total, prevTotal, rewards, practice, choices, onPick, onBack, stars = 0 }) {
   const L = LEVELS[idx], C = STRINGS.clear, sc = scope(), locked = { v: false };
   const bonusNum = h("b", { class: "num" }), lvlNum = h("b", { class: "num" }), totalNum = h("b", { class: "num total" });
   const [pre] = String(C.bonus).split("{bonus}");
@@ -127,13 +146,14 @@ export function levelClearScreen({ idx, bonus, levelBonus, total, prevTotal, rew
   const summary = h("div", { class: "summary" },
     h("div", { class: "sum-row" }, h("span", null, icon("hourglass"), pre.replace(/[:：]\s*\+?$/, "") || UI.result.timeBonus), h("span", null, "+", bonusNum)),
     h("div", { class: "sum-row" }, h("span", null, icon("star"), UI.result.levelBonus), h("span", null, "+", lvlNum)),
+    practice ? null : starsRow(stars, L.objective === "miniboss" || L.objective === "boss"),
     h("div", { class: "sum-row total-row" }, h("span", null, UI.result.total), h("span", null, icon("star"), totalNum)));
   const node = h("section", { class: "card screen-card clear-card gold-frame", "aria-label": fmt(C.title, { n: idx + 1 }) },
     ornaments(),
     h("header", { class: "card-head" }, practice ? h("span", { class: "badge" }, UI.result.practiceDone) : null, h("h2", null, fmt(C.title, { n: idx + 1 }))),
     h("div", { class: "cl-grid" },
       h("div", { class: "cl-left" }, summary, ...rewards.map((r) => rewardCard(r.kind, r.id))),
-      h("div", { class: "cl-right" }, dialogView(L.outro))),
+      h("div", { class: "cl-right" }, dialogView(L.outro), L.hook ? h("p", { class: "hook" }, L.hook) : null)),
     practice
       ? h("div", { class: "btn-row" }, button(UI.result.back, onBack, { ic: "back", autofocus: true }))
       : h("div", { class: "perk-box" }, h("h3", { class: "perk-head" }, C.pickPerk, divider()), h("div", { class: "perks" }, ...choices.map((p) => perkCard(p, onPick, locked)))));
@@ -144,13 +164,15 @@ export function levelClearScreen({ idx, bonus, levelBonus, total, prevTotal, rew
 }
 
 // ---------- Yenilgi ----------
-export function gameOverScreen({ line, idx, practice, onRetry, onMap, onRestart }) {
+export function gameOverScreen({ line, idx, practice, onRetry, onMap, onRestart, dda = null, tip = "" }) {
   const T = STRINGS.gameOver, sc = scope();
   const node = h("section", { class: "card screen-card over-card gold-frame", "aria-label": "Yenilgi" },
     ornaments(),
     h("div", { class: "over-sigil", "aria-hidden": "true" }, "☠"),
     dialogView([line]),
     h("p", { class: "stat-line" }, fmt(T.stats, { n: idx + 1, score: S.score })),
+    ddaNote(dda),
+    tip ? h("p", { class: "tip-line" }, h("b", null, UI.result.tip + ": "), tip) : null,
     h("div", { class: "btn-row col" },
       button(T.retry, onRetry, { small: T.retryNote, autofocus: true }),
       button(UI.result.back, onMap, { kind: "ghost", ic: "back" }),
@@ -159,7 +181,7 @@ export function gameOverScreen({ line, idx, practice, onRetry, onMap, onRestart 
 }
 
 // ---------- Final ----------
-export function finalScreen({ outro, score, onMap, onReplay }) {
+export function finalScreen({ outro, score, onMap, onReplay, stars = 0 }) {
   const sc = scope();
   const node = h("section", { class: "card screen-card final-card gold-frame", "aria-label": STRINGS.finalTitle },
     ornaments(),
@@ -168,6 +190,7 @@ export function finalScreen({ outro, score, onMap, onReplay }) {
     dialogView(outro),
     h("p", { class: "final-line" }, STRINGS.finalLine),
     h("p", { class: "final-score" }, rich(STRINGS.finalScore, { score })),
+    stars ? h("div", { class: "summary final-stars" }, starsRow(stars, true)) : null,
     h("div", { class: "btn-row" },
       button(UI.result.seeMap, onMap, { ic: "play", autofocus: true }),
       confirmButton(STRINGS.replay, UI.result.confirm, onReplay, sc, { kind: "ghost" })),

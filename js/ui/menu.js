@@ -6,6 +6,7 @@ import { QUALITY_LABELS, nextQuality, readQuality, writeQuality } from "../core/
 import { setWizardQuality } from "../render/wizard.js";
 import { artBg, artOr, warmArt } from "./art.js";
 import { emblemImg, sparks, wordmark } from "./brand.js";
+import { ddaEnabled, setDdaEnabled } from "../game/track.js";
 import { BRAND } from "./brandmodel.js";
 import { icon, iconIfArt } from "./icons.js";
 import { careerStats, continueCardModel, storyLines } from "./models.js";
@@ -49,11 +50,13 @@ export function showMenu({ hasSave, saveInfo, saveName, save, notice, onContinue
   let q = readQuality(globalThis.localStorage);
   const qLabel = () => `${UI.menu.graphics}: ${QUALITY_LABELS[q]}`;
   const gfx = button(qLabel(), () => { q = nextQuality(q); writeQuality(globalThis.localStorage, q); setWizardQuality(q); gfx.querySelector(".gbtn-l").textContent = qLabel(); }, { kind: "mbtn", ic: "gear", aria: "Grafik kalitesi, değiştirmek için seç" });
+  const helpLabel = () => `${UI.menu.help}: ${ddaEnabled() ? UI.menu.on : UI.menu.off}`;
+  const help = button(helpLabel(), () => { setDdaEnabled(!ddaEnabled()); help.querySelector(".gbtn-l").textContent = helpLabel(); }, { kind: "mbtn", ic: "shield" });
   const list = [];
   if (hasSave) list.push(button(UI.menu.continue, onContinue, { kind: "mbtn primary wide", ic: "play", small: saveName ? `${saveName}${saveInfo ? " · " + saveInfo : ""}` : saveInfo || "", autofocus: true }));
   list.push(hasSave ? confirmButton(UI.menu.newGame, UI.menu.confirmNew, onNew, sc, { kind: "mbtn", ic: "spark" }) : button(UI.menu.startGame, onNew, { kind: "mbtn primary wide", ic: "play", autofocus: true }));
   if (hasSave && onMap) list.push(button(UI.menu.map, onMap, { kind: "mbtn", ic: "map" }));
-  list.push(sound, gfx);
+  list.push(sound, gfx, help);
   const bg = artBg(GAME.menuBackground, "menu-art");
   const stats = careerStats(save, LEVELS.length);
   const idx = save ? LEVEL_IDS.indexOf(save.currentLevel) : -1;

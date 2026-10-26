@@ -2,6 +2,7 @@
 // DOM'a dokunmaz (Three.js yalnızca ortak vektörler için).
 import * as THREE from "three";
 import { ABILITY_ORDER, GAME, PLAYER, WEAPON_ORDER } from "./data.js";
+import { DDA_NEUTRAL } from "../game/dda.js";
 
 export const S = {};
 let snapshot = null;
@@ -26,6 +27,8 @@ export const restoreSnapshot = () => { Object.assign(S, JSON.parse(JSON.stringif
 export const RT = {
   running: false, cooldown: 0, invuln: 0, spawnTimer: 0, bossSummon: 0, bossRef: null, totemsDown: 0, collected: 0,
   timeLeft: 0, shieldT: 0, timeslowT: 0, stoneReady: false, shake: 0, paused: false, killBase: 0,
+  // Aşama 1: bölüm süresi (sn), alınan vuruş sayısı, DDA yardım kademesi/çarpanları, DDA ek canı, ilk-giriş ipucu kuyruğu [{ at, text }]
+  elapsed: 0, lastKill: 0, hits: 0, dda: { ...DDA_NEUTRAL }, ddaHp: 0, hintQ: [],
 };
 export const abilCd = {};
 export function resetAbilityCooldowns() { for (const id of ABILITY_ORDER) abilCd[id] = 0; }

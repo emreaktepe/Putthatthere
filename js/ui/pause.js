@@ -9,6 +9,7 @@ import { $ } from "../core/util.js";
 import { quitToMap } from "../game/flow.js";
 import { currentPreset, cyclePreset } from "../render/camera.js";
 import { releaseInput } from "../game/input.js";
+import { ddaEnabled, setDdaEnabled } from "../game/track.js";
 import { icon } from "./icons.js";
 import { isPaused, pauseReduce } from "./models.js";
 import { UI } from "./text.js";
@@ -16,10 +17,11 @@ import { BRAND } from "./brandmodel.js";
 
 const T = UI.hud;
 let state = "play";
-let card = null, pauseView = null, leaveView = null, soundBtn = null, camBtn = null, resumeBtn = null, cancelBtn = null, lastFocus = null;
+let card = null, pauseView = null, leaveView = null, soundBtn = null, camBtn = null, helpBtn = null, resumeBtn = null, cancelBtn = null, lastFocus = null;
 
 const muteBtn = () => $("mute");
 const camLabel = () => `${T.camera}: ${currentPreset().name}`;
+const helpLabel = () => `${UI.menu.help}: ${ddaEnabled() ? UI.menu.on : UI.menu.off}`;
 const soundLabel = () => (muteBtn().getAttribute("aria-pressed") === "true" ? T.soundOff : T.soundOn);
 
 function gbtn(label, fn, kind = "ghost", ic = "") {
@@ -33,9 +35,11 @@ function build() {
   soundBtn = gbtn(soundLabel(), () => { muteBtn().click(); soundBtn.querySelector(".gbtn-l").textContent = soundLabel(); }, "ghost", "sound");
   // kamera düğmesi kompakt (mobil) HUD'da üst çubuktan kalktı; burada erişilebilir (masaüstünde V / Z-C kısayolları da çalışır)
   camBtn = gbtn(camLabel(), () => { cyclePreset(); camBtn.querySelector(".gbtn-l").textContent = camLabel(); }, "ghost", "target");
+  // yardım (DDA) anahtarı: yalnızca duraklatma kartında ve menüde; varsayılan açık, tercih buyucu_ayar'da saklanır
+  helpBtn = gbtn(helpLabel(), () => { setDdaEnabled(!ddaEnabled()); helpBtn.querySelector(".gbtn-l").textContent = helpLabel(); }, "ghost", "shield");
   pauseView = h("div", { class: "pause-view" },
     h("img", { class: "pause-emb", src: BRAND.emblem256, alt: "", width: 40, height: 40, draggable: "false", "aria-hidden": "true" }), h("h2", { id: "pause-title" }, T.paused), h("p", { class: "hint" }, T.pauseNote),
-    h("div", { class: "btn-row col" }, resumeBtn, soundBtn, camBtn, gbtn(T.toMap, () => apply("leave"), "ghost", "map")),
+    h("div", { class: "btn-row col" }, resumeBtn, soundBtn, camBtn, helpBtn, gbtn(T.toMap, () => apply("leave"), "ghost", "map")),
     h("p", { class: "hint keys" }, T.pauseKeys));
   cancelBtn = gbtn(T.cancel, () => apply("pause"), "primary", "back");
   leaveView = h("div", { class: "pause-view", hidden: true },
@@ -50,7 +54,7 @@ function show(view) {
   pauseView.hidden = view !== "pause";
   leaveView.hidden = view !== "leave";
   card.setAttribute("aria-labelledby", view === "leave" ? "leave-title" : "pause-title");
-  if (view === "pause") { soundBtn.querySelector(".gbtn-l").textContent = soundLabel(); camBtn.querySelector(".gbtn-l").textContent = camLabel(); }
+  if (view === "pause") { soundBtn.querySelector(".gbtn-l").textContent = soundLabel(); camBtn.querySelector(".gbtn-l").textContent = camLabel(); helpBtn.querySelector(".gbtn-l").textContent = helpLabel(); }
 }
 
 function apply(ev) {

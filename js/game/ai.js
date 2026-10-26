@@ -53,7 +53,7 @@ export function bossLogic(e, dt, es) {
   const edt = dt * es;
   if (e.bp === 1) {
     RT.bossSummon -= edt;
-    if (RT.bossSummon <= 0) { RT.bossSummon = 6; e.atkT = 0.5; for (const id of e.d.summons1 || []) spawnEnemy(id); }
+    if (RT.bossSummon <= 0) { RT.bossSummon = 6; e.atkT = 0.5; for (const id of e.d.summons1 || []) if (liveCount() < LEVELS[S.level].cap) spawnEnemy(id); }
   } else if (e.bp === 2) {
     RT.bossSummon -= edt;
     if (RT.bossSummon <= 0) {

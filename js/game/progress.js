@@ -83,10 +83,13 @@ export function practiceKit(levels, index, weaponOrder) {
   return { unlocked, abilities, weapon: unlocked[0] };
 }
 
-// En iyi sonucu günceller (yeni nesne döner). time: kalan saniye (yüksek = iyi), score: bölüm puanı
-export function recordBest(best, id, { score, time }) {
+// En iyi sonucu günceller (yeni nesne döner). time: kalan saniye (yüksek = iyi), score: bölüm puanı, stars: 0-3 (verilmezse dokunulmaz)
+export function recordBest(best, id, { score, time, stars }) {
   const prev = best.levels[id] || { score: 0, time: 0 };
-  return { score: best.score, levels: { ...best.levels, [id]: { score: Math.max(prev.score, Math.floor(score)), time: Math.max(prev.time, Math.floor(time)) } } };
+  const e = { score: Math.max(prev.score, Math.floor(score)), time: Math.max(prev.time, Math.floor(time)) };
+  const st = Math.max(Math.floor(prev.stars) || 0, Math.min(Math.max(Math.floor(stars) || 0, 0), 3));
+  if (st > 0) e.stars = st;
+  return { score: best.score, levels: { ...best.levels, [id]: e } };
 }
 
 // Harita çizim modeli (SVG'den bağımsız, saf). pts: order ile aynı sırada [{x,y}]; useVia=false ise kenarlara hafif varsayılan kıvrım verilir

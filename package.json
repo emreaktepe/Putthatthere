@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node --test \"tests/**/*.test.js\"",
     "validate": "node tools/validate-config.mjs data/game.config.json",
-    "art": "node tools/check-art.mjs"
+    "art": "node tools/check-art.mjs",
+    "balance": "node tools/balance-sim.mjs"
   }
 }

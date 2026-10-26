@@ -23,15 +23,52 @@ test("repo JSON'u doğrulayıcıdan hatasız ve uyarısız geçer", () => {
   assert.deepEqual(res.warnings, []);
 });
 
-test("LEVELS eşdeğer (EK: id, map; intro/outro satır nesnesi)", () => {
-  assert.equal(A.LEVELS.length, L.LEVELS.length);
-  A.LEVELS.forEach((lv, i) => {
-    const got = strip(lv, ["id", "map", "image", "nodeImage"]);
+// AŞAMA 1 + PERDE I BİLİNÇLİ DEĞİŞİKLİKLER (docs/strateji/oyun-tasarimi-zorluk-ve-bolum-plani.md §12 ve "Perde I uygulama notları"):
+// eski 9 bölüm yeni kimliklere taşındı (LEGACY_LEVEL_IDS), araya 2 yeni bölüm girdi (w1-04, w1-06); metinler (intro/outro/hook/hint), ödül takvimi ve
+// aşağıdaki sayılar bilinçli değişti. Tema, hedef türü (pass hariç: hayatta kal -> zamanlı kristal), ad, totem konumları legacy ile aynı kalır.
+// Sayılar VARSAYIMDIR (model: js/config/balance.js).
+import { LEGACY_LEVEL_IDS } from "../js/core/legacyids.js";
+const BALANCE = {
+  0: { goal: 25, time: 105, start: { ghost: 3 }, spawn: [{ ghost: 1 }], every: 8, cap: 6 },
+  1: { goal: 29, time: 120, start: { ghost: 1, bat: 1 }, spawn: [{ bat: 1, ghost: 1 }], every: 12, cap: 6 },
+  2: { goal: 33, time: 140, start: { ghost: 1, bat: 1, golem: 1 }, spawn: [{ golem: 1, bat: 1 }], every: 12, cap: 7 },
+  3: { goal: 38, time: 155, start: { ghost: 2, bat: 2, golem: 1, archer: 2 }, spawn: [{ ghost: 1, archer: 1 }], every: 9, cap: 9 },
+  4: { objective: "crystal", goal: 31, time: 105, start: { ghost: 2, bat: 3, wolf: 4 }, spawn: [{ wolf: 1, bat: 1 }], every: 8, cap: 11, crystals: undefined },
+  5: { time: 200, start: { ghost: 1, ember: 3, golem: 1 }, spawn: [{ ember: 1, ghost: 1 }], every: 10, cap: 8 },
+  6: { goal: 42, time: 170 },
+  7: { time: 120, start: { knight: 1, archer: 2, wolf: 1 }, spawn: [{ archer: 1, ghost: 1 }], every: 6, cap: 6 },
+  8: { time: 180 },
+};
+const EXTRA = ["id", "map", "image", "nodeImage", "hint", "reward", "ability", "world", "hook", "objectiveText"];
+test("LEVELS: eski 9 bölüm yeni kimliklerle eşdeğer (sayılar BALANCE; EK: id, map, görsel, hint, reward/ability, world, hook, objectiveText)", () => {
+  assert.equal(A.LEVELS.length, L.LEVELS.length + 2);
+  assert.deepEqual(A.LEVEL_IDS, ["w1-01", "w1-02", "w1-03", "w1-04", "w1-05", "w1-06", "w1-07", "w1-08", "w1-09", "w2-02", "w3-09"]);
+  const oldIds = ["forest", "cave", "golems", "graveyard", "pass", "village", "crystals", "tower", "castle"];
+  oldIds.forEach((oid, i) => {
+    const lv = A.LEVELS[A.LEVEL_IDS.indexOf(LEGACY_LEVEL_IDS[oid])];
+    assert.ok(lv, oid);
+    const got = strip(lv, EXTRA);
     got.intro = got.intro.map((l) => strip(l, ["color"]));
     got.outro = got.outro.map((l) => strip(l, ["color"]));
-    const want = { ...L.LEVELS[i], intro: L.LEVELS[i].intro.map(parseLine), outro: L.LEVELS[i].outro.map(parseLine) };
-    assert.deepEqual(got, want, `bölüm ${i + 1}`);
+    // hikâye metinleri senaryo belgesiyle yenilendi (w1-*); köprü bölümlerinde (w2-02, w3-09) eskisiyle aynı kalır
+    const bridge = i === 6 || i === 8;
+    const want = strip({ ...L.LEVELS[i], ...BALANCE[i] }, EXTRA);
+    for (const k of Object.keys(want)) if (want[k] === undefined) delete want[k];
+    if (bridge) { want.intro = L.LEVELS[i].intro.map(parseLine); want.outro = L.LEVELS[i].outro.map(parseLine); } else { want.intro = got.intro; want.outro = got.outro; }
+    assert.deepEqual(got, want, oid + " -> " + LEGACY_LEVEL_IDS[oid]);
   });
+});
+
+test("Perde I ödül takvimi (plan §4.4) ve yeni bölümler", () => {
+  const rw = (id) => { const lv = A.LEVELS[A.LEVEL_IDS.indexOf(id)]; return [lv.reward || null, lv.ability || null]; };
+  assert.deepEqual(rw("w1-01"), ["frost", null]); assert.deepEqual(rw("w1-02"), [null, null]); assert.deepEqual(rw("w1-03"), ["arcane", null]);
+  assert.deepEqual(rw("w1-04"), [null, "shield"]); assert.deepEqual(rw("w1-05"), ["lightning", null]); assert.deepEqual(rw("w1-06"), [null, "blink"]);
+  assert.deepEqual(rw("w1-07"), [null, null]); assert.deepEqual(rw("w1-08"), ["poison", null]);
+  assert.deepEqual(rw("w1-09"), ["nova", "timeslow"], "geçici: Perde II'ye kadar nova/timeslow burada"); assert.deepEqual(rw("w2-02"), ["meteor", null]);
+  const w4 = A.LEVELS[3], w6 = A.LEVELS[5];
+  assert.deepEqual([w4.objective, w4.goal, w4.time], ["survive", 60, 60]); assert.equal(A.THEMES[w4.theme].id, "forest-dusk");
+  assert.deepEqual([w6.objective, w6.goal, w6.totems.length], ["totem", 1, 1]); assert.equal(A.THEMES[w6.theme].id, "cave-ice");
+  assert.equal(A.LEVELS[A.LEVEL_IDS.indexOf("w1-09")].objectiveText, "Baş Nöbetçi'yi yen!");
 });
 
 test("WEAPONS / WEAPON_ORDER eşdeğer (EK: image, imageSmall)", () => {
@@ -58,29 +95,34 @@ test("ENEMIES / ENEMY_NAMES eşdeğer (EK: name, shortName, scale, model, summon
   // koda gömülü kimlikler artık veride
   assert.equal(A.ENEMIES.totem.summon, "ghost");
   assert.deepEqual(A.ENEMIES.boss.summons1, ["ghost", "ghost"]);
-  assert.deepEqual(A.ENEMIES.boss.summons2, ["archer", "bat"]);
+  assert.deepEqual(A.ENEMIES.boss.summons2, ["archer"]); // Aşama 1 bilinçli: eski ["archer","bat"]; final boss modeli %28 -> ~%37 (plan §3.8-D)
   assert.equal(A.ENEMIES.knight.shortName, "Şövalye");
   assert.equal(A.ENEMIES.boss.shortName, "Kral");
   assert.equal(A.TOTEM_ID, "totem");
 });
 
 test("THEMES / VIS / FLOOR_KIND eşdeğer (EK: floorKind, scenery, seed, id)", () => {
-  assert.deepEqual(A.THEMES.map((t) => strip(t, ["floorKind", "scenery", "seed", "id"])), L.THEMES);
-  assert.deepEqual(A.THEMES.map((t) => t.floorKind), L.FLOOR_KIND);
-  assert.deepEqual(A.THEMES.map((t) => t.seed), L.THEMES.map((_, i) => i)); // drawFloor tohumu eskiden tema dizinine eşitti
-  assert.deepEqual(A.VIS, L.VIS);
+  // ilk 9 tema legacy ile aynı; forest-dusk (9) ve cave-ice (10) Perde I ile eklendi (sıra değişmez: boss faz 3 müziği 8. dizinde kalır)
+  assert.equal(A.THEMES.length, L.THEMES.length + 2);
+  assert.deepEqual(A.THEMES.slice(0, 9).map((t) => strip(t, ["floorKind", "scenery", "seed", "id"])), L.THEMES);
+  assert.deepEqual(A.THEMES.slice(0, 9).map((t) => t.floorKind), L.FLOOR_KIND);
+  assert.deepEqual(A.THEMES.map((t) => t.seed), A.THEMES.map((_, i) => i)); // drawFloor tohumu tema dizinine eşit
+  assert.deepEqual(A.THEMES.slice(9).map((t) => t.id), ["forest-dusk", "cave-ice"]);
+  assert.deepEqual(A.VIS.slice(0, 9), L.VIS);
 });
 
 test("MUSIC eşdeğer (EK: fifth yalnız tema 2'de); boss faz 3 = eski P3", () => {
-  assert.deepEqual(A.MUSIC.map((m, i) => (i === 2 ? strip(m, ["fifth"]) : m)), L.MUSIC);
-  assert.deepEqual(A.MUSIC.map((m) => !!m.fifth), L.MUSIC.map((_, i) => i === 2));
+  assert.deepEqual(A.MUSIC.slice(0, 9).map((m, i) => (i === 2 ? strip(m, ["fifth"]) : m)), L.MUSIC);
+  assert.deepEqual(A.MUSIC.slice(0, 9).map((m) => !!m.fifth), L.MUSIC.map((_, i) => i === 2));
   assert.deepEqual(Object.keys(A.MUSIC_P3), ["8"]);
   assert.deepEqual(A.MUSIC_P3[8], L.P3);
 });
 
 test("metinler eşdeğer (açılış, ölüm repliği, hedef şablonları, final)", () => {
   assert.equal(A.STRINGS.opening, L.OPENING);
-  assert.deepEqual(A.STRINGS.deathLines.map((l) => strip(l, ["color"])), L.DEATH_LINES.map(parseLine));
+  // Perde I: 12 satır (senaryo belgesi §2.6); ilk 3 satır legacy ile aynı
+  assert.equal(A.STRINGS.deathLines.length, 12);
+  assert.deepEqual(A.STRINGS.deathLines.slice(0, 3).map((l) => strip(l, ["color"])), L.DEATH_LINES.map(parseLine));
   assert.equal(A.GAME.startHp, L.START_HP);
   assert.equal(A.GAME.baseSpeed, L.BASE_SPEED);
   // eski objectiveHtml metinleri
@@ -126,6 +168,8 @@ test("PERKS: kimlik/ad/açıklama/sıra eşdeğer", () => {
   assert.deepEqual(A.PERKS.map((p) => [p.id, p.name, p.desc]), legacy.map((p) => [p.id, p.name, p.desc]));
 });
 
+// AŞAMA 1 BİLİNÇLİ DEĞİŞİKLİK: bu 5 perk'e azami yığın eklendi (eski: sınırsız). Beklenen ok() = eski ok() VE yığın < sınır.
+const NEW_LIMITS = { speed: 3, power: 5, haste: 4, magnet: 2, stone: 3 };
 test("PERKS: ok() ve apply() rastgele oyun dizilerinde eski kapanışlarla birebir", () => {
   const R = rng(12345);
   let steps = 0;
@@ -135,10 +179,10 @@ test("PERKS: ok() ve apply() rastgele oyun dizilerinde eski kapanışlarla bireb
     for (let step = 0; step < 24; step++) {
       // eski ok(): kapanış S1'i okur; yeni ok(S2)
       legacy.forEach((p, i) => {
-        const oldOk = p.ok ? !!p.ok() : true;
+        const oldOk = (p.ok ? !!p.ok() : true) && (NEW_LIMITS[p.id] === undefined || (S1.perkCount[p.id] || 0) < NEW_LIMITS[p.id]);
         assert.equal(A.PERKS[i].ok(S2), oldOk, `ok ${p.id} run ${run} adım ${step}`);
       });
-      const pool = legacy.map((p, i) => i).filter((i) => (legacy[i].ok ? legacy[i].ok() : true));
+      const pool = legacy.map((p, i) => i).filter((i) => (legacy[i].ok ? legacy[i].ok() : true) && (NEW_LIMITS[legacy[i].id] === undefined || (S1.perkCount[legacy[i].id] || 0) < NEW_LIMITS[legacy[i].id]));
       if (!pool.length) break;
       const i = pool[Math.floor(R() * pool.length)];
       legacy[i].apply(); A.PERKS[i].apply(S2);

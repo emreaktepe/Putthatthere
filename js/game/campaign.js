@@ -64,7 +64,8 @@ export function endPractice() {
 export const inPractice = () => !!camp.practice;
 
 // bölüm sonucunu en iyilere işler (puan: bölümde kazanılan, süre: kalan saniye) ve kaydı yazar
-export function recordResult(id, score, time) {
-  camp.best = recordBest(camp.best, id, { score, time });
+// stars: 0-3 (alıştırmada verilmez: yıldız yazılmaz)
+export function recordResult(id, score, time, stars = 0) {
+  camp.best = recordBest(camp.best, id, { score, time, stars: camp.practice ? 0 : stars });
   camp.best.score = Math.max(camp.best.score, Math.floor((camp.practice ? 0 : S.score)));
 }

@@ -44,6 +44,7 @@ export function killEnemy(e) {
   const i = enemies.indexOf(e);
   if (i < 0) return;
   e.dead = true;
+  RT.lastKill = RT.elapsed;
   enemies.splice(i, 1);
   if (e.blob) scene.remove(e.blob);
   retireEnemy(e); // 3B modeller ~0.35 sn "dead" animasyonu oynar; oynanış (hedefleme, çarpışma, puan, drop) yukarıda/aşağıda anında işlenir
@@ -58,7 +59,7 @@ export function killEnemy(e) {
       S.kills++;
       if (S.vampire && S.kills % 12 === 0 && S.hp < S.maxHp) { S.hp = Math.min(S.hp + 1, S.maxHp); burst(wizard.position.clone().setY(1.5), 0xff3b5c, 8); }
     }
-    if (Math.random() < e.d.drop) placePickup("heart", e.mesh.position.clone().setY(0.9));
+    if (Math.random() < e.d.drop * RT.dda.heartMul) placePickup("heart", e.mesh.position.clone().setY(0.9));
   }
   if (e.d.ai === "static") {
     RT.totemsDown++;
@@ -81,6 +82,7 @@ export function damagePlayer(n) {
   }
   if (RT.stoneReady) { n *= 0.5; RT.stoneReady = false; }
   S.hp -= n;
+  RT.hits++;
   RT.invuln = 1.5;
   burst(wizard.position.clone().setY(1.2), 0xff4d6d);
   sfx("hurt");
