@@ -117,7 +117,7 @@ export function addCloud(x, z, dmg, o) {
   m.scale.set(o.r, 0.9, o.r);
   m.position.set(x, 0.6, z);
   scene.add(m);
-  clouds.push({ x, z, r: o.r, life: o.life, tick: 0.5, dmg, m });
+  clouds.push({ x, z, r: o.r, life: o.life, tick: 0.5, dmg, m, element: o.element || null });
 }
 
 export function removeObj(o) {

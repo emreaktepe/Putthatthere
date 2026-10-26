@@ -11,11 +11,11 @@ const model = Object.fromEntries(campaignBalance(JSON.parse(fs.readFileSync(cfgP
 const pct = (x) => (x * 100).toFixed(0).padStart(3) + "%";
 console.log(`YAKLAŞIK denge simülasyonu · N=${N} koşu/bot/bölüm · seed=${seed}${dda ? ` · DDA ${dda}. ölüm kademesi` : ""}`);
 console.log("Uyarı: basitleştirilmiş 2B model; botlar insan değildir, kalibre edilmemiştir. Yalnızca sıralama/fark okunmalı.\n");
-console.log("bölüm       hedef  model | yürüyen  orta   iyi | orta: ort.sn  ort.hasar  süre-aşımı | orta hedef bandında?");
+console.log("bölüm       hedef  model | yürüyen acemi  orta   iyi  usta | orta: ort.sn  ort.hasar  süre-aşımı  A20 | orta hedef bandında?");
 const rows = A.LEVELS.map((L, i) => {
   const r = Object.fromEntries(Object.values(PROFILES).map((p) => [p.id, runMany(A, i, p, N, seed, { dda })]));
   const t = TARGET_P[L.id], ok = t === undefined ? "-" : Math.abs(r.orta.winRate - t) <= BAND ? "evet" : r.orta.winRate > t ? "kolay" : "zor";
-  console.log(`${L.id.padEnd(11)} ${t === undefined ? "  - " : pct(t)}  ${model[L.id] ? pct(model[L.id].p) : "  -"} |  ${pct(r.yuruyen.winRate)}   ${pct(r.orta.winRate)}  ${pct(r.iyi.winRate)} |  ${r.orta.avgSec.toFixed(0).padStart(7)} ${r.orta.avgDmg.toFixed(1).padStart(10)} ${pct(r.orta.timeoutRate).padStart(11)} | ${ok}`);
+  console.log(`${L.id.padEnd(11)} ${t === undefined ? "  - " : pct(t)}  ${model[L.id] ? pct(model[L.id].p) : "  -"} |  ${pct(r.yuruyen.winRate)}  ${pct(r.acemi.winRate)}  ${pct(r.orta.winRate)}  ${pct(r.iyi.winRate)}  ${pct(r.usta.winRate)} |  ${r.orta.avgSec.toFixed(0).padStart(7)} ${r.orta.avgDmg.toFixed(1).padStart(10)} ${pct(r.orta.timeoutRate).padStart(11)} ${r.orta.a20.toFixed(2).padStart(5)} | ${ok}`);
   return { id: L.id, ...r };
 });
 if (process.argv.includes("--json")) console.log(JSON.stringify(rows));

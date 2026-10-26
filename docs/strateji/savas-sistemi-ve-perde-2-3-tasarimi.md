@@ -697,3 +697,85 @@ Mermi uçuş süresi d/v; Yıldırım hedefi menzil 9 ve zincir 5 birim; Okçu i
 | R2 | Renk varyantı düşmanların `setTint` ile okunurluğu test edilmedi; benzer silüetler (Cinci/Rahip, Alfa/Kurt) karışabilir. | Aşama D başında model/tint denemesi; gerekirse yeni model (3B ek liste). |
 | R3 | Kayıt göçü: 11 bölümlük eski tamamlama; Perde II/III sıra kuralı (§6.5). | Aşama D'de `save` v3 testi. |
 | R4 | Mobil performans: yeni tehlikeler + etiketler + sis katmanları. | Aşama C çıkış kriterinde gerçek cihaz kare hızı. |
+
+
+---
+
+## Aşama A uygulama notları (geliştirme odası)
+
+Durum: UYGULANDI (Aşama A). Tüm sayılar VARSAYIMDIR; gerçek oyuncu testi yapılmadı. Belge ile kod çelişirse kod esas alındı (aşağıda "Sapmalar ve sınırlar").
+
+### Yapılanlar
+- **Karşıtlık matrisi:** `js/game/matchup.js` (saf): `matchupLevel/multiplier(element, tags, res)`; Etkili x1.75, Normal x1, Dirençli x0.6, Bağışık x0.25. Config: `weapons.<id>.element`, `enemies.<id>.tags` (genel kural tablosu: `js/config/registry.js` `TAG_RULES`) ve `enemies.<id>.res` (element -> E/N/D/I, etiketi ezer). Doğrulayıcı: bilinmeyen element/etiket/düzey reddedilir (E_ENUM). Yeni 8 düşman türü eklenince yalnız veri (etiket + res) yeterli; `tests/matrix.test.js` bunu 8 yeni türün tasarım satırlarıyla gösterir.
+- **Hasar:** `combat.js hurt(e, dmg, slow, bypass, element)`: çarpan kalkan kontrolünden sonra, Güç Tılsımı (rollDamage) ve zincir düşüşünden SONRA uygulanır; doğrudan mermi, Zehir bulutu, Meteor, Ay Işığı, zincir hepsi element taşır. Kor patlaması elementsiz x1. Kesirli kalan can <= 0.05 ölüm sayılır. Yankı: zincir/Meteor/Ay Işığı ikinci atışı %50 hasar (`ECHO_SCALE`).
+- **Yıldırım:** gerçek zincir (`js/game/chain.js`): ilk hedef menzil 9 içinde en yakın, sonrakiler öncekine <= 5 birim, tekrarsız; hasar 1 / 0.7 / 0.5.
+- **Kristal akışı:** level alanları `minKills`, `crystalDelay`, `crystalLure` (isteğe bağlı; şema + doğrulayıcı + admin formu + adapt + test). Hedef = kristal >= goal VE öldürme >= minKills (kristal toplama ve öldürme anında denetlenir). Hedef kristal sayısı dolunca yeni kristal çıkmaz ve bir kez "Kristaller tamam. Kalan düşmanları da yen!" bildirimi çıkar. HUD "Yenilen düşman" satırı `n/N` gösterir (panel yerleşimi aynı).
+- **Doğma:** `pickSpawnPointNear` (oyuncudan >= 6.5, yarıçap 9-14; eski: 8 birim, 14 halka). Doğma uyarı halkası YAPILMADI.
+- **Etiketler:** "Etkili!" / "Dirençli" (Bağışık da "Dirençli"): DOM havuzu <= 6, aynı düşman 0.4 sn, 0.7 sn ömür, `prefers-reduced-motion` iken yalnız solma; metinler `strings.matchup`. Düşman kontak gölgesi en zayıf elementin silah rengine tonlanır.
+- **Diğer:** mermi ömrü 1.4 -> 1.1 (Ateş/Buz/Üçlü, `weapons.<id>.life`); Buz yavaşlatma ölçeği 0.35 -> 0.5, süre 3 -> 2.5 sn (`slowScale/slowTime`); slogan "Bir büyü. Bir gece. Tek kader." (`brandmodel.js`, `text.js`, test); ölüm repliği `after: <bölüm>` süzgeci (`js/game/deathlines.js`; Taşkın satırları `w1-03` tamamlanınca).
+- **Denge modeli (`balance.js`):** TP düzeltmesi q (hp<=1 kovalayıcı: Ruh x0.5, Yarasa x0.8); yeni W_BALANCE kuralları: kristal bölümünde `minKills` yok; `minKills > goal x 0.6`; kill arzı < 1.3 x minKills; ilk 20 sn planlanan düşman < 4; ardışık Z sıçraması kuralı önceki Z < 1.2 ise (giriş tabanı) uygulanmaz.
+
+### Config önce -> sonra
+| Silah | Önce | Sonra |
+|---|---|---|
+| Yıldırım | dmg 2, cd 0.9, zincir n3 menzil 13 (oyuncuya en yakın 3) | dmg 1.5, cd 1.0, menzil 9, hop 5, düşüş 1/0.7/0.5, element lightning |
+| Zehir | 1 / 1.4 sn / r 2.2 | 1.2 / 1.3 sn / r 2.5 |
+| Meteor | 3 / 2.8 sn / r 3 | 4 / 2.6 sn / r 3.2 |
+| Ay Işığı | 1 / 4.5 sn / r 4 / itme 2 | 1.5 / 3.5 sn / r 4.5 / itme 2.5 |
+| Ateş/Buz/Üçlü | mermi ömrü 1.4 | 1.1; Buz yavaşlatma 0.35x/3 sn -> 0.5x/2.5 sn |
+
+| Bölüm | start / spawn / every / cap (önce) | (sonra) | kristal / minKills / gecikme |
+|---|---|---|---|
+| w1-01 | Ruh3 / Ruh1 / 8 / 6 | Ruh5 / Ruh2 / 6 / 8 | 3 / 12 / 1.5 sn, lure |
+| w1-02 | Ruh1 Yar1 / Yar1 Ruh1 / 12 / 6 | Ruh2 Yar3 / Yar1 Ruh2 / 9 / 8 | 3 / 14 / 1.5 |
+| w1-03 | Ruh1 Yar1 Taş1 / Taş1 Yar1 / 12 / 7 | Ruh3 Yar2 Taş1 / (Taş1 Yar2 veya Ruh3) / 9 / 9 | 3 / 14 / 1.5 |
+| w1-04 (hayatta kal) | Ruh1 Yar1 Taş1 / Ruh1 Yar1 / 12 / 6 | Ruh3 Yar1 Taş1 / Ruh2 Yar1 / 10 / 9 | kristal 2 (aynı) |
+| w1-05 | Ruh2 Yar2 Taş1 Okç2 / Ruh1 Okç1 / 9 / 9 | aynı başlangıç / Ruh2 Okç1 / 9 / 10 | 3 / 18 / 1.5 |
+| w1-06 (totem) | Ruh1 Yar1 / Ruh1 Yar1 / 12 / 6 | Ruh2 Yar1 / Ruh2 Yar1 / 12 / 8 | kristal 3 (aynı) |
+| w1-07 | Ruh2 Yar3 Kur4 / Kur1 Yar1 / 8 / 11 | Ruh2 Yar3 Kur3 / Kur1 Yar2 / 9 / 11 | 3 / 14 / 1.2 |
+| w1-08 (totem) | Ruh1 Kor3 Taş1 / Kor1 Ruh1 / 10 / 8 | Ruh2 Kor3 Taş1 / Kor1 Ruh2 / 10 / 9 | - |
+| w1-09 | Şv1 Okç2 Kur1 / Okç1 Ruh1 / 6 / 6 | aynı / Okç1 Ruh2 / 7 / 7 | - |
+| w2-02 (köprü) | start/spawn aynı | aynı | kristal 4 / 18 / 1.2 (minKills tutarlılığı için) |
+
+`goal` ve `time` hiçbir bölümde değişmedi.
+
+### Matris özeti (koddaki karşılığı; E = Etkili, D = Dirençli, I = Bağışık)
+| Silah (element) | Etkili | Dirençli / Bağışık |
+|---|---|---|
+| Ateş | Okçu, Kurt | Taş Bekçi (D), Kor (I) |
+| Buz | Yarasa, Kor | Totem (D), Kurt (I) |
+| Üçlü (Arcane) | Ruh, Taş Bekçi, Kral | Rahip, Şövalye (D) |
+| Yıldırım | Yarasa, Kurt | Ruh, Taş Bekçi, Okçu, Şövalye (D) |
+| Zehir | Yarasa, Taş Bekçi, Rahip | Şövalye, Kral (D), Ruh, Totem (I) |
+| Meteor (Yıkım) | Taş Bekçi, Totem, Şövalye | Yarasa, Kurt (D) |
+| Ay Işığı | Ruh, Rahip, Şövalye | - |
+
+Mevcut 10 türde Ateş/Buz/Yıldırım'ın Etkili sayısı 2'dir; "en az 3" kuralı 18 türlü tasarım matrisinde sağlanır (`matrix.test.js` bunu 8 yeni türün veri satırlarıyla doğrular). Yıldırım'ın tek vuruşta (zincirin 1. halkası) öldürdüğü tür: 5 (Ruh, Yarasa, Okçu, Kurt, Kor) -> 2 (Yarasa, Kurt); Don Hortlağı eklenince 3.
+
+### Bot (`tools/balance/sim.mjs`) ve sonuçlar (YAKLAŞIK; N=100, seed 1; kalibre DEĞİL)
+Eklenenler: element/direnç çarpanı, yeni zincir, minKills/gecikme/lure, yakın doğma, mermi uçuş süresi ve menzil, tepki gecikmesi, dikkat boşluğu, mesafe/hareket isabet cezası, matris farkında silah politikası, kristal seçimi `nearP`, profiller yürüyen/acemi/orta/iyi/usta, telemetri (`weaponDmg`, EVO, A10/A20/A60). KALİBRASYON SAPMASI: tasarım önerisindeki orta bot (isabet 0.55) ilk bölümleri hedef bandın çok altına çektiği için orta bot isabet 0.66, ateş görev payı 0.68, kaçış 3.5 yapıldı.
+
+Geçme oranı (%): "yürüyen" sütununda parantez = eski config'te.
+
+| Bölüm | hedef | yürüyen | acemi | orta | iyi | usta | orta A20 sonra | orta A20 önce* |
+|---|---|---|---|---|---|---|---|---|
+| w1-01 | 92 | 0 (97) | 5 | 100 | 100 | 100 | 1.52 | 0.58 |
+| w1-02 | 88 | 0 (95) | 0 | 87 | 100 | 100 | 2.10 | 0.54 |
+| w1-03 | 85 | 0 (85) | 0 | 71 | 100 | 100 | 3.21 | 1.23 |
+| w1-04 | 84 | 100 (hayatta kal) | 33 | 100 | 100 | 100 | 1.33 | 0.70 |
+| w1-05 | 77 | 0 (59) | 1 | 88 | 100 | 100 | 3.22 | 3.03 |
+| w1-06 | 86 | 0 | 82 | 100 | 100 | 100 | 0.84 | 0.28 |
+| w1-07 | 71 | 0 (89) | 77 | 100 | 100 | 100 | 2.15 | 1.18 |
+| w1-08 | 65 | 0 | 24 | 96 | 100 | 100 | 3.00 | 0.91 |
+| w1-09 | 48 | 0 | 2 | 71 | 100 | 100 | 4.02 | 1.64 |
+
+*Önce = eski config'in YENİ simde koşulması (eski sim değil). A20 = ilk 20 sn ortalama aktif düşman (statik totem hariç); tasarım hedefi (§2.2) 1.2 / 1.0 / 1.5 / - / 1.5: karşılandı. Orta bot ilk 5 bölümde hedef banda (+-12) yaklaşıyor (w1-01, 02, 05 içinde; w1-03 -14; w1-04 hayatta kal +16); w1-06..09'da hedefin 14-30 puan ÜSTÜNDE: başlıca neden Aşama B'nin düşman becerileri ve çevre tehlikelerinin modelde olmaması, botun Yıldırım/Arcane'i hâlâ verimli kullanması. Yürüyen bot kristal bölümlerinde artık %0.
+
+### Sapmalar ve sınırlar
+- **M5-M7:** tasarım hedefleri (tek silah tür başına <= %60, kampanyada <= %40) botta SAĞLANMADI (orta botta Yıldırım payı w1-07..09'da %66-83; iyi botta Ateş w1-09'da %77). Test yalnız gevşek kıskaç (<= %88) koyar. Perde I'de az silah açık ve bazı türlerin tek Etkili silahı var; gerçek oyuncu telemetrisi (`weaponDmg`, EVO) olmadan sonuca varılamaz.
+- **Yapılmadı:** Ruh Sis Perdesi, doğma uyarı halkası, Pırıl ipucu rengi, Odak Merceği/Zırh Kıran perk'leri, K5 `crystalKillDrop`, `skills`; boss canı ve Kristal Mızrak (Aşama E).
+- **Model p:** TARGET_P (eski hedefler) korundu; TP düzeltmesi q ile model p hedeften <= 0.10 (w3-09 geçici köprü: 0.13).
+- **Ölçülemeyenler:** etiketlerin okunabilirliği, dokunmatik, gerçek kare hızı, hissedilen zorluk; ekran görüntüsü alınamadı (headless WebGL bağlam kaybı), yalnız konsol hatası olmadığı doğrulandı.
+
+### Kalan işler
+Aşama B (beceriler; bot modeline eklenince orta botun Perde I sonundaki gevşemesi düzelmeli), C (tehlikeler/atmosfer), D/E (Perde II-III, 8 yeni tür), F (perk'ler, M5-M7 telemetri paneli). Oyun testinde bakılacaklar: ilk 3 bölümde düşman geliyor mu, Yıldırım hâlâ baskın mı (özellikle w1-07 sonrası), etiketler okunuyor mu, minKills hissi.

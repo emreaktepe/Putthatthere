@@ -10,7 +10,7 @@
 
 import { SCHEMA, CONFIG_SCHEMA_VERSION, enumList } from "./schema.js";
 import { balanceIssues } from "./balance.js";
-import { ID_RE, HEX_RE, FORBIDDEN_KEYS, ABILITY_KINDS, PERK_STATS, WEAPON_BLOCKS } from "./registry.js";
+import { ID_RE, HEX_RE, FORBIDDEN_KEYS, ABILITY_KINDS, PERK_STATS, WEAPON_BLOCKS, ELEMENTS } from "./registry.js";
 
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -317,6 +317,8 @@ function semantic(c, raw, err, warn) {
     if (!isObj(e)) continue;
     if (e.model === undefined && !ENUM_MODELS.includes(id)) err("E_ENUM", ["enemies", id, "model"], `model belirtilmeli: kimlik ${JSON.stringify(id)} bir model adı değil (${ENUM_MODELS.join(" | ")})`, { value: id, expect: ENUM_MODELS.join("|") });
     else if (e.model === undefined) e.model = id;
+    // karşıtlık: ezme tablosunda bilinmeyen element reddedilir (tür/etiket denetimi şemada: enm TAGS / MATCH_LEVELS)
+    if (isObj(e.res)) for (const k of Object.keys(e.res)) if (!ELEMENTS.includes(k)) err("E_ENUM", ["enemies", id, "res", k], `Bilinmeyen element ${JSON.stringify(k)} (res): ${ELEMENTS.join(" | ")} olmalı`, { value: k, expect: ELEMENTS.join("|") });
   }
 
   // bölümler

@@ -5,7 +5,7 @@ import { fmt } from "../core/dom.js";
 
 export const UI = {
   version: "1.1",
-  menu: { continue: "Devam Et", startGame: "Başla", resumeLevel: "Devam edilen bölüm", kinds: "{n} çeşit", levelShort: "Bölüm", progress: "İlerleme", how: "Nasıl oynanır?", newGame: "Yeni Oyun", sound: "Ses", graphics: "Grafik", confirmNew: "Kayıt silinsin mi? Tekrar dokun", help: "Yardım", on: "Açık", off: "Kapalı", map: "Harita", subtitle: "Bir büyü. Dokuz bölüm. Tek kader.", noSave: "Kayıt okunamadı; yeni oyun başlatıldı.", newer: "Kayıt daha yeni bir sürümden; yeni oyun başlatılacak." },
+  menu: { continue: "Devam Et", startGame: "Başla", resumeLevel: "Devam edilen bölüm", kinds: "{n} çeşit", levelShort: "Bölüm", progress: "İlerleme", how: "Nasıl oynanır?", newGame: "Yeni Oyun", sound: "Ses", graphics: "Grafik", confirmNew: "Kayıt silinsin mi? Tekrar dokun", help: "Yardım", on: "Açık", off: "Kapalı", map: "Harita", subtitle: "Bir büyü. Bir gece. Tek kader.", noSave: "Kayıt okunamadı; yeni oyun başlatıldı.", newer: "Kayıt daha yeni bir sürümden; yeni oyun başlatılacak." },
   intro: { skip: "Atla", next: "Devam" },
   map: { title: "Harita", back: "Menü", completed: "Tamamlanan", best: "En iyi", locked: "Kilitli", open: "Açık", done: "Tamamlandı", play: "Savaşa gir", practice: "Tekrar oyna", practiceNote: "Alıştırma: ilerleme değişmez", lockedNote: "Önceki bölümü tamamla", close: "Kapat", detail: "Detay", less: "Daha az", time: "Süre", reward: "Ödül", foes: "Düşmanlar", sec: "sn", goal: "Hedef" },
   hud: {

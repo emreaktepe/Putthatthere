@@ -4,7 +4,7 @@
 // Alan tanımı: { t: tür, req?: zorunlu, def?: varsayılan, label?: Türkçe etiket, ... türe özgü sınırlar }
 // Türler: int, num, str, hex, bool, enum, ref, arr, obj, map (id'li nesne), rec (ref anahtarlı nesne)
 
-import { ART_RE, ENUMS, ID_RE, UI_ICON_KEYS, WEATHER_MAX } from "./registry.js";
+import { ART_RE, ELEMENTS, ENUMS, ID_RE, UI_ICON_KEYS, WEATHER_MAX } from "./registry.js";
 
 export const CONFIG_SCHEMA_VERSION = 1;
 
@@ -31,6 +31,13 @@ const dialogLine = obj({
   speaker: ref("characters", { label: "Konuşmacı" }),
   text: str(1, 240, { req: true, label: "Metin" }),
 }, { label: "Diyalog satırı" });
+
+// ölüm repliği: isteğe bağlı `after` = bu bölüm tamamlanmadan çıkmaz (konuşmacı henüz tanışılmamış olabilir)
+const deathLine = obj({
+  speaker: ref("characters", { label: "Konuşmacı" }),
+  text: str(1, 240, { req: true, label: "Metin" }),
+  after: ref("levels", { label: "Şu bölüm tamamlanınca çıkar" }),
+}, { label: "Ölüm repliği" });
 
 const musicFields = (req) => {
   const r = req ? { req: true } : {};
@@ -97,7 +104,7 @@ export const SCHEMA = obj({
     finalLine: str(1, 200, { req: true, label: "Final satırı" }),
     finalScore: str(1, 100, { req: true, ph: ["score"], label: "Final puanı" }),
     replay: str(1, 40, { req: true, label: "Yeniden oyna düğmesi" }),
-    deathLines: arr(dialogLine, 1, 12, { req: true, label: "Ölüm repliği" }),
+    deathLines: arr(deathLine, 1, 12, { req: true, label: "Ölüm repliği" }),
     objective: R(obj({
       crystal: str(1, 100, { req: true, ph: ["goal"], label: "Hedef: kristal" }),
       survive: str(1, 100, { req: true, ph: ["goal"], label: "Hedef: hayatta kal" }),
@@ -136,6 +143,12 @@ export const SCHEMA = obj({
       newAbility: str(1, 100, { req: true, ph: ["name", "key"], label: "Yeni yetenek" }),
       pickPerk: str(1, 60, { req: true, label: "Perk seç" }),
     }, { label: "Bölüm sonu" })),
+    // Aşama A: karşıtlık etiketleri ve minKills bildirimi (isteğe bağlı; yoksa koddaki varsayılan Türkçe metin)
+    matchup: obj({
+      effective: str(1, 20, { label: "Etiket: Etkili vuruş" }),
+      resist: str(1, 20, { label: "Etiket: Dirençli vuruş" }),
+      needKills: str(1, 120, { label: "Kristaller tamam, düşman bekleniyor" }),
+    }, { label: "Karşıtlık / hedef metinleri" }),
     // Aşama 1: dinamik yardım (DDA) bilgi satırları; kademe 2/3/4+ (bkz. js/game/dda.js). İsteğe bağlı: yoksa bilgi satırı gösterilmez
     dda: obj({
       notice2: str(1, 120, { label: "Yardım bilgisi: 2. ölümden sonra" }),
@@ -193,6 +206,9 @@ export const SCHEMA = obj({
     summons1: arr(ref("enemies"), 0, 4, { label: "Boss faz 1 çağrısı" }),
     summons2: arr(ref("enemies"), 0, 4, { label: "Boss faz 2 çağrısı" }),
     image: art({ label: "Düşman görseli (rozet, boss çubuğu)" }),
+    // karşıtlık sistemi (isteğe bağlı): etiketler genel kuralı verir, res tek tek ezer (E Etkili x1.75, N Normal, D Dirençli x0.6, I Bağışık x0.25)
+    tags: arr(enm("TAGS"), 0, 4, { label: "Etiketler (karşıtlık)" }),
+    res: obj(Object.fromEntries(ELEMENTS.map((el) => [el, enm("MATCH_LEVELS", { label: "Element: " + el })])), { label: "Element ezme tablosu (E/N/D/I)" }),
   }, { label: "Düşman" }), 1, 40, { label: "Düşmanlar" })),
 
   weapons: R(map(obj({
@@ -206,8 +222,12 @@ export const SCHEMA = obj({
     speed: num(4, 40, { label: "Mermi hızı" }),
     pierceable: bool({ label: "Delici perk uygulanır" }),
     slow: bool({ label: "Yavaşlatır" }),
+    element: enm("ELEMENTS", { label: "Element (karşıtlık)" }),
+    life: num(0.3, 4, { label: "Mermi ömrü (sn; boş: 1.4)" }),
+    slowScale: num(0.1, 1, { label: "Yavaşlatma zaman ölçeği (boş: 0.35)" }),
+    slowTime: num(0.5, 10, { label: "Yavaşlatma süresi (sn; boş: 3)" }),
     spread: obj({ n: int(2, 7, { req: true }) }, { label: "Yelpaze" }),
-    chain: obj({ n: int(2, 8, { req: true }), range: num(3, 25, { req: true }) }, { label: "Zincir" }),
+    chain: obj({ n: int(2, 8, { req: true }), range: num(3, 25, { req: true }), hop: num(1, 15, { label: "Sıçrama menzili (boş: yok, eski seçim)" }), falloff: arr(num(0.1, 1), 1, 8, { label: "Hasar düşüşü (1., 2., 3. hedef)" }) }, { label: "Zincir" }),
     cloud: obj({ dist: num(1, 20, { req: true }), r: num(0.5, 8, { req: true }), life: num(0.5, 15, { req: true }) }, { label: "Bulut" }),
     meteor: obj({ r: num(0.5, 8, { req: true }), delay: num(0.2, 4, { req: true }) }, { label: "Meteor" }),
     nova: obj({ r: num(0.5, 12, { req: true }), push: num(0, 8, { req: true }) }, { label: "Halka" }),
@@ -274,6 +294,9 @@ export const SCHEMA = obj({
     time: int(15, 300, { req: true, label: "Süre (sn)" }),
     theme: ref("themes", { req: true, label: "Tema" }),
     crystals: int(0, 10, { label: "Aynı anda kristal" }),
+    minKills: int(0, 100, { label: "En az öldürme (kristal bölümü bitmek için; boş/0: yok)" }),
+    crystalDelay: num(0, 6, { label: "Kristal yeniden doğma gecikmesi (sn; boş: anında)" }),
+    crystalLure: bool({ label: "Yeni kristal düşmana yakın çıksın" }),
     start: rec("enemies", int(0, 12), { req: true, label: "Başlangıç düşmanları" }),
     spawn: arr(rec("enemies", int(1, 4)), 0, 8, { req: true, label: "Doğma dalgaları" }),
     every: num(2, 30, { req: true, label: "Doğma aralığı (sn)" }),

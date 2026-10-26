@@ -103,6 +103,7 @@ export function renderHud() {
     if (changed("qGoal", q[0].value)) el.qGoalVal.textContent = q[0].value;
     if (changed("qDone", q[0].done)) el.qGoalRow.classList.toggle("done", q[0].done);
     if (changed("qKills", q[1].value)) el.qKillVal.textContent = q[1].value;
+    if (changed("qKd", q[1].done)) el.qKillVal.parentElement.classList.toggle("done", q[1].done);
   }
   // can
   const states = heartStates(S.hp, S.maxHp), key = states.join(",");

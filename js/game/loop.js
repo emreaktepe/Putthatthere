@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { mus, sfx } from "../audio/engine.js";
-import { ABILITY_ORDER, GAME, LEVELS, PLAYER } from "../core/data.js";
+import { ABILITY_ORDER, GAME, LEVELS, PLAYER, STRINGS } from "../core/data.js";
 import { INPUT, RT, S, abilCd, aim, aimPoint, bolts, clouds, echoQ, enemies, enemyShots, fxs, hazards, moveDir, pickups, shots, strikes } from "../core/state.js";
 import { ARENA, flatDist, rand } from "../core/util.js";
 import { timeFactor } from "./abilities.js";
@@ -8,7 +8,7 @@ import { updateEnemies } from "./ai.js";
 import { damagePlayer, hurt } from "./combat.js";
 import { gameOver, levelClear } from "./flow.js";
 import { scaledEvery } from "./dda.js";
-import { effectiveCap } from "./spawnmath.js";
+import { crystalGoalMet, effectiveCap } from "./spawnmath.js";
 import { isTouch, keys, mouse, ray } from "./input.js";
 import { cast, fireSpell, nearestEnemies } from "./weapons.js";
 import { liveCount, placePickup, spawnCrystal, spawnEnemy } from "./world.js";
@@ -50,7 +50,7 @@ export function update(dt, t) {
 
   for (let i = echoQ.length - 1; i >= 0; i--) {
     echoQ[i].t -= dt;
-    if (echoQ[i].t <= 0) { const id = echoQ[i].id; echoQ.splice(i, 1); fireSpell(id); }
+    if (echoQ[i].t <= 0) { const { id, scale } = echoQ[i]; echoQ.splice(i, 1); fireSpell(id, scale || 1); }
   }
 
   // Hareket
@@ -106,7 +106,7 @@ export function update(dt, t) {
       }
       if (target) {
         s.hit.add(target);
-        hurt(target, s.dmg, s.slow);
+        hurt(target, s.dmg, s.slow, false, s.element);
         if (s.pierce > 0 && !target.d.static) s.pierce--; else gone = true;
       }
     }
@@ -134,7 +134,7 @@ export function update(dt, t) {
     c.m.scale.set(c.r * (1 + Math.sin(t * 3) * 0.04), 0.9, c.r * (1 + Math.sin(t * 3) * 0.04));
     if (c.tick <= 0) {
       c.tick = 0.5;
-      for (const e of [...enemies]) if (!e.dead && flatDist(e.mesh.position, c) < c.r + e.d.r * 0.5) hurt(e, c.dmg * 0.5, false, true); // saniyede 1*dmg
+      for (const e of [...enemies]) if (!e.dead && flatDist(e.mesh.position, c) < c.r + e.d.r * 0.5) hurt(e, c.dmg * 0.5, false, true, c.element); // saniyede 1*dmg
       burst(new THREE.Vector3(c.x + rand(c.r * 0.7), 0.8, c.z + rand(c.r * 0.7)), 0x6bff6b, 2);
     }
     if (c.life <= 0) { scene.remove(c.m); c.m.material.dispose(); clouds.splice(i, 1); }
@@ -153,7 +153,7 @@ export function update(dt, t) {
       burst(new THREE.Vector3(s.x, 0.8, s.z), 0xffa03a, 30);
       sfx("meteor_hit");
       RT.shake = Math.max(RT.shake, 0.3);
-      for (const e of [...enemies]) if (!e.dead && flatDist(e.mesh.position, s) < s.r + e.d.r * 0.5) hurt(e, s.dmg, false);
+      for (const e of [...enemies]) if (!e.dead && flatDist(e.mesh.position, s) < s.r + e.d.r * 0.5) hurt(e, s.dmg, false, false, s.element);
       if (!RT.running) return;
     }
   }
@@ -197,14 +197,25 @@ export function update(dt, t) {
         S.score += 10;
         burst(p.mesh.position, 0x5ee7ff);
         const want = L.crystals !== undefined ? L.crystals : (L.objective === "crystal" ? 5 : 0);
-        if (pickups.filter((q) => q.type === "crystal").length < want) spawnCrystal();
         if (L.objective === "crystal") {
           RT.collected++;
           if (S.rain && Math.random() < S.rain) RT.collected++; // Mana Yağmuru
-          if (RT.collected >= L.goal) { levelClear(); return; }
-        } else if (Math.random() < 0.35 * RT.dda.heartMul) placePickup("heart", p.mesh.position.clone().setY(0.9)); // diğer hedeflerde kristal kalp/mana ödülüdür
+          if (crystalGoalMet(L, RT.collected, S.kills - RT.killBase)) { levelClear(); return; }
+          if (RT.collected >= L.goal && !RT.needKillsShown) { RT.needKillsShown = true; toast((STRINGS.matchup && STRINGS.matchup.needKills) || "Kristaller tamam. Kalan düşmanları da yen!", 3000, true); } // minKills bekleniyor
+        }
+        // yeniden doğma (K2): crystalDelay sn sonra (yoksa anında); hedef sayısı dolduysa (öldürme bekleniyor) yenisi çıkmaz
+        if (!(L.objective === "crystal" && RT.collected >= L.goal) && pickups.filter((q) => q.type === "crystal").length + RT.crystalQ.length < want) {
+          if (L.crystalDelay > 0) RT.crystalQ.push(L.crystalDelay); else spawnCrystal(L.crystalLure);
+        }
+        if (L.objective !== "crystal" && Math.random() < 0.35 * RT.dda.heartMul) placePickup("heart", p.mesh.position.clone().setY(0.9)); // diğer hedeflerde kristal kalp/mana ödülüdür
       }
     }
+  }
+
+  // Bekleyen kristaller (K2 crystalDelay)
+  for (let i = RT.crystalQ.length - 1; i >= 0; i--) {
+    RT.crystalQ[i] -= dt;
+    if (RT.crystalQ[i] <= 0) { RT.crystalQ.splice(i, 1); spawnCrystal(LEVELS[S.level].crystalLure); }
   }
 
   // Yeni düşman doğurma

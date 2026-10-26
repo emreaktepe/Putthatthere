@@ -4,7 +4,10 @@
 //  * Gerçek js/game/ai.js, loop.js, combat.js Three.js/DOM'a bağlı olduğu için İTHAL EDİLEMEZ. Bu dosya onların sabitlerini ve durum makinelerini
 //    BASİTLEŞTİRİLMİŞ bir 2B modelde YENİDEN YAZAR (aynı sayılar: hızlar, süreler, yarıçaplar, dokunulmazlık, doğma kuralı). Saf modüller ithal edilir:
 //    js/game/dda.js, js/game/damage.js, js/game/spawnmath.js, js/config/{validate,adapt}.js (perk ok/apply dahil).
-//  * Mermi uçuş süresi yok (isabet anında hesaplanır, olasılıkla); isabet oranı bot profilinin parametresidir (VARSAYIM V2).
+//  * Aşama A uyarlaması (docs/strateji/savas-sistemi-ve-perde-2-3-tasarimi.md §8.1-8.3): element/direnç çarpanı (matchup.js), gerçek Yıldırım zinciri (chain.js),
+//    minKills + crystalDelay + crystalLure, yakın doğma, mermi UÇUŞ SÜRESİ (d/v; hedef ölürse boşa), tepki gecikmesi (yeni hedefe tgtDelay), dikkat boşluğu,
+//    mesafe/hareket isabet cezası, matris farkında silah politikası (policy), kristal seçiminde nearP. Beceriler (Aşama B) ve çevre tehlikeleri henüz YOK.
+//  * Mermi isabeti hâlâ olasılıkla belirlenir (isabet oranı bot profilinin parametresidir, VARSAYIM V2); uçuş süresi sonrası uygulanır.
 //  * Bot gerçek bir insan değildir: tepki süresi, kaçış, hedef seçimi basit kurallardır. Oyuncu bölüm başında tam canla ve kampanya sırasına göre
 //    (n bölüm = n perk seçimi, bölüm ödülleriyle açılan büyü/yetenek) başlar; bölümler arası can taşıması YOKTUR (iyimser).
 //  * Boss/mini-boss mekanikleri sadeleştirilmiştir (faz geçişleri, ışık toplama, yer halkaları var; animasyon/kamera/ses yok).
@@ -15,18 +18,25 @@ import { validate } from "../../js/config/validate.js";
 import { mulberry } from "../../js/core/util.js";
 import { ddaFor, scaledEvery, scaledStart } from "../../js/game/dda.js";
 import { rollDamage } from "../../js/game/damage.js";
-import { effectiveCap, pickSpawnPoint } from "../../js/game/spawnmath.js";
+import { crystalGoalMet, effectiveCap, pickCrystalPoint, pickSpawnPointNear } from "../../js/game/spawnmath.js";
+import { MULT, matchupLevel } from "../../js/game/matchup.js";
+import { chainFalloff, chainTargets } from "../../js/game/chain.js";
 
 export const ARENA = 14;
 export const DT = 1 / 30;
-const PRIORITY = ["lightning", "arcane", "frost", "fire"];
+const PRIORITY = ["lightning", "arcane", "frost", "fire"]; // "favori" silah (politika dışı atışlar): en yeni/güçlü hissedilen
 const GREEDY = ["hp", "power", "haste", "pierce", "vampire", "speed", "stone", "magnet", "echo", "piril", "rain"];
 
 // bot profilleri (VARSAYIM V2). acc: projektil isabet olasılığı tabanı; react: karar yenileme süresi (sn); fleeR: kaçış başlama mesafesi
+// acc: taban isabet; duty: ateş görev payı; react: karar yenileme (sn); tgtDelay: yeni belirmiş hedefe tepki (sn); distract: [periyot sn, ateşsiz süre sn];
+// KALİBRASYON (Aşama A): orta bot acc/duty/fleeR ilk 5 Perde I bölümünde hedef banda yaklaşsın diye 0.55/0.5/3.2 -> 0.66/0.68/3.5 yapıldı (tasarım önerisi 0.55 idi; botta kaçış/dikkat modeli sade olduğundan telafi). Son 4 bölümde bot hâlâ fazla güçlü (beceriler yok).
+// policy: matris farkında silah seçme olasılığı; nearP: kristalde en yakını seçme olasılığı. Değerler tasarım §8.3 (VARSAYIM).
 export const PROFILES = {
-  yuruyen: { id: "yuruyen", ad: "yürüyen", shoot: false, acc: 0, react: 0.15, fleeR: 3.6, smart: false, abil: false, greedy: false },
-  orta: { id: "orta", ad: "orta", shoot: true, acc: 0.5, duty: 0.45, react: 0.25, fleeR: 3.2, smart: false, abil: false, shieldOnly: true, greedy: false },
-  iyi: { id: "iyi", ad: "iyi", shoot: true, acc: 0.8, duty: 0.7, react: 0.1, fleeR: 4.2, smart: true, abil: true, greedy: true },
+  yuruyen: { id: "yuruyen", ad: "yürüyen", shoot: false, acc: 0, react: 0.15, fleeR: 3.6, smart: false, abil: false, greedy: false, nearP: 1, policy: 0, tgtDelay: 0, distract: null },
+  acemi: { id: "acemi", ad: "acemi", shoot: true, acc: 0.4, duty: 0.4, react: 0.45, fleeR: 3.0, smart: false, abil: false, greedy: false, nearP: 0.7, policy: 0, tgtDelay: 0.45, distract: [5, 1.0] },
+  orta: { id: "orta", ad: "orta", shoot: true, acc: 0.66, duty: 0.68, react: 0.3, fleeR: 3.5, smart: false, abil: false, shieldOnly: true, greedy: false, nearP: 0.7, policy: 0.5, tgtDelay: 0.3, distract: [7, 0.7] },
+  iyi: { id: "iyi", ad: "iyi", shoot: true, acc: 0.75, duty: 0.7, react: 0.15, fleeR: 4.2, smart: true, abil: true, greedy: true, nearP: 0.9, policy: 0.9, tgtDelay: 0.15, distract: [12, 0.4] },
+  usta: { id: "usta", ad: "usta", shoot: true, acc: 0.88, duty: 0.85, react: 0.1, fleeR: 4.2, smart: true, abil: true, greedy: true, nearP: 1, policy: 1, tgtDelay: 0.1, distract: null },
 };
 
 export function loadConfig(path = "data/game.config.json") {
@@ -81,15 +91,17 @@ export function simulate(A, idx, prof, seed, opts = {}) {
   let elapsed = 0, hits = 0, dmgTaken = 0, kills = 0, collected = 0, totemsDown = 0, spawnTimer = 0, bossSummon = 5;
   let result = null, lastKill = 0;
 
-  const enemies = [], eshots = [], pickups = [], clouds = [], strikes = [], hazards = [];
+  const enemies = [], eshots = [], pickups = [], clouds = [], strikes = [], hazards = [], pend = [], crystalQ = [];
+  const wdmg = {}, evo = { all: 0, eff: 0 }; // M5/M7 ölçümü: silah x düşman türü hasarı; Etkili hasar olayı oranı
+  let a20sum = 0, a20n = 0, a10sum = 0, a10n = 0, a60sum = 0, a60n = 0, favCrystal = null;
   const live = () => { let n = 0; for (const e of enemies) if (!e.d.noCap) n++; return n; };
   const crystalsWanted = L.crystals !== undefined ? L.crystals : L.objective === "crystal" ? 5 : 0;
   const rr = (r) => (rnd() * 2 - 1) * r;
-  const crystal = () => pickups.push({ type: "crystal", x: rr(ARENA - 1.5), z: rr(ARENA - 1.5) });
+  const crystal = () => { const foes = L.crystalLure ? enemies.filter((e) => !e.d.static) : []; const q = pickCrystalPoint(P, foes, rnd, ARENA - 1.5, !!L.crystalLure); pickups.push({ type: "crystal", x: q.x, z: q.z }); };
 
   function spawn(type, at) {
     const d = E[type];
-    const sp = at || pickSpawnPoint(P, rnd, ARENA);
+    const sp = at || pickSpawnPointNear(P, rnd, ARENA);
     const e = { type, d, x: sp.x, z: sp.z, hp: d.hp, maxHp: d.hp, slow: 0, shield: 0, phase: rnd() * 10, age: 0, cd: 0, st: "approach", tm: 0, fuse: 0, wind: 0, spd: d.speed, enraged: false, bp: 1, shielded: false, vuln: 0, waveT: 8, kx: 0, kz: 0, vx: 0, vz: 0, cx: 0, cz: 0, dead: false, exploded: false };
     if (d.ai === "ranged") e.cd = 1 + rnd() * 1.5;
     if (d.ai === "support") e.cd = 2 + rnd() * 2;
@@ -116,7 +128,7 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     if (e.d.ai === "bomber" && !e.exploded) explode(e);
     if (e.d.ai === "support") for (const o of enemies) if (d2(o.x, o.z, e.x, e.z) < 8) o.shield = 0;
     if (!e.suicide) {
-      if (!e.d.static) { kills++; if (S.vampire && kills % 12 === 0 && S.hp < S.maxHp) S.hp++; }
+      if (!e.d.static) { kills++; if (S.vampire && kills % 12 === 0 && S.hp < S.maxHp) S.hp++; if (L.objective === "crystal" && !result && crystalGoalMet(L, collected, kills)) result = { win: true, cause: "win" }; }
       if (rnd() < e.d.drop * dda.heartMul) pickups.push({ type: "heart", x: e.x, z: e.z });
     }
     if (e.d.ai === "static") { totemsDown++; if (totemsDown >= L.goal && !result) result = { win: true, cause: "win" }; }
@@ -125,17 +137,20 @@ export function simulate(A, idx, prof, seed, opts = {}) {
   function explode(e) {
     e.exploded = true;
     if (invuln <= 0 && d2(e.x, e.z, P.x, P.z) < 2.5) hitPlayer(1);
-    for (const o of [...enemies]) if (o !== e && !o.dead && d2(o.x, o.z, e.x, e.z) < 2.5) hurt(o, 1, false, false);
+    for (const o of [...enemies]) if (o !== e && !o.dead && d2(o.x, o.z, e.x, e.z) < 2.5) hurt(o, 1, false, false, null);
   }
-  function hurt(e, dmg, slow, bypass) {
+  function hurt(e, dmg, slow, bypass, el, wid) {
     if (e.dead) return;
     if (e.shielded) return;
     if (e.shield > 0 && !bypass) { e.shield = 0; return; }
+    const lvl = matchupLevel(el, e.d.tags, e.d.res);
+    dmg *= MULT[lvl];
+    if (wid) { const m = (wdmg[wid] = wdmg[wid] || {}); m[e.type] = (m[e.type] || 0) + Math.min(dmg, Math.max(e.hp, 0)); evo.all++; if (lvl === "E") evo.eff++; }
     e.hp -= dmg;
     if (e.d.ai === "boss" && e.bp < 3) e.hp = Math.max(e.hp, e.maxHp * (e.bp === 1 ? 0.66 : 0.33) - 0.001);
-    if (slow) e.slow = 3;
+    if (slow) { e.slow = slow.t || 3; e.slowK = slow.k || 0.35; }
     if (!e.d.static && e.d.ai !== "boss" && e.d.ai !== "knight") { const l = d2(e.x, e.z, P.x, P.z) || 1; e.kx = ((e.x - P.x) / l) * 3; e.kz = ((e.z - P.z) / l) * 3; }
-    if (e.hp <= 0) kill(e);
+    if (e.hp <= 0.05) kill(e);
   }
 
   // ---- başlangıç ----
@@ -157,7 +172,10 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     let tgt = null;
     const boss = enemies.find((e) => e.d.ai === "boss");
     if (boss && boss.shielded) tgt = nearestOf(pickups, (p) => p.type === "light");
-    if (!tgt && L.objective === "crystal") tgt = nearestOf(pickups, (p) => p.type === "crystal");
+    if (!tgt && L.objective === "crystal") {
+      if (!favCrystal || !pickups.includes(favCrystal)) { const cs = pickups.filter((p) => p.type === "crystal"); favCrystal = !cs.length ? null : rnd() < prof.nearP ? nearestOf(cs).o : cs[Math.floor(rnd() * cs.length)]; }
+      if (favCrystal) tgt = { o: favCrystal, d: d2(favCrystal.x, favCrystal.z, P.x, P.z) };
+    }
     if (!tgt && (prof.smart || S.hp < S.maxHp) && S.hp < S.maxHp) { const h = nearestOf(pickups, (p) => p.type === "heart"); if (h && h.d < 7) tgt = h; }
     if (!tgt && prof.shoot) {
       if (L.objective === "totem") { const t = nearestOf(enemies, (e) => e.d.ai === "static"); if (t && t.d > 9) tgt = t; }
@@ -215,11 +233,24 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     if (abil.has("timeslow") && abCd.timeslow <= 0 && (near(7) >= 4 || enemies.some((e) => e.d.ai === "boss" && e.bp >= 2))) { timeslowT = abP("timeslow").duration || 3; abCd.timeslow = A.ABILITIES.timeslow.cd; }
   }
 
+  const favorite = () => PRIORITY.find((w) => weapons.has(w)) || A.WEAPON_ORDER[0];
+  // matris farkında en iyi tek-hedef silah: çarpan x hasar / bekleme x hedef sayısı faktörü
+  const FACT = { lightning: 1.55, arcane: 1.8, poison: 1.0, fire: 1, frost: 1 };
+  function bestFor(tgt) {
+    let best = favorite(), bs = -1;
+    for (const id of weapons) {
+      const w = A.WEAPONS[id]; if (w.meteor || w.nova) continue;
+      const sc = (w.dmg * MULT[matchupLevel(w.element, tgt.d.tags, tgt.d.res)] * (FACT[id] || 1)) / w.cd;
+      if (sc > bs + 1e-9) { bs = sc; best = id; }
+    }
+    return best;
+  }
   function shoot() {
     if (!prof.shoot || cooldown > 0) return;
+    if (prof.distract && elapsed % prof.distract[0] < prof.distract[1]) return; // dikkat dağınıklığı: bu aralıkta ateş yok
     let tgt = null, bd = 1e9;
     for (const e of enemies) {
-      if (e.dead) continue;
+      if (e.dead || e.age < (prof.tgtDelay || 0)) continue; // tepki gecikmesi: yeni belirmiş düşmana hemen ateş edilmez
       let d = d2(e.x, e.z, P.x, P.z);
       if (d > 20) continue;
       if (prof.smart && d < 14) { if (e.d.ai === "bomber" || e.d.ai === "ranged" || e.d.ai === "support") d -= 3; if (e.d.static) d += 2; }
@@ -227,7 +258,7 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     }
     if (!tgt) return;
     const dist = d2(tgt.x, tgt.z, P.x, P.z);
-    let wid = primary();
+    let wid = rnd() < prof.policy ? bestFor(tgt) : favorite();
     if (prof.smart) {
       if (weapons.has("meteor") && tgt.maxHp >= 4 && dist > 3.5 && dist < 16 && !tgt.shielded && cooldown <= 0) wid = "meteor";
       else if (weapons.has("nova")) { let c = 0; for (const e of enemies) if (!e.d.static && d2(e.x, e.z, P.x, P.z) < 3.8) c++; if (c >= 3) wid = "nova"; }
@@ -235,34 +266,43 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     const w = A.WEAPONS[wid];
     cooldown = (w.cd * S.cdMul) / (prof.duty || 1); // duty: kaçarken/nişan alırken atış kaybı (VARSAYIM)
     const times = S.echo > 0 && rnd() < S.echo ? 2 : 1;
-    for (let k = 0; k < times; k++) cast(w, wid, tgt, dist);
+    for (let k = 0; k < times; k++) cast(w, wid, tgt, dist, k === 1 && (w.chain || w.meteor || w.nova) ? 0.5 : 1);
   }
-  function cast(w, wid, tgt, dist) {
-    const dmg = rollDamage(w.dmg, S.dmgMul, dmgSt);
+  function cast(w, wid, tgt, dist, scale = 1) {
+    const dmg = rollDamage(w.dmg, S.dmgMul, dmgSt) * scale, el = w.element || null;
     if (w.chain) {
-      const list = enemies.filter((e) => d2(e.x, e.z, P.x, P.z) <= w.range).sort((a, b) => d2(a.x, a.z, P.x, P.z) - d2(b.x, b.z, P.x, P.z)).slice(0, w.chain);
-      for (const e of list) hurt(e, dmg, false, false);
+      if (w.hop) {
+        const list = chainTargets(P, enemies.filter((e) => !e.dead), w.chain, w.range, w.hop);
+        list.forEach((e, k) => hurt(e, dmg * chainFalloff(w.falloff, k), false, false, el, wid));
+      } else {
+        const list = enemies.filter((e) => d2(e.x, e.z, P.x, P.z) <= w.range).sort((a, b) => d2(a.x, a.z, P.x, P.z) - d2(b.x, b.z, P.x, P.z)).slice(0, w.chain);
+        for (const e of list) hurt(e, dmg, false, false, el, wid);
+      }
     } else if (w.nova) {
       for (const e of [...enemies]) {
         if (e.dead || d2(e.x, e.z, P.x, P.z) > w.nova.r + e.d.r * 0.5) continue;
-        hurt(e, dmg, false, false);
+        hurt(e, dmg, false, false, el, wid);
         if (!e.dead && !e.d.static && e.d.ai !== "boss" && e.d.ai !== "knight") { const l = d2(e.x, e.z, P.x, P.z) || 1; e.x = clamp(e.x + ((e.x - P.x) / l) * w.nova.push, -ARENA - 1, ARENA + 1); e.z = clamp(e.z + ((e.z - P.z) / l) * w.nova.push, -ARENA - 1, ARENA + 1); }
       }
     } else if (w.meteor) {
       const lead = prof.smart ? w.meteor.delay : 0;
-      strikes.push({ x: clamp(tgt.x + tgt.vx * lead, -ARENA, ARENA), z: clamp(tgt.z + tgt.vz * lead, -ARENA, ARENA), t: w.meteor.delay, r: w.meteor.r, dmg });
+      strikes.push({ x: clamp(tgt.x + tgt.vx * lead, -ARENA, ARENA), z: clamp(tgt.z + tgt.vz * lead, -ARENA, ARENA), t: w.meteor.delay, r: w.meteor.r, dmg, el, wid });
     } else if (w.cloud) {
       const miss = rnd() > prof.acc;
-      clouds.push({ x: tgt.x + (miss ? rr(2.5) : 0), z: tgt.z + (miss ? rr(2.5) : 0), life: w.cloud.life, tick: 0, r: w.cloud.r, dmg });
+      clouds.push({ x: tgt.x + (miss ? rr(2.5) : 0), z: tgt.z + (miss ? rr(2.5) : 0), life: w.cloud.life, tick: 0, r: w.cloud.r, dmg, el, wid });
     } else {
-      let p = prof.acc * (dist <= 10 ? 1 : Math.max(0.4, 1 - (dist - 10) * 0.06));
+      if (dist > w.speed * (w.life || 1.4)) return; // menzil dışı: mermi ömrü bitmeden ulaşamaz
+      // isabet: mesafe cezası 0.04/birim (> 8), hareketteyken x0.85 (tasarım §8.3)
+      let p = prof.acc * Math.max(0.3, 1 - 0.04 * Math.max(0, dist - 8)) * (Math.hypot(dirX, dirZ) > 0.3 ? 0.85 : 1);
       if (tgt.d.zig) p *= 0.75;
       if (tgt.d.ai === "charge" && tgt.st === "charge") p *= 0.7;
       const pellets = w.spread ? [1, dist < 9 ? 0.7 : 0, dist < 6 ? 0.5 : 0] : [1];
+      const slow = w.slow ? { t: w.slowTime || 3, k: w.slowScale || 0.35 } : null;
       for (const q of pellets) {
         if (q > 0 && rnd() < p * q) {
-          hurt(tgt, dmg, !!w.slow, false);
-          if (S.pierce && w.pierceable && rnd() < 0.5) { const o = enemies.find((e) => e !== tgt && !e.dead && d2(e.x, e.z, tgt.x, tgt.z) < 3); if (o) hurt(o, dmg, !!w.slow, false); }
+          const o = S.pierce && w.pierceable && rnd() < 0.5 ? enemies.find((e) => e !== tgt && !e.dead && d2(e.x, e.z, tgt.x, tgt.z) < 3) : null;
+          pend.push({ t: dist / w.speed, e: tgt, dmg, slow, el, wid }); // uçuş süresi: hedef bu arada ölürse boşa gider
+          if (o) pend.push({ t: (dist + 3) / w.speed, e: o, dmg, slow, el, wid });
         }
       }
     }
@@ -274,7 +314,7 @@ export function simulate(A, idx, prof, seed, opts = {}) {
       if (e.dead) continue;
       const d = e.d;
       e.slow = Math.max(e.slow - dt, 0); e.age += dt;
-      const ts = es * (e.slow > 0 ? 0.35 : 1), edt = dt * ts;
+      const ts = es * (e.slow > 0 ? (e.slowK || 0.35) : 1), edt = dt * ts;
       const dx = P.x - e.x, dz = P.z - e.z, dist = Math.hypot(dx, dz) || 1e-4, ux = dx / dist, uz = dz / dist;
       if (e.shield > 0) e.shield = Math.max(e.shield - dt, 0);
       let mx = 0, mz = 0;
@@ -368,6 +408,9 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     const sp = 8 * (A.PLAYER.speedMul || 1) * S.speedMul * dt;
     P.x = clamp(P.x + dirX * sp, -ARENA + 0.5, ARENA - 0.5); P.z = clamp(P.z + dirZ * sp, -ARENA + 0.5, ARENA - 0.5);
     shoot();
+    for (let i = pend.length - 1; i >= 0; i--) { const h = pend[i]; h.t -= dt; if (h.t <= 0) { pend.splice(i, 1); if (!h.e.dead) hurt(h.e, h.dmg, h.slow, false, h.el, h.wid); } }
+    for (let i = crystalQ.length - 1; i >= 0; i--) { crystalQ[i] -= dt; if (crystalQ[i] <= 0) { crystalQ.splice(i, 1); crystal(); } }
+    { let n = 0; for (const e of enemies) if (!e.d.static) n++; if (elapsed <= 10) { a10sum += n; a10n++; } if (elapsed <= 20) { a20sum += n; a20n++; } if (elapsed <= 60) { a60sum += n; a60n++; } }
 
     updateEnemies(dt, es);
     if (result) break;
@@ -383,13 +426,13 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     for (let i = clouds.length - 1; i >= 0; i--) {
       const c = clouds[i];
       c.life -= dt; c.tick -= dt;
-      if (c.tick <= 0) { c.tick = 0.5; for (const e of [...enemies]) if (!e.dead && d2(e.x, e.z, c.x, c.z) < c.r + e.d.r * 0.5) hurt(e, c.dmg * 0.5, false, true); }
+      if (c.tick <= 0) { c.tick = 0.5; for (const e of [...enemies]) if (!e.dead && d2(e.x, e.z, c.x, c.z) < c.r + e.d.r * 0.5) hurt(e, c.dmg * 0.5, false, true, c.el, c.wid); }
       if (c.life <= 0) clouds.splice(i, 1);
     }
     for (let i = strikes.length - 1; i >= 0; i--) {
       const s = strikes[i];
       s.t -= dt;
-      if (s.t <= 0) { strikes.splice(i, 1); for (const e of [...enemies]) if (!e.dead && d2(e.x, e.z, s.x, s.z) < s.r + e.d.r * 0.5) hurt(e, s.dmg, false, false); }
+      if (s.t <= 0) { strikes.splice(i, 1); for (const e of [...enemies]) if (!e.dead && d2(e.x, e.z, s.x, s.z) < s.r + e.d.r * 0.5) hurt(e, s.dmg, false, false, s.el, s.wid); }
     }
     for (let i = hazards.length - 1; i >= 0; i--) {
       const h = hazards[i];
@@ -407,12 +450,13 @@ export function simulate(A, idx, prof, seed, opts = {}) {
         pickups.splice(i, 1);
         if (p.type === "heart") S.hp = Math.min(S.hp + 1, S.maxHp);
         else if (p.type === "crystal") {
-          if (pickups.filter((q) => q.type === "crystal").length < crystalsWanted) crystal();
           if (L.objective === "crystal") {
             collected++;
             if (S.rain && rnd() < S.rain) collected++;
-            if (collected >= L.goal) { result = { win: true, cause: "win" }; break; }
-          } else if (rnd() < 0.35 * dda.heartMul) pickups.push({ type: "heart", x: p.x, z: p.z });
+            if (crystalGoalMet(L, collected, kills)) { result = { win: true, cause: "win" }; break; }
+          }
+          if (!(L.objective === "crystal" && collected >= L.goal) && pickups.filter((q) => q.type === "crystal").length + crystalQ.length < crystalsWanted) { if (L.crystalDelay > 0) crystalQ.push(L.crystalDelay); else crystal(); }
+          if (L.objective !== "crystal" && rnd() < 0.35 * dda.heartMul) pickups.push({ type: "heart", x: p.x, z: p.z });
         }
       }
     }
@@ -431,17 +475,19 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     if (timeLeft <= 0) { result = L.objective === "survive" ? { win: true, cause: "win" } : { win: false, cause: "timeout" }; }
   }
   if (!result) result = { win: false, cause: "timeout" };
-  return { ...result, sec: elapsed, hits, dmg: dmgTaken, hpEnd: S.hp };
+  return { ...result, sec: elapsed, hits, dmg: dmgTaken, hpEnd: S.hp, kills, a10: a10n ? a10sum / a10n : 0, a20: a20n ? a20sum / a20n : 0, a60: a60n ? a60sum / a60n : 0, wdmg, evo };
 }
 
 // N koşu -> özet. seed'ler (bölüm, profil, koşu) üçlüsünden türetilir: aynı girdi = aynı sonuç
 export function runMany(A, idx, prof, N = 200, seed = 1, opts = {}) {
   const off = Object.keys(PROFILES).indexOf(prof.id) * 99991 + idx * 7919;
-  let win = 0, timeout = 0, dead = 0, secWin = 0, secAll = 0, hits = 0, dmg = 0;
+  let win = 0, timeout = 0, dead = 0, secWin = 0, secAll = 0, hits = 0, dmg = 0, a10 = 0, a20 = 0, a60 = 0, evoAll = 0, evoEff = 0;
+  const wd = {};
   for (let k = 0; k < N; k++) {
     const r = simulate(A, idx, prof, seed * 1000003 + off + k * 15485863, opts);
     if (r.win) { win++; secWin += r.sec; } else if (r.cause === "timeout") timeout++; else dead++;
-    secAll += r.sec; hits += r.hits; dmg += r.dmg;
+    secAll += r.sec; hits += r.hits; dmg += r.dmg; a10 += r.a10; a20 += r.a20; a60 += r.a60; evoAll += r.evo.all; evoEff += r.evo.eff;
+    for (const [w, m] of Object.entries(r.wdmg)) for (const [t, v] of Object.entries(m)) { wd[w] = wd[w] || {}; wd[w][t] = (wd[w][t] || 0) + v; }
   }
-  return { n: N, winRate: win / N, timeoutRate: timeout / N, deathRate: dead / N, avgSecWin: win ? secWin / win : null, avgSec: secAll / N, avgHits: hits / N, avgDmg: dmg / N };
+  return { n: N, winRate: win / N, timeoutRate: timeout / N, deathRate: dead / N, avgSecWin: win ? secWin / win : null, avgSec: secAll / N, avgHits: hits / N, avgDmg: dmg / N, a10: a10 / N, a20: a20 / N, a60: a60 / N, evo: evoAll ? evoEff / evoAll : 0, weaponDmg: wd };
 }
