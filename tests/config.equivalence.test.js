@@ -33,15 +33,18 @@ import { LEGACY_LEVEL_IDS } from "../js/core/legacyids.js";
 const BALANCE = {
   0: { goal: 25, time: 105, start: { ghost: 5 }, spawn: [{ ghost: 2 }], every: 6, cap: 8, crystals: 3 },
   1: { goal: 29, time: 120, start: { ghost: 2, bat: 3 }, spawn: [{ bat: 1, ghost: 2 }], every: 9, cap: 8, crystals: 3 },
-  2: { goal: 33, time: 140, start: { ghost: 3, bat: 2, golem: 1 }, spawn: [{ golem: 1, bat: 2 }, { ghost: 3 }], every: 9, cap: 9, crystals: 3 },
+  // Aşama B: w1-03 Ruh3 Yar2 Taş1 / 9 sn -> Ruh2 Yar2 Taş1 / 9.5 sn (3 beceri açık: orta bot %59 -> ~%70)
+  2: { goal: 33, time: 140, start: { ghost: 2, bat: 2, golem: 1 }, spawn: [{ golem: 1, bat: 2 }, { ghost: 3 }], every: 9.5, cap: 9, crystals: 3 },
   3: { goal: 38, time: 155, start: { ghost: 2, bat: 2, golem: 1, archer: 2 }, spawn: [{ ghost: 2, archer: 1 }], every: 9, cap: 10, crystals: 3 },
   4: { objective: "crystal", goal: 31, time: 105, start: { ghost: 2, bat: 3, wolf: 3 }, spawn: [{ wolf: 1, bat: 2 }], every: 9, cap: 11, crystals: 3 },
-  5: { time: 200, start: { ghost: 2, ember: 3, golem: 1 }, spawn: [{ ember: 1, ghost: 2 }], every: 10, cap: 9 },
-  6: { goal: 42, time: 170, crystals: 4 },
+  // Aşama B (bot kalibre): w1-08 Ruh2 Kor3 Taş1 / Kor1 Ruh2 / 10 / 9 -> Ruh2 Kor4 Taş2 / Kor3 Ruh2 / 7 / 11 (orta bot %97 -> ~%69)
+  5: { time: 200, start: { ghost: 2, ember: 4, golem: 2 }, spawn: [{ ember: 3, ghost: 2 }], every: 7, cap: 11 },
+  // Aşama B: w2-02 geçici köprü: Ruh3 Yar3 Taş2 Okç2 Rahip2 / (Rahip1 Yar1 | Okç1 Yar1) / 6 / 11 -> Ruh2 Yar2 Taş1 Okç1 Rahip1 / (Rahip1 Yar1 | Okç1 Ruh1) / 8 / 10 (4 beceri açık; orta bot %38 -> ~%70)
+  6: { goal: 42, time: 170, crystals: 4, start: { ghost: 2, bat: 2, golem: 1, archer: 1, priest: 1 }, spawn: [{ priest: 1, bat: 1 }, { archer: 1, ghost: 1 }], every: 8, cap: 10 },
   7: { time: 120, start: { knight: 1, archer: 2, wolf: 1 }, spawn: [{ archer: 1, ghost: 2 }], every: 7, cap: 7 },
   8: { time: 180 },
 };
-const EXTRA = ["id", "map", "image", "nodeImage", "hint", "reward", "ability", "world", "hook", "objectiveText", "minKills", "crystalDelay", "crystalLure"];
+const EXTRA = ["id", "map", "image", "nodeImage", "hint", "reward", "ability", "world", "hook", "objectiveText", "minKills", "crystalDelay", "crystalLure", "skills"];
 test("LEVELS: eski 9 bölüm yeni kimliklerle eşdeğer (sayılar BALANCE; EK: id, map, görsel, hint, reward/ability, world, hook, objectiveText)", () => {
   assert.equal(A.LEVELS.length, L.LEVELS.length + 2);
   assert.deepEqual(A.LEVEL_IDS, ["w1-01", "w1-02", "w1-03", "w1-04", "w1-05", "w1-06", "w1-07", "w1-08", "w1-09", "w2-02", "w3-09"]);

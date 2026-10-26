@@ -20,6 +20,7 @@ import { starsFor } from "./stars.js";
 import { eligibleDeathLines } from "./deathlines.js";
 import { camp, continueGame, endPractice, hasSave, inPractice, initCampaign, newGame, persist, recordResult, startPractice, statuses } from "./campaign.js";
 import { clearWorld, spawnCrystal, spawnEnemy } from "./world.js";
+import { skillHintTexts } from "./skillrun.js";
 
 let levelStartScore = 0;
 
@@ -122,6 +123,7 @@ export function startLevel() {
   if (dda.startShield) RT.shieldT = (ABILITIES.shield && ABILITIES.shield.params && ABILITIES.shield.params.duration) || 8;
   if (dda.tier > 0 && STRINGS.dda && STRINGS.dda["notice" + (dda.tier + 1)]) RT.hintQ.push({ at: 0.4, text: STRINGS.dda["notice" + (dda.tier + 1)] });
   else if (!practice && L.hint) L.hint.forEach((text, i) => RT.hintQ.push({ at: 0.8 + i * 3.4, text })); // yeni öğe ipuçları: yalnızca ilk girişte, en çok 2 satır, 3 sn
+  if (!practice && !(dda.tier > 0)) skillHintTexts(S.level).slice(0, 1).forEach((text) => RT.hintQ.push({ at: 0.8 + ((L.hint && L.hint.length) || 0) * 3.4, text })); // Aşama B: yeni düşman becerisi ipucu (oturumda bir kez, 3 sn)
   renderHud();
   renderWeapons();
   renderAbilities();

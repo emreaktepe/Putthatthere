@@ -4,6 +4,7 @@ import { RT, bolts, clouds, echoQ, enemies, enemyShots, fxs, hazards, pickups, s
 import { ARENA, rand } from "../core/util.js";
 import { wizard } from "../render/wizard.js";
 import { pickCrystalPoint, pickSpawnPointNear } from "./spawnmath.js";
+import { initEnemySkills, resetSkills } from "./skillrun.js";
 import { WEAPONS } from "../core/data.js";
 import { ELEMENTS } from "../config/registry.js";
 import { weakElements } from "./matchup.js";
@@ -66,6 +67,7 @@ export function spawnEnemy(type, at) {
   if (d.ai === "static") e.cd = 12;
   if (d.ai === "knight") { e.cd = 4; e.wind = 0; e.enraged = false; }
   if (d.ai === "boss") { e.bp = 1; e.shielded = false; e.vuln = 0; e.waveT = 8; }
+  initEnemySkills(e);
   enemies.push(e);
   if (d.ai === "boss" || d.ai === "knight") RT.bossRef = e;
   return e;
@@ -79,6 +81,7 @@ export function clearWorld() {
   enemies.forEach((e) => { disposeEnemy(e); if (e.blob) scene.remove(e.blob); });
   pickups.length = enemies.length = shots.length = enemyShots.length = bolts.length = hazards.length = clouds.length = strikes.length = fxs.length = echoQ.length = 0;
   clearDying();
+  resetSkills();
   resetSparks();
   RT.bossRef = null;
   RT.shieldT = RT.timeslowT = 0;

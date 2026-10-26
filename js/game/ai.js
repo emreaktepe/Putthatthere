@@ -4,6 +4,7 @@ import { LEVELS, STRINGS } from "../core/data.js";
 import { RT, S, enemies, enemyShots, pickups } from "../core/state.js";
 import { ARENA, flatDist, rand } from "../core/util.js";
 import { damagePlayer, killEnemy } from "./combat.js";
+import { onSlamEnd, skillTick } from "./skillrun.js";
 import { liveCount, spawnEnemy, spawnLights } from "./world.js";
 import { setIce, setShieldVis } from "../render/enemies.js";
 import { addBolt, addHazard, burst, makeShot } from "../render/fx.js";
@@ -116,7 +117,8 @@ export function updateEnemies(dt, t, es) {
     const ux = dx / dist, uz = dz / dist;
     let mx = 0, mz = 0; // hareket (birim/sn)
 
-    switch (d.ai) {
+    const held = e.sk ? skillTick(e, dt, es, dist) : false; // Aşama B: beceri uyarısı/eylemi sürerken düşmanın kendi hareketi çalışmaz
+    if (!held) switch (d.ai) {
       case "chase": {
         let cx = ux, cz = uz;
         if (d.zig) { const a = Math.sin(t * 5 + e.phase) * 0.9, c = Math.cos(a), s = Math.sin(a); cx = ux * c + uz * s; cz = -ux * s + uz * c; }
@@ -178,7 +180,7 @@ export function updateEnemies(dt, t, es) {
         if (!e.enraged && e.hp <= e.maxHp * 0.5) { e.enraged = true; e.spd = 1.6; e.cd = 0; toast(STRINGS.toasts.knightEnrage, 2000); }
         if (e.wind > 0) {
           e.wind -= edt; e.windT = 0.1; // yere vurma hazırlığı 1 sn ("windup"); biterken şok dalgası patlar ("attack")
-          if (e.wind <= 0) e.atkT = 0.4;
+          if (e.wind <= 0) { e.atkT = 0.4; onSlamEnd(e); }
         } else {
           mx = ux * e.spd; mz = uz * e.spd;
           e.cd -= edt;
@@ -195,7 +197,7 @@ export function updateEnemies(dt, t, es) {
     }
 
     e.moving = mx * mx + mz * mz > 0.01;
-    if (d.ai === "chase") e.windT = d.dmg > 0 && RT.invuln <= 0 && dist < d.r + 1.2 ? 0.1 : 0; // temas hasarından hemen önce uyarı pozu
+    if (d.ai === "chase" && !held) e.windT = d.dmg > 0 && RT.invuln <= 0 && dist < d.r + 1.2 ? 0.1 : 0; // temas hasarından hemen önce uyarı pozu
     p.x = THREE.MathUtils.clamp(p.x + mx * edt + e.kx * dt, -ARENA - 1, ARENA + 1);
     p.z = THREE.MathUtils.clamp(p.z + mz * edt + e.kz * dt, -ARENA - 1, ARENA + 1);
     const kd = Math.exp(-dt * 10); // vuruş geri itmesi hızla söner

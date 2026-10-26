@@ -779,3 +779,72 @@ Geçme oranı (%): "yürüyen" sütununda parantez = eski config'te.
 
 ### Kalan işler
 Aşama B (beceriler; bot modeline eklenince orta botun Perde I sonundaki gevşemesi düzelmeli), C (tehlikeler/atmosfer), D/E (Perde II-III, 8 yeni tür), F (perk'ler, M5-M7 telemetri paneli). Oyun testinde bakılacaklar: ilk 3 bölümde düşman geliyor mu, Yıldırım hâlâ baskın mı (özellikle w1-07 sonrası), etiketler okunuyor mu, minKills hissi.
+
+
+---
+
+## Aşama B uygulama notları (geliştirme odası)
+
+Durum: UYGULANDI (Aşama B). Tüm sayılar VARSAYIMDIR; gerçek oyuncu testi yapılmadı, bot yaklaşık bir modeldir.
+
+### Yapılanlar
+- **Saf çerçeve:** `js/game/skills.js` (DOM/Three yok, Node'da test edilir): `SKILLS` tablosu (tetikleyici sayıları, bekleme, uyarı, etki), `canTrigger`, `onWindupEnd` (iptal kuralları), `veilStep/veilBlocks`, `emberChainVictims`, `pickReviveTarget/isReviveCandidate/reviveAllowed`, `auraMul`, `skillDamageMul`, `volleyPoints`, `skillSteps` (öğretim sırası denetimi), `warnBudgetOk` (eşzamanlı 3 işaret). Oyun tarafı: `js/game/skillrun.js` (`skillTick` her düşman karesinde `ai.js`'ten çağrılır; `true` dönerse düşmanın kendi hareketi o karede çalışmaz). DDA ve alıştırma kipi bu dosyalara bağlı DEĞİL: sıklık/bekleme değişmez (testle denetlenir).
+- **Config:** `levels.<id>.skills` (isteğe bağlı; yoksa beceri yok = eski davranış). Şema `enm("SKILL_IDS")` dizisi, doğrulayıcı bilinmeyen kimliği `E_ENUM` ile reddeder, `adapt` aktarır, admin formunda dizi-enum satırı (`enumRow`). `strings.skills.<id>`: bölüm başı ipucu metinleri (en çok 100 karakter).
+- **Uyarı okunurluğu:** her uyarılı beceride düşman `windup` modunda (`e.windT`, yeni model/animasyon yok) ve yerde `addHazard` halkası var (`fx.addHazard` artık kaydı döndürür). Uyarı sırasında düşman ölürse işaretler kaldırılır (`onEnemyKilled`). Eşzamanlı en çok 3 işaret (volley 3 yer ister). Bekleme düşman zamanıyla işler (Buz bekleme/tetiklemeyi uzatır), uyarı süresi oyun zamanıyla (Zaman Çatlağı uyarıyı da uzatır, hazard ile uyumlu).
+- **Beceriler:** Ruh `veil` (>7 birimde saydam [`render/enemies.setVeil`] ve mermi içinden geçer; yaklaşınca 0.15 sn sonra katı; Arcane/Ay Işığı deler; elementsiz hasar [Kor patlaması] geçemez); Yarasa `batDive` (>=2 yarasa oyuncuya 12 birim, 7 sn, 0.6 sn uyarı = kilitli nokta halkası, 12 hız dalış en çok 0.7 sn; vurulursa/itilirse bozulur; Buz'la yavaşlamışsa başlamaz/iptal); Taş Bekçi `quake` (oyuncu <4.5, 7 sn, 1.0 sn halka r 3.2, 1 hasar, sonra 0.8 sn ayakta); Okçu `volley` (9 sn, 1.2 sn, oyuncunun hareket yönünün 1.2 önünde + yanlara 2 işaret, r 1.5, 1 hasar; Buz'lu okçu başlamaz); Kurt `howl` (>=2 kurt ya da hp<%50, 12 sn, 0.9 sn, vurulunca iptal; 12 birimdeki kurtlar 5 sn x1.3 hız, yorgunluk %30 kısa); Kor `emberChain` (patlayan Kor'un 3.5 birimindeki fitilsiz Kor'lar 0.25 sn sonra patlar; yerde ateş lekesi r 1.6, 3 sn, 0.5 sn ısınma sonra 1 hasar/sn; havuz en çok 2 leke); Rahip `revive` (7 birim, son 4 sn, rahip başına 2, 10 sn, 1.5 sn yeşil halka, cap'e saygılı; diriltilen puan/öldürme vermez); Totem `aura` (6 birim x0.6, sürekli mor halka); Şövalye `leap` (hp<%75, 9 sn, 0.9 sn kilitli işaret [son 0.3 sn zıplama], iniş 2 hasar r 2.2, sonra 1.2 sn yorgun x1.5; ayrıca leap açıkken yer şokundan sonra 1.0 sn "açık an" x1.3, düşman ayakta bekler).
+- **Silah karşıtlığı bağı:** hasar yine `combat.hurt` -> `matchup.js` (E/D/I) ile hesaplanır; beceri çarpanı (aura, yorgun/açık an) matris çarpanından SONRA uygulanır. Karşı oyun: Buz (batDive/volley başlamaz), Ay Işığı/nova itmesi (dalışı bozar; hurt bayrağı), Arcane/Ay Işığı (perdeyi deler), uzaktan Arcane/Buz (zincir patlama), vurmak (howl iptal), Meteor/Mızrak (açık an).
+
+### Bölüm -> beceri (kademeli açılış)
+| Bölüm | Açık beceriler | Yeni |
+|---|---|---|
+| w1-01 | veil | veil |
+| w1-02 | veil, batDive | batDive |
+| w1-03 | + quake | quake |
+| w1-04 | aynı | - |
+| w1-05 | + volley | volley |
+| w1-06 | + aura | aura |
+| w1-07 | aynı | - |
+| w1-08 | + emberChain | emberChain |
+| w1-09 | + leap | leap |
+| w2-02 (köprü) | w1-09 ile aynı küme (howl/revive YOK; bölümde etkin olanlar: veil, batDive, quake, volley) | - |
+| w3-09 | alan yok (beceri yok) | - |
+
+Sapma: belge `aura`'yı w1-08'de `emberChain` ile birlikte açıyordu; "her bölümde en çok 1 yeni şey" kuralı için `aura` Lanet Totemi'nin ilk çıktığı w1-06'ya alındı (w1-08'de zaten açık). `howl` (w2-03) ve `revive` (w2-07) yalnız tanım + test; hiçbir bölümde açık değil. Belge `volley`'yu w2-01 diyordu; Okçu Perde I'de w1-05'te çıktığı için orada açıldı (Okçu'nun mevcut atışına ek olarak çalışır).
+
+### Config önce -> sonra (yalnızca start/spawn/every/cap; goal/time/kristal değişmedi)
+| Bölüm | Önce | Sonra | Neden (orta bot) |
+|---|---|---|---|
+| w1-03 | Ruh3 Yar2 Taş1 / (Taş1 Yar2 veya Ruh3) / 9 sn / cap 9 | Ruh2 Yar2 Taş1 / aynı / 9.5 sn / cap 9 | 3 beceri sonrası %59 -> ~%70 |
+| w1-06 | Ruh2 Yar1 / Ruh2 Yar1 / 12 / 8 | Ruh3 Yar2 / Ruh2 Yar1 / 11 / 9 | nefes bölümü, hafif sertleşme |
+| w1-08 | Ruh2 Kor3 Taş1 / Kor1 Ruh2 / 10 / 9 | Ruh2 Kor4 Taş2 / Kor3 Ruh2 / 7 / 11 | %97 -> ~%70 |
+| w2-02 | Ruh3 Yar3 Taş2 Okç2 Rahip2 / (Rahip1 Yar1 / Okç1 Yar1) / 6 / 11 | Ruh2 Yar2 Taş1 Okç1 Rahip1 / (Rahip1 Yar1 / Okç1 Ruh1) / 8 / 10 | 4 beceri açılınca %38 -> ~%72 |
+
+### Bot (`tools/balance/sim.mjs`) sonuçları (YAKLAŞIK; N=100, seed 1; kalibre DEĞİL)
+Bota eklenenler: becerilerin aynı sabitlerle soyut modeli (perde hedeflemesi, dalış, sarsıntı, ok işaretleri, zincir patlama + ateş lekesi, aura, atılış/yorgunluk/açık an), profil başına `watch` (uyarı işaretini görme olasılığı: acemi 0.5, orta 0.7, iyi/usta 1) ve `tgtDelay` kadar tepki gecikmesi. `howl`/`revive` botta yok (hiçbir bölümde açık değil).
+
+| Bölüm | hedef | yürüyen | acemi | orta | iyi | usta |
+|---|---|---|---|---|---|---|
+| w1-01 | 92 | 0 | 3 | 95 | 100 | 100 |
+| w1-02 | 88 | 0 | 0 | 84 | 100 | 100 |
+| w1-03 | 85 | 0 | 0 | 70 | 100 | 100 |
+| w1-04 | 84 | 99 (hayatta kal) | 42 | 100 | 100 | 100 |
+| w1-05 | 77 | 0 | 1 | 94 | 100 | 100 |
+| w1-06 | 86 | 0 | 40 | 100 | 100 | 100 |
+| w1-07 | 71 | 0 | 85 | 99 | 100 | 100 |
+| w1-08 | 65 | 0 | 0 | 70 | 94 | 100 |
+| w1-09 | 48 | 0 | 0 | 51 | 100 | 100 |
+| w2-02 | 79 | 0 | 3 | 72 | 100 | 100 |
+
+Hedef bandla karşılaştırma: w1-08 (70, hedef 60-70) ve w1-09 (51, hedef 45-60) bandın içinde. w1-03 hedefin 15 altında (70/85; Arcane perdeyi ancak bu bölümün ödülüyle açar). w1-05 (+17), w1-06 (+14), w1-07 (+28) HÂLÂ hedefin üstünde: botun kaçış/tepki modeli bu bölümlerin baskısını karşılıyor; w1-07'de Kurt `howl` bilerek açılmadı (belge Perde II), sayıları sertleştirmek (A20 5'e kadar) insan için orantısız zor olacağından denenip bırakıldı. Acemi bot (>= 0.5 x orta kuralı) SAĞLANMADI: acemi bot çok zayıf modellendi (Aşama A'dan beri). Statik TP modeli beceri baskısını bilmez: `BOT_CALIBRATED = {w1-08}` (js/config/balance.js) için Z sıçraması/monotonluk/tepe/p±10 kuralları uygulanmaz (p >= 0.3 şartı sürer; w1-08 model p 0.32); w2-02 model p 0.94 (hedef 0.79) için test toleransı 0.16'ya çıkarıldı (geçici köprü).
+
+### Doğrulayıcı
+`balanceIssues`: bir bölümde ilk kez açılan beceri >1 ise ve önceki bölümlerde açık beceri kapanırsa W_BALANCE (`skillSteps`); bilinmeyen kimlik E_ENUM. Repo config'i 0 hata, 0 uyarı.
+
+### Performans / mobil
+Eşzamanlı yer işareti en çok 3 (her biri 2 Mesh: halka + dolgu; yalnızca tetiklenince doğar, bitince atılır; her karede nesne üretimi yok). Kalıcı ek Mesh: Lanet Alanı halkası totem başına 1 (w1-08'de en çok 3), ateş lekesi havuzu en çok 2 (kalıcı ek <= 5 çizim çağrısı). Uyarı işaretleri geçici; w1-08'de en kötü anda geçici toplam +6'yı AŞABİLİR (3 halka + 2 leke + işaretler). Gerçek cihazda ÖLÇÜLMEDİ.
+
+### Ölçülemeyenler / kalan işler
+- Uyarıların okunurluğu, "haksız" hissi, dokunmatik ve gerçek kare hızı ölçülemedi. Headless Chrome ile `?dev=1&level=w1-03` ve `w1-08` 25 sn sanal süre açıldı: konsolda hata yok (yalnızca THREE.Clock kullanımdan kalkıyor uyarısı); bölümün gerçekten başlayıp becerilerin tetiklendiği görsel olarak doğrulanamadı (DOM dökümü zaman aşımı).
+- Yarasa dalışında "yerde ince çizgi" yerine kilitli hedef noktasında halka var (çizgi için yeni geometri gerekirdi); sapma.
+- `howl`/`revive` Perde II bölümlerine eklenince bota işlenmeli; beceri TP+ değerleri (`SKILLS.*.tp`) henüz statik denge modeline bağlı değil.
+- El ile denenecekler: w1-03 Taş Bekçi sarsıntısı (halka okunuyor mu, 4.5 birim tetikleyici fazla mı), w1-05 ok yağmuru (3 işaret kaçılabilir mi), w1-08 zincir patlama + ateş lekesi (haksız hissi), w1-09 Şövalye atılışı ve yorgunluk penceresi, w1-01 perdeli Ruh (Ateş/Buz ile vurulamayan Ruh sıkıcı mı), ipucu toast'ları.

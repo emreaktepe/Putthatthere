@@ -11,6 +11,8 @@ import { scaledEvery } from "./dda.js";
 import { crystalGoalMet, effectiveCap } from "./spawnmath.js";
 import { isTouch, keys, mouse, ray } from "./input.js";
 import { cast, fireSpell, nearestEnemies } from "./weapons.js";
+import { updateSkills } from "./skillrun.js";
+import { veilBlocks } from "./skills.js";
 import { liveCount, placePickup, spawnCrystal, spawnEnemy } from "./world.js";
 import { tickDying } from "../render/enemies.js";
 import { addCloud, addFx, burst, dropHazard, emit, removeObj, updateSparks } from "../render/fx.js";
@@ -88,6 +90,8 @@ export function update(dt, t) {
 
   updateEnemies(dt, t, es);
   if (!RT.running) return;
+  updateSkills(dt, t);
+  if (!RT.running) return;
 
   // Oyuncu mermileri
   for (let i = shots.length - 1; i >= 0; i--) {
@@ -101,7 +105,7 @@ export function update(dt, t) {
     } else if (!gone) {
       let target = null;
       for (const e of enemies) {
-        if (s.hit.has(e)) continue;
+        if (s.hit.has(e) || veilBlocks(e.veiled, s.element)) continue; // perdeli Ruh: mermi içinden geçer
         if (flatDist(s.mesh.position, e.mesh.position) < e.d.r + 0.3) { target = e; break; }
       }
       if (target) {

@@ -53,6 +53,22 @@ export function buildEnemy(type) {
   const d = ENEMIES[type], model = d.model; // görünüm/ses modeli: enemies.<id>.model (varsayılan: kimlik; kayıtlı MODEL_KINDS hepsi ENEMY_VIS'te)
   return buildVisEnemy(d, ENEMY_VIS[model] || ENEMY_VIS.ghost);
 }
+// Sis Perdesi (skills.js veil): perdeliyken model saydam; malzemelerin özgün hâli ilk çağrıda saklanır, yalnız durum değişince uygulanır
+export function setVeil(e, on) {
+  if (!e.vis || e.veilOn === on) return;
+  e.veilOn = on;
+  if (!e.veilMats) {
+    const seen = new Set();
+    e.vis.group.traverse((o) => { if (o.material) for (const m of Array.isArray(o.material) ? o.material : [o.material]) seen.add(m); });
+    e.veilMats = [...seen].map((m) => ({ m, t: m.transparent, o: m.opacity, w: m.depthWrite }));
+  }
+  for (const r of e.veilMats) {
+    r.m.transparent = on ? true : r.t;
+    r.m.opacity = on ? Math.min(r.o, 0.3) : r.o;
+    r.m.depthWrite = on ? false : r.w;
+    r.m.needsUpdate = true;
+  }
+}
 // yavaşlama göstergesi: küçük buz kristalleri (paylaşımlı geometri/materyal)
 export function setIce(e, on) {
   if (on && !e.iceG) {

@@ -4,7 +4,7 @@
 // Alan tanımı: { t: tür, req?: zorunlu, def?: varsayılan, label?: Türkçe etiket, ... türe özgü sınırlar }
 // Türler: int, num, str, hex, bool, enum, ref, arr, obj, map (id'li nesne), rec (ref anahtarlı nesne)
 
-import { ART_RE, ELEMENTS, ENUMS, ID_RE, UI_ICON_KEYS, WEATHER_MAX } from "./registry.js";
+import { ART_RE, ELEMENTS, ENUMS, ID_RE, SKILL_IDS, UI_ICON_KEYS, WEATHER_MAX } from "./registry.js";
 
 export const CONFIG_SCHEMA_VERSION = 1;
 
@@ -149,6 +149,8 @@ export const SCHEMA = obj({
       resist: str(1, 20, { label: "Etiket: Dirençli vuruş" }),
       needKills: str(1, 120, { label: "Kristaller tamam, düşman bekleniyor" }),
     }, { label: "Karşıtlık / hedef metinleri" }),
+    // Aşama B: düşman becerisi ipucu toast'ları (beceri kimliği -> kısa metin; yoksa ipucu gösterilmez)
+    skills: obj(Object.fromEntries(SKILL_IDS.map((k) => [k, str(1, 100, { label: "Beceri ipucu: " + k })])), { label: "Düşman becerisi ipuçları" }),
     // Aşama 1: dinamik yardım (DDA) bilgi satırları; kademe 2/3/4+ (bkz. js/game/dda.js). İsteğe bağlı: yoksa bilgi satırı gösterilmez
     dda: obj({
       notice2: str(1, 120, { label: "Yardım bilgisi: 2. ölümden sonra" }),
@@ -304,6 +306,7 @@ export const SCHEMA = obj({
     reward: ref("weapons", { label: "Ödül büyü" }),
     ability: ref("abilities", { label: "Ödül yetenek" }),
     totems: arr(arr(num(-12, 12), 2, 2), 1, 6, { label: "Totem konumları [x,z]" }),
+    skills: arr(enm("SKILL_IDS"), 0, 9, { label: "Açık düşman becerileri (kademeli: bölümde en çok 1 yeni)" }),
     image: art({ label: "Bölüm kapak görseli (3:2)" }),
     nodeImage: art({ label: "Harita düğümü madalyonu (kare)" }),
     hint: arr(str(1, 100), 0, 2, { label: "Yeni öğe ipuçları (yalnızca ilk girişte, 3 sn bildirim; en çok 2)" }),

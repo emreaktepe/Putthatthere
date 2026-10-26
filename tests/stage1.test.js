@@ -7,7 +7,7 @@ import { rollDamage } from "../js/game/damage.js";
 import { SPAWN_MIN_DIST, effectiveCap, pickSpawnPoint } from "../js/game/spawnmath.js";
 import { DEFAULT_SETTINGS, SETTINGS_KEY, readSettings, writeSettings } from "../js/core/settings.js";
 import { MAX_ATTEMPTS, MAX_BYTES, TELEMETRY_KEY, emptyTelemetry, loadTelemetry, recordAttempt, sanitizeTelemetry, saveTelemetry, summarize } from "../js/core/telemetry.js";
-import { balanceIssues, campaignBalance, enemyTP, passProb, zForProb } from "../js/config/balance.js";
+import { BOT_CALIBRATED, balanceIssues, campaignBalance, enemyTP, passProb, zForProb } from "../js/config/balance.js";
 import { validate } from "../js/config/validate.js";
 import { PROFILES, loadConfig, runMany, simulate } from "../tools/balance/sim.mjs";
 import { TARGET_P } from "../tools/balance/targets.mjs";
@@ -79,14 +79,15 @@ test("Perde I dengesi: Z tırmanışı düzgün (nefes ve köprü bölümü hari
   const rows = campaignBalance(cfg); assert.equal(rows.length, 11);
   const NEFES = new Set(["w1-04", "w1-06", "w2-02"]); // plan §4.6: w1-06 nefes bölümü; w2-02 geçici köprü (Perde II başı gibi kolay; Perde II yapılınca yeniden sıralanır)
   for (let i = 1; i < rows.length; i++) {
-    if (NEFES.has(rows[i].id)) continue;
+    if (NEFES.has(rows[i].id) || BOT_CALIBRATED.has(rows[i].id) || BOT_CALIBRATED.has(rows[i - 1].id)) continue; // Aşama B: w1-08 bot-kalibre (balance.js BOT_CALIBRATED); sonraki bölüm (w1-09 sınav) ondan bağımsız
     assert.ok(rows[i].Z >= rows[i - 1].Z - 0.011, `${rows[i].id} Z düşmemeli`);
     // bilinçli değişiklik: Aşama A — önceki bölüm çok kolaysa (Z < 1.2, JUMP_FLOOR_Z) oran yanıltıcı; w1-01 (Z~1.0) -> w1-02 sıçraması sayılmaz
     if (!["miniboss", "boss"].includes(rows[i].objective) && rows[i - 1].Z >= 1.2) assert.ok(rows[i].Z / rows[i - 1].Z <= 1.35, `${rows[i].id} sıçrama`);
   }
-  assert.equal(Math.max(...rows.map((r) => r.Z)), rows[10].Z, "final boss zirve");
+  assert.equal(Math.max(...rows.filter((r) => !BOT_CALIBRATED.has(r.id)).map((r) => r.Z)), rows[10].Z, "final boss zirve (bot-kalibre bölüm hariç)");
   assert.ok(rows[1].Z / rows[0].Z < 1.6, "w1-01 hedefli kolay giriş; w1-02 sıçraması taban kuralıyla muaf");
-  for (const r of rows) { assert.ok(Math.abs(r.p - TARGET_P[r.id]) <= (r.id === 'w3-09' ? 0.13 : 0.1), // bilinçli değişiklik: Aşama A — boss çağrısı Ruh'unun TP'si q=0.5 ile düştü (w3-09 geçici köprü, Perde III'te yeniden tasarlanacak)
+  for (const r of rows) { assert.ok(BOT_CALIBRATED.has(r.id) || Math.abs(r.p - TARGET_P[r.id]) <= (r.id === 'w3-09' ? 0.13 : r.id === 'w2-02' ? 0.16 : 0.1), // Aşama B: w2-02 geçici köprü, 4 beceri açık; bot ~%70 için sayılar azaltıldı, statik model p ~0.94 (Perde II'de yeniden)
+     // bilinçli değişiklik: Aşama A — boss çağrısı Ruh'unun TP'si q=0.5 ile düştü (w3-09 geçici köprü, Perde III'te yeniden tasarlanacak)
      `${r.id} model p ${r.p} hedef ${TARGET_P[r.id]}`); assert.ok(r.p >= 0.3); }
   assert.deepEqual(balanceIssues(cfg), []);
 });

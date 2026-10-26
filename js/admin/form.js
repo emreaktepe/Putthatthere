@@ -237,6 +237,7 @@ function arrField(ctx, spec, segs, opts, label) {
     const ip = ptr([...segs, i]);
     let body;
     if (it.t === "ref") body = refRow(ctx, it, ip, spec);
+    else if (it.t === "enum") body = enumRow(ctx, it, ip, spec);
     else if (isPair(it)) body = pairRow(ctx, it, ip, x);
     else if (it.t === "obj") body = isDialog ? dialogRow(ctx, it, [...segs, i]) : h("details", { class: "sub", open: opts.depth < 3 && arr.length <= 3 }, h("summary", null, `#${i + 1}${x && x.name ? " · " + x.name : x && x.from ? " · " + x.from + " → " + x.to : ""}`), ...objFields(ctx, it, [...segs, i], { ...opts, skip: null }, (opts.depth || 1) + 1));
     else if (it.t === "rec") body = recField(ctx, it, ip, "#" + (i + 1), true);
@@ -259,6 +260,13 @@ function csvField(ctx, spec, p, label, arr) {
     ctx.set(p, parts);
   });
   return wrap(ctx, spec, p, input, { label, inputId: id });
+}
+
+function enumRow(ctx, it, ip, arrSpec) {
+  const sel = selectEl(nid(), enumList(it).map((x) => [x, x]), ctx.get(ip), null);
+  sel.setAttribute("aria-label", arrSpec.label || "Seçim");
+  sel.addEventListener("change", () => ctx.set(ip, sel.value));
+  return sel;
 }
 
 function refRow(ctx, it, ip, arrSpec) {

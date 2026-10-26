@@ -3,6 +3,8 @@
 // Saf: DOM/Three.js'e dokunmaz; ham (adapt edilmemiş) konfigürasyon üzerinde çalışır; doğrulayıcı, denge botu ve testler kullanır.
 // UYARI: Tüm katsayılar VARSAYIMDIR (plan V3-V6); gerçek oyuncu/bot verisiyle kalibre edilmedi. Sonuçlar "sıralama aracı"dır, mutlak p değildir.
 
+import { skillSteps } from "../game/skills.js";
+
 export const TP = { hpExp: 0.45, speedBase: 0.5, speedK: 0.25, ai: { chase: 1, ranged: 1.5, charge: 1.3, bomber: 1, support: 1.5, knight: 1.3, boss: 1.5 }, totem: 3.0 };
 // "mesafe tutan / hücumlu" düşmanlar için etkin hız (plan §1.2 notu)
 export const V_EFF = { charge: 3.4, ranged: 2.0, support: 1.5 };
@@ -15,7 +17,10 @@ export const TIME_SHARE = { min: 1.4, max: 2.2 }; // kristal bölümü: time / (
 export const MOBILE_CAP = 12; // V14
 export const START_CAP_RATIO = 1.5;
 export const JUMP_MAX = 1.35;
-export const JUMP_FLOOR_Z = 1.2; // ardışık Z sıçraması (sınav bölümleri hariç)
+export const JUMP_FLOOR_Z = 1.2;
+// Aşama B: zorluğu STATİK modele değil, becerileri bilen denge botuna (tools/balance/sim.mjs) göre ayarlanmış bölümler. Statik TP modeli beceri baskısını
+// ve bot kaçınmasını bilmez; bu bölümlerde Z sıçraması/monotonluk/tepe ve model-p bandı kuralları uygulanmaz (p >= 0.3 şartı sürer). Sayılar VARSAYIMDIR.
+export const BOT_CALIBRATED = new Set(["w1-08"]); // ardışık Z sıçraması (sınav bölümleri hariç)
 
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const r1 = (x) => Math.round(x * 10 + 1e-9) / 10; // plan tablolarıyla aynı yuvarlama (1 ondalık)
@@ -136,13 +141,18 @@ export function balanceIssues(cfg) {
       if (!["miniboss", "boss", "survive"].includes(L.objective) && planned20(L) < PLANNED_20S_MIN) out.push({ path: ["levels", id, "start"], message: `İlk 20 sn'de planlanan düşman ~${planned20(L).toFixed(1)}: ekran boş kalabilir (en az ${PLANNED_20S_MIN} önerilir)` });
       if (Number.isInteger(L.cap) && L.cap > MOBILE_CAP) out.push({ path: ["levels", id, "cap"], message: `cap ${L.cap}: mobil için en çok ${MOBILE_CAP} önerilir` });
     }
+    // Aşama B: kademeli tanıtma (bölümde ilk kez açılan beceri <= 1) ve beceri kümesi önceki bölümlerin üst kümesi
+    for (const st of skillSteps(lv, order)) {
+      if (st.added.length > 1) out.push({ path: ["levels", st.id, "skills"], message: `Bu bölümde ${st.added.length} beceri ilk kez açılıyor (${st.added.join(", ")}): kademeli tanıtma için bölüm başına en çok 1 yeni beceri önerilir` });
+      if (st.dropped.length) out.push({ path: ["levels", st.id, "skills"], message: `Önceki bölümde açık olan beceri(ler) kapanıyor (${st.dropped.join(", ")}): beceri kümesi önceki bölümlerin üst kümesi olmalı` });
+    }
     const rows = campaignBalance(cfg);
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i], L = lv[r.id];
       const total = Object.values(L.start || {}).reduce((a, b) => a + (typeof b === "number" ? b : 0), 0);
       if (Number.isInteger(L.cap) && total > L.cap * START_CAP_RATIO) out.push({ path: ["levels", r.id, "start"], message: `Başlangıçta ${total} düşman var; cap ${L.cap} için fazla (en çok cap x ${START_CAP_RATIO})` });
       if (r.p < 0.3) out.push({ path: ["levels", r.id, "start"], message: `Model tahmini ilk-deneme geçme oranı ~%${Math.round(r.p * 100)} (Z ${r.Z}, B30 ${r.B30}): hedef bandın altında (yaklaşık model)` });
-      if (i > 0 && r.objective !== "miniboss" && r.objective !== "boss") {
+      if (i > 0 && r.objective !== "miniboss" && r.objective !== "boss" && !BOT_CALIBRATED.has(r.id)) {
         const prev = rows[i - 1];
         // giriş tabanı: önceki bölüm çok kolaysa (Z < JUMP_FLOOR_Z; ilk bölüm / nefes) oran yanıltıcıdır, sıçrama sayılmaz
         if (prev.Z >= JUMP_FLOOR_Z && r.Z / prev.Z > JUMP_MAX) out.push({ path: ["levels", r.id, "start"], message: `Zorluk sıçraması: Z ${prev.Z} -> ${r.Z} (x${(r.Z / prev.Z).toFixed(2)}); en çok x${JUMP_MAX} önerilir (yaklaşık model)` });
