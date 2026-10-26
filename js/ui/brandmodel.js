@@ -5,7 +5,7 @@ export const BRAND = {
   sub: "Büyücünün Gecesi",
   full: "HEXORA: Büyücünün Gecesi",
   kicker: "KARANLIĞIN KALBİ",
-  slogan: "Bir büyü. Dokuz bölüm. Tek kader.",
+  slogan: "Bir büyü. Bir gece. Tek kader.",
   // Emre'nin uygulama ikonu (yuvarlak köşeli kare, arka planlı): küçük kullanım 256, büyük kullanım 512
   emblem256: "./assets/favicon/icon-256.webp",
   emblem512: "./assets/favicon/icon-512.webp",

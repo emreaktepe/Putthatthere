@@ -47,8 +47,9 @@ export function adapt(cfg) {
     if (w.speed !== undefined) o.speed = w.speed;
     if (w.pierceable) o.pierceable = true;
     if (w.slow) o.slow = true;
+    for (const f of ["element", "life", "slowScale", "slowTime"]) if (w[f] !== undefined) o[f] = w[f];
     if (w.spread) o.spread = w.spread.n;
-    if (w.chain) { o.chain = w.chain.n; o.range = w.chain.range; }
+    if (w.chain) { o.chain = w.chain.n; o.range = w.chain.range; if (w.chain.hop !== undefined) o.hop = w.chain.hop; if (w.chain.falloff) o.falloff = [...w.chain.falloff]; }
     if (w.cloud) o.cloud = { ...w.cloud };
     if (w.meteor) o.meteor = { ...w.meteor };
     if (w.nova) o.nova = { ...w.nova };
@@ -79,6 +80,8 @@ export function adapt(cfg) {
     if (e.summons2) o.summons2 = [...e.summons2];
     if (e.character) o.character = e.character;
     if (e.image) o.image = e.image;
+    if (e.tags && e.tags.length) o.tags = [...e.tags];
+    if (e.res && Object.keys(e.res).length) o.res = { ...e.res };
     ENEMIES[id] = o;
     ENEMY_NAMES[id] = e.name;
   }
@@ -106,6 +109,8 @@ export function adapt(cfg) {
     const L = cfg.levels[id];
     const o = { name: L.name, objective: L.objective, goal: L.goal, time: L.time, theme: themeIds.indexOf(L.theme) };
     if (L.crystals !== undefined) o.crystals = L.crystals;
+    for (const f of ["minKills", "crystalDelay"]) if (L[f] !== undefined) o[f] = L[f];
+    if (L.crystalLure) o.crystalLure = true;
     o.start = { ...L.start };
     o.spawn = L.spawn.map((w) => ({ ...w }));
     o.every = L.every; o.cap = L.cap;
@@ -124,7 +129,7 @@ export function adapt(cfg) {
   });
 
   const s = cfg.strings;
-  const STRINGS = { ...s, deathLines: s.deathLines.map(line) };
+  const STRINGS = { ...s, deathLines: s.deathLines.map((l) => (l.after ? { ...line(l), after: l.after } : line(l))) };
 
   const PLAYER = { ...cfg.player, name: charName(cfg.player.character), look: { ...cfg.player.look } };
   const GAME = { ...cfg.game };

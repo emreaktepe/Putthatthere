@@ -109,7 +109,7 @@ export function updateEnemies(dt, t, es) {
     e.atkT = Math.max(e.atkT - dt, 0);
     if (e.windT > 0) { e.windT = Math.max(e.windT - dt, 0); if (e.windT === 0 && d.ai === "boss") e.atkT = 0.4; } // uyarı bitti = saldırı anı
     if (e.shield > 0) e.shield = Math.max(e.shield - dt, 0);
-    e.ts = es * (e.slow > 0 ? 0.35 : 1); // model animasyon hız çarpanı
+    e.ts = es * (e.slow > 0 ? (e.slowK || 0.35) : 1); // model animasyon hız çarpanı
     const edt = dt * e.ts;
     const dx = wizard.position.x - p.x, dz = wizard.position.z - p.z;
     const dist = Math.hypot(dx, dz) || 0.0001;

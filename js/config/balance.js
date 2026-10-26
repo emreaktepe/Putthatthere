@@ -14,17 +14,23 @@ export const CRYSTAL_SEC = 2.4; // V1: kristal başına süre (yetkin oyuncu)
 export const TIME_SHARE = { min: 1.4, max: 2.2 }; // kristal bölümü: time / (goal x 2.4)
 export const MOBILE_CAP = 12; // V14
 export const START_CAP_RATIO = 1.5;
-export const JUMP_MAX = 1.35; // ardışık Z sıçraması (sınav bölümleri hariç)
+export const JUMP_MAX = 1.35;
+export const JUMP_FLOOR_Z = 1.2; // ardışık Z sıçraması (sınav bölümleri hariç)
 
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const r1 = (x) => Math.round(x * 10 + 1e-9) / 10; // plan tablolarıyla aynı yuvarlama (1 ondalık)
+
+// TP düzeltmesi (docs/strateji/savas-sistemi-ve-perde-2-3-tasarimi.md §2.4; benzetim, VARSAYIM): menzilden ölen, temas olmayan "hp<=1 kovalayıcı"
+// tehdidi fazla puanlanıyordu. Yavaş (Ruh) 0.5, hızlı (Yarasa) 0.8.
+export const Q_FACTOR = { slowChaser: 0.5, fastChaser: 0.8 };
+const qFactor = (e) => (e.ai === "chase" && (e.hp || 1) <= 1 ? ((e.speed || 0) < 3 ? Q_FACTOR.slowChaser : Q_FACTOR.fastChaser) : 1);
 
 // düşman tanımı (konfigürasyon biçimi) -> TP
 export function enemyTP(e) {
   if (!isObj(e)) return 0;
   if (e.ai === "static") return TP.totem;
   const v = V_EFF[e.ai] !== undefined ? V_EFF[e.ai] : e.speed || 0;
-  const raw = Math.pow(Math.max(e.hp || 1, 0.5), TP.hpExp) * (TP.speedBase + TP.speedK * v) * Math.max(e.dmg || 0, 1) * (TP.ai[e.ai] || 1);
+  const raw = Math.pow(Math.max(e.hp || 1, 0.5), TP.hpExp) * (TP.speedBase + TP.speedK * v) * Math.max(e.dmg || 0, 1) * (TP.ai[e.ai] || 1) * qFactor(e);
   return r1(raw);
 }
 
@@ -88,6 +94,23 @@ export function campaignBalance(cfg) {
   });
 }
 
+// ---- Aşama A (docs/strateji/savas-sistemi-ve-perde-2-3-tasarimi.md §2, §8.2) ----
+export const MIN_KILLS_MAX_RATIO = 0.6; // minKills <= goal x 0.6
+export const PLANNED_20S_MIN = 4; // ilk 20 sn'de planlanan (başlangıç + dalgalar, cap'e kırpılmış) düşman en az; savaşan bot gerçek A20'yi sim ölçer
+const sumN = (o) => Object.values(o || {}).reduce((a, b) => a + (typeof b === "number" ? b : 0), 0);
+// ilk 20 sn'de sahaya girecek düşman sayısı (dalgalar ortalama büyüklükle; cap üst sınır; ölenler düşülmez: üst tahmin)
+export function planned20(L) {
+  const waves = Array.isArray(L.spawn) ? L.spawn : [], every = L.every > 0 ? L.every : 1e9;
+  const avg = waves.length ? waves.reduce((a, w) => a + sumN(w), 0) / waves.length : 0;
+  return Math.min(sumN(L.start) + Math.floor(20 / every) * avg, (L.cap || 99) + sumN(L.start));
+}
+// minKills'in beklenen arzı: başlangıç + zamanın izin verdiği dalgalar (üst tahmin)
+export function killSupply(L) {
+  const waves = Array.isArray(L.spawn) ? L.spawn : [], every = L.every > 0 ? L.every : 1e9;
+  const avg = waves.length ? waves.reduce((a, w) => a + sumN(w), 0) / waves.length : 0;
+  return sumN(L.start) + Math.floor((L.time || 0) / every) * avg;
+}
+
 // ---- doğrulayıcı kuralları (W_BALANCE) ----
 // -> [{ path: [...], message }]; yalnızca gerçek sorunlar. Girdi bozuksa boş döner (yapı hataları başka yerde raporlanır).
 export function balanceIssues(cfg) {
@@ -103,6 +126,14 @@ export function balanceIssues(cfg) {
         if (share < TIME_SHARE.min) out.push({ path: ["levels", id, "time"], message: `${L.goal} kristal x ${CRYSTAL_SEC} sn = ${Math.round(base)} sn; süre ${L.time} sn (payı ${share.toFixed(2)}x): süre baskısı fazla (en az ${TIME_SHARE.min}x önerilir)` });
         else if (share > TIME_SHARE.max) out.push({ path: ["levels", id, "time"], message: `${L.goal} kristal için süre ${L.time} sn (payı ${share.toFixed(2)}x): gevşek, süre baskısı yok (en çok ${TIME_SHARE.max}x önerilir)` });
       }
+      if (L.objective === "crystal") {
+        if (!(L.minKills > 0)) out.push({ path: ["levels", id, "start"], message: "Kristal bölümünde minKills yok: hiç ateş etmeden geçilebilir (ilk bölümler boş kalır)" });
+        else {
+          if (Number.isInteger(L.goal) && L.minKills > L.goal * MIN_KILLS_MAX_RATIO) out.push({ path: ["levels", id, "start"], message: `minKills ${L.minKills}: goal ${L.goal} x ${MIN_KILLS_MAX_RATIO} = ${Math.floor(L.goal * MIN_KILLS_MAX_RATIO)} üstünde (kristal akışı bekler)` });
+          if (killSupply(L) < L.minKills * 1.3) out.push({ path: ["levels", id, "start"], message: `minKills ${L.minKills} için düşman arzı yetersiz olabilir (başlangıç + dalgalar ~${Math.round(killSupply(L))})` });
+        }
+      }
+      if (!["miniboss", "boss", "survive"].includes(L.objective) && planned20(L) < PLANNED_20S_MIN) out.push({ path: ["levels", id, "start"], message: `İlk 20 sn'de planlanan düşman ~${planned20(L).toFixed(1)}: ekran boş kalabilir (en az ${PLANNED_20S_MIN} önerilir)` });
       if (Number.isInteger(L.cap) && L.cap > MOBILE_CAP) out.push({ path: ["levels", id, "cap"], message: `cap ${L.cap}: mobil için en çok ${MOBILE_CAP} önerilir` });
     }
     const rows = campaignBalance(cfg);
@@ -113,7 +144,8 @@ export function balanceIssues(cfg) {
       if (r.p < 0.3) out.push({ path: ["levels", r.id, "start"], message: `Model tahmini ilk-deneme geçme oranı ~%${Math.round(r.p * 100)} (Z ${r.Z}, B30 ${r.B30}): hedef bandın altında (yaklaşık model)` });
       if (i > 0 && r.objective !== "miniboss" && r.objective !== "boss") {
         const prev = rows[i - 1];
-        if (prev.Z > 0 && r.Z / prev.Z > JUMP_MAX) out.push({ path: ["levels", r.id, "start"], message: `Zorluk sıçraması: Z ${prev.Z} -> ${r.Z} (x${(r.Z / prev.Z).toFixed(2)}); en çok x${JUMP_MAX} önerilir (yaklaşık model)` });
+        // giriş tabanı: önceki bölüm çok kolaysa (Z < JUMP_FLOOR_Z; ilk bölüm / nefes) oran yanıltıcıdır, sıçrama sayılmaz
+        if (prev.Z >= JUMP_FLOOR_Z && r.Z / prev.Z > JUMP_MAX) out.push({ path: ["levels", r.id, "start"], message: `Zorluk sıçraması: Z ${prev.Z} -> ${r.Z} (x${(r.Z / prev.Z).toFixed(2)}); en çok x${JUMP_MAX} önerilir (yaklaşık model)` });
       }
     }
   } catch (e) { /* bozuk taslak: yapısal doğrulama zaten raporlar */ }

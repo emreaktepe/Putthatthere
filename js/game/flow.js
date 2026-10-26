@@ -17,6 +17,7 @@ import { finalScreen, gameOverScreen, levelClearScreen, levelIntroScreen } from 
 import { unmount } from "../ui/screens.js";
 import { UI } from "../ui/text.js";
 import { starsFor } from "./stars.js";
+import { eligibleDeathLines } from "./deathlines.js";
 import { camp, continueGame, endPractice, hasSave, inPractice, initCampaign, newGame, persist, recordResult, startPractice, statuses } from "./campaign.js";
 import { clearWorld, spawnCrystal, spawnEnemy } from "./world.js";
 
@@ -99,14 +100,14 @@ export function startLevel() {
   clearWorld();
   const id = LEVEL_IDS[S.level], practice = inPractice(), dda = currentDda(id, practice); // yardım kademesi (alıştırmada yok)
   RT.dda = dda; RT.elapsed = 0; RT.lastKill = 0; RT.hits = 0; RT.hintQ = []; RT.ddaHp = 0; dmgState.carry = 0;
-  RT.collected = 0; RT.totemsDown = 0; RT.timeLeft = L.objective === "survive" ? L.time : L.time * dda.timeMul; RT.cooldown = 0; RT.invuln = 1; RT.spawnTimer = 0; RT.bossSummon = 5;
+  RT.collected = 0; RT.crystalQ = []; RT.needKillsShown = false; RT.totemsDown = 0; RT.timeLeft = L.objective === "survive" ? L.time : L.time * dda.timeMul; RT.cooldown = 0; RT.invuln = 1; RT.spawnTimer = 0; RT.bossSummon = 5;
   resetAbilityCooldowns();
   RT.stoneReady = false;
   RT.paused = false; RT.killBase = S.kills || 0; // görev paneli: bu bölümde yenilen düşman = S.kills - killBase
   if (S.stoneLevels > 0) { S.stoneLevels--; RT.stoneReady = true; }
   wizard.position.set(0, 0, 0);
   const crystals = L.crystals !== undefined ? L.crystals : (L.objective === "crystal" ? 5 : 0);
-  for (let i = 0; i < crystals; i++) spawnCrystal();
+  for (let i = 0; i < crystals; i++) spawnCrystal(L.crystalLure);
   const fixed = (k) => ["boss", "knight", "static"].includes(ENEMIES[k] && ENEMIES[k].ai); // set-piece düşmanlar yardımla azalmaz
   for (const [type, n] of Object.entries(scaledStart(L.start, dda.startMul, fixed))) for (let i = 0; i < n; i++) spawnEnemy(type);
   if (L.objective === "totem") for (const [x, z] of L.totems) spawnEnemy(TOTEM_ID, { x, z });
@@ -150,7 +151,8 @@ export function gameOver(cause = "dead") {
   endAttempt("d", { timeout: cause === "timeout" });
   RT.running = false;
   sfx("game_over");
-  const line = STRINGS.deathLines[Math.floor(Math.random() * STRINGS.deathLines.length)];
+  const pool = eligibleDeathLines(STRINGS.deathLines, camp.completed);
+  const line = pool[Math.floor(Math.random() * pool.length)];
   const idx = S.level, practice = inPractice(), id = LEVEL_IDS[idx];
   if (!practice) noteDeath(id);
   const next = practice ? null : nextDda(id), L = LEVELS[idx];

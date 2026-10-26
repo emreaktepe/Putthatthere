@@ -472,3 +472,13 @@ h3 { font-size: 17px; color: var(--violet-2); }
   .reward-ic.has-art, .reward-ic.has-art .reward-img { width: 76px; height: 76px; }
   .perk-ic .perk-img { width: 48px; height: 48px; }
 }
+
+/* "Etkili!" / "Dirençli" vuruş etiketleri (js/ui/dmgtags.js): en çok 6 öğe, kısa süreli, tıklamayı engellemez */
+#dmgtags { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+.dmgtag { position: absolute; transform: translate(-50%, -50%); font-family: var(--ui); font-weight: 800; letter-spacing: .02em; text-shadow: 0 1px 3px #000, 0 0 8px #000; white-space: nowrap; opacity: 0; }
+.dmgtag.e { font-size: 17px; }
+.dmgtag.d { font-size: 12px; color: #b9b9c6 !important; font-weight: 600; }
+.dmgtag.go { animation: dmgtag-rise .7s ease-out forwards; }
+@keyframes dmgtag-rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.8); } 15% { opacity: 1; transform: translate(-50%, -60%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -190%) scale(1); } }
+@media (max-width: 640px) { .dmgtag.e { font-size: 15px; } .dmgtag.d { font-size: 11px; } }
+@media (prefers-reduced-motion: reduce) { .dmgtag.go { animation: dmgtag-fade .7s linear forwards; } @keyframes dmgtag-fade { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } } }

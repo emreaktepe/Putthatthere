@@ -1,8 +1,11 @@
 import { sfx } from "../audio/engine.js";
-import { LEVELS } from "../core/data.js";
+import { LEVELS, WEAPONS } from "../core/data.js";
 import { RT, S, enemies } from "../core/state.js";
 import { flatDist } from "../core/util.js";
 import { gameOver, levelClear } from "./flow.js";
+import { MULT, matchupLevel } from "./matchup.js";
+import { crystalGoalMet } from "./spawnmath.js";
+import { popTag } from "../ui/dmgtags.js";
 import { placePickup } from "./world.js";
 import { retireEnemy } from "../render/enemies.js";
 import { addFx, burst } from "../render/fx.js";
@@ -10,13 +13,24 @@ import { scene } from "../render/scene.js";
 import { wizard } from "../render/wizard.js";
 import { flashHurt, renderHud } from "../ui/hud.js";
 
-export function hurt(e, dmg, slow, bypassShield = false) {
+const KILL_EPS = 0.05; // kesirli hasarın kalan canı <= 0.05 ölüm sayılır ("0.1 canlı hayalet" kötü hissi çıkmasın)
+let elementColor = null;
+const colorOf = (el) => {
+  if (!elementColor) { elementColor = {}; for (const w of Object.values(WEAPONS)) if (w.element && elementColor[w.element] === undefined) elementColor[w.element] = w.color; }
+  return elementColor[el] ?? 0xffffff;
+};
+
+// element: silahın elementi (karşıtlık çarpanı için; yoksa x1). slow: null | { t, k } (süre sn, zaman ölçeği)
+export function hurt(e, dmg, slow, bypassShield = false, element = null) {
   if (e.dead) return;
   if (e.shielded) { burst(e.mesh.position, 0xbfe0ff, 4); sfx("shield_block"); return; } // Gölge Kral Faz 3 kalkanı
   if (e.shield > 0 && !bypassShield) { e.shield = 0; burst(e.mesh.position, 0x6bff9a, 6); sfx("shield_block"); return; }
+  const lvl = matchupLevel(element, e.d.tags, e.d.res);
+  dmg *= MULT[lvl];
+  if (lvl !== "N") popTag(e, lvl, colorOf(element));
   e.hp -= dmg;
   if (e.d.ai === "boss" && e.bp < 3) e.hp = Math.max(e.hp, e.maxHp * (e.bp === 1 ? 0.66 : 0.33) - 0.001); // faz atlanmasın
-  if (slow) e.slow = 3;
+  if (slow) { e.slow = (slow && slow.t) || 3; e.slowK = (slow && slow.k) || 0.35; }
   burst(e.mesh.position, e.d.emissive === 0 ? 0xffffff : e.d.color, 5);
   e.hurtT = 0.28; // 3B model "hurt" modu
   e.flash = 0.1; // vuruş geri bildirimi: beyaz parlama + hafif geri itme
@@ -25,7 +39,7 @@ export function hurt(e, dmg, slow, bypassShield = false) {
     e.kx = (dx / l) * 3; e.kz = (dz / l) * 3;
   }
   sfx("hit");
-  if (e.hp <= 0) killEnemy(e);
+  if (e.hp <= KILL_EPS) killEnemy(e);
 }
 
 export function explodeEmber(e) {
@@ -68,6 +82,8 @@ export function killEnemy(e) {
     if (RT.totemsDown >= LEVELS[S.level].goal) levelClear();
   }
   if (e.d.ai === "boss" || e.d.ai === "knight") { RT.bossRef = null; levelClear(); }
+  // minKills (K4): kristal hedefi tamam ve öldürme sayısı yeter -> bu öldürme bölümü bitirir
+  { const L = LEVELS[S.level]; if (!e.d.static && !e.suicide && L && L.objective === "crystal" && RT.running && crystalGoalMet(L, RT.collected, S.kills - RT.killBase)) levelClear(); }
 }
 
 export function damagePlayer(n) {

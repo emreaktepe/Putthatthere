@@ -73,8 +73,14 @@ export function questRows(L, rt = {}, kills = 0, labels = {}) {
   const icon = L && L.objective === "crystal" ? "crystal" : L && L.objective === "survive" ? "hourglass" : "target";
   return [
     { id: "goal", icon, label: String(labels.objective || ""), value, done },
-    { id: "kills", icon: "skull", label: String(labels.kills || ""), value: String(Math.max(Math.floor(kills) || 0, 0)), done: false },
+    killRow(L, labels, kills),
   ];
+}
+
+// yenilen düşman satırı: bölümde minKills varsa "3/12" (hedef) biçiminde ve tamamlanınca done; yoksa yalnız sayı
+function killRow(L, labels, kills) {
+  const n = Math.max(Math.floor(kills) || 0, 0), need = L && L.objective === "crystal" ? Math.max(Math.floor(L.minKills) || 0, 0) : 0;
+  return { id: "kills", icon: "skull", label: String(labels.kills || ""), value: need ? `${Math.min(n, need)}/${need}` : String(n), done: need > 0 && n >= need };
 }
 
 // büyü/yetenek slotu: kilitli mi, seçili mi, ekran okuyucu etiketi

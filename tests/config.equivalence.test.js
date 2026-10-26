@@ -28,18 +28,20 @@ test("repo JSON'u doğrulayıcıdan hatasız ve uyarısız geçer", () => {
 // aşağıdaki sayılar bilinçli değişti. Tema, hedef türü (pass hariç: hayatta kal -> zamanlı kristal), ad, totem konumları legacy ile aynı kalır.
 // Sayılar VARSAYIMDIR (model: js/config/balance.js).
 import { LEGACY_LEVEL_IDS } from "../js/core/legacyids.js";
+// SAVAŞ SİSTEMİ AŞAMA A (docs/strateji/savas-sistemi-ve-perde-2-3-tasarimi.md §2.4 + "Aşama A uygulama notları"): ilk bölümlerin baskısı
+// (start/spawn/every/cap), kristal akışı (crystals, crystalDelay, crystalLure, minKills) bilinçli yeniden dengelendi; sayılar VARSAYIMDIR.
 const BALANCE = {
-  0: { goal: 25, time: 105, start: { ghost: 3 }, spawn: [{ ghost: 1 }], every: 8, cap: 6 },
-  1: { goal: 29, time: 120, start: { ghost: 1, bat: 1 }, spawn: [{ bat: 1, ghost: 1 }], every: 12, cap: 6 },
-  2: { goal: 33, time: 140, start: { ghost: 1, bat: 1, golem: 1 }, spawn: [{ golem: 1, bat: 1 }], every: 12, cap: 7 },
-  3: { goal: 38, time: 155, start: { ghost: 2, bat: 2, golem: 1, archer: 2 }, spawn: [{ ghost: 1, archer: 1 }], every: 9, cap: 9 },
-  4: { objective: "crystal", goal: 31, time: 105, start: { ghost: 2, bat: 3, wolf: 4 }, spawn: [{ wolf: 1, bat: 1 }], every: 8, cap: 11, crystals: undefined },
-  5: { time: 200, start: { ghost: 1, ember: 3, golem: 1 }, spawn: [{ ember: 1, ghost: 1 }], every: 10, cap: 8 },
-  6: { goal: 42, time: 170 },
-  7: { time: 120, start: { knight: 1, archer: 2, wolf: 1 }, spawn: [{ archer: 1, ghost: 1 }], every: 6, cap: 6 },
+  0: { goal: 25, time: 105, start: { ghost: 5 }, spawn: [{ ghost: 2 }], every: 6, cap: 8, crystals: 3 },
+  1: { goal: 29, time: 120, start: { ghost: 2, bat: 3 }, spawn: [{ bat: 1, ghost: 2 }], every: 9, cap: 8, crystals: 3 },
+  2: { goal: 33, time: 140, start: { ghost: 3, bat: 2, golem: 1 }, spawn: [{ golem: 1, bat: 2 }, { ghost: 3 }], every: 9, cap: 9, crystals: 3 },
+  3: { goal: 38, time: 155, start: { ghost: 2, bat: 2, golem: 1, archer: 2 }, spawn: [{ ghost: 2, archer: 1 }], every: 9, cap: 10, crystals: 3 },
+  4: { objective: "crystal", goal: 31, time: 105, start: { ghost: 2, bat: 3, wolf: 3 }, spawn: [{ wolf: 1, bat: 2 }], every: 9, cap: 11, crystals: 3 },
+  5: { time: 200, start: { ghost: 2, ember: 3, golem: 1 }, spawn: [{ ember: 1, ghost: 2 }], every: 10, cap: 9 },
+  6: { goal: 42, time: 170, crystals: 4 },
+  7: { time: 120, start: { knight: 1, archer: 2, wolf: 1 }, spawn: [{ archer: 1, ghost: 2 }], every: 7, cap: 7 },
   8: { time: 180 },
 };
-const EXTRA = ["id", "map", "image", "nodeImage", "hint", "reward", "ability", "world", "hook", "objectiveText"];
+const EXTRA = ["id", "map", "image", "nodeImage", "hint", "reward", "ability", "world", "hook", "objectiveText", "minKills", "crystalDelay", "crystalLure"];
 test("LEVELS: eski 9 bölüm yeni kimliklerle eşdeğer (sayılar BALANCE; EK: id, map, görsel, hint, reward/ability, world, hook, objectiveText)", () => {
   assert.equal(A.LEVELS.length, L.LEVELS.length + 2);
   assert.deepEqual(A.LEVEL_IDS, ["w1-01", "w1-02", "w1-03", "w1-04", "w1-05", "w1-06", "w1-07", "w1-08", "w1-09", "w2-02", "w3-09"]);
@@ -72,7 +74,16 @@ test("Perde I ödül takvimi (plan §4.4) ve yeni bölümler", () => {
 });
 
 test("WEAPONS / WEAPON_ORDER eşdeğer (EK: image, imageSmall)", () => {
-  assert.deepEqual(mapVals(A.WEAPONS, (w) => strip(w, ["image", "imageSmall"])), L.WEAPONS);
+  // Aşama A bilinçli değişiklikler (§3.4/§3.5): Yıldırım, Zehir, Meteor, Ay Işığı sayıları + EK alanlar (element, life, slowScale, slowTime, hop, falloff)
+  const A_CHANGED = {
+    lightning: { cd: 1, dmg: 1.5, chain: 3, range: 9 },
+    poison: { cd: 1.3, dmg: 1.2, cloud: { dist: 8, r: 2.5, life: 4 } },
+    meteor: { cd: 2.6, dmg: 4, meteor: { r: 3.2, delay: 0.8 } },
+    nova: { cd: 3.5, dmg: 1.5, nova: { r: 4.5, push: 2.5 } },
+  };
+  const want = mapVals(L.WEAPONS, (w, k) => ({ ...w, ...(A_CHANGED[k] || {}) }));
+  assert.deepEqual(mapVals(A.WEAPONS, (w) => strip(w, ["image", "imageSmall", "element", "life", "slowScale", "slowTime", "hop", "falloff"])), want);
+  assert.equal(A.WEAPONS.lightning.hop, 5); assert.deepEqual(A.WEAPONS.lightning.falloff, [1, 0.7, 0.5]);
   assert.deepEqual(A.WEAPON_ORDER, L.WEAPON_ORDER);
   assert.deepEqual(Object.keys(A.WEAPONS), Object.keys(L.WEAPONS));
 });
@@ -87,7 +98,7 @@ test("ABILITIES / ABILITY_ORDER eşdeğer (EK: params)", () => {
 });
 
 test("ENEMIES / ENEMY_NAMES eşdeğer (EK: name, shortName, scale, model, summon*)", () => {
-  const got = mapVals(A.ENEMIES, (e) => strip(e, ["name", "shortName", "scale", "model", "summon", "summons1", "summons2", "character", "image"]));
+  const got = mapVals(A.ENEMIES, (e) => strip(e, ["name", "shortName", "scale", "model", "summon", "summons1", "summons2", "character", "image", "tags", "res"]));
   assert.deepEqual(got, L.ENEMIES);
   assert.deepEqual(Object.keys(A.ENEMIES), Object.keys(L.ENEMIES));
   assert.deepEqual(A.ENEMY_NAMES, L.ENEMY_NAMES);
