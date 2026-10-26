@@ -830,8 +830,8 @@
   },
   "levels": {
     "w1-01": {
-      "image": "assets/art/bolum-forest.webp",
-      "nodeImage": "assets/art/dugum-forest.webp",
+      "image": "assets/art/bolum-w1-01.webp",
+      "nodeImage": "assets/art/dugum-w1-01.webp",
       "name": "Fısıldayan Orman",
       "objective": "crystal",
       "goal": 25,
@@ -865,8 +865,8 @@
       "hook": "Küçük ışık, ona yol göstermek için sanki yıllardır bekliyordu."
     },
     "w1-02": {
-      "image": "assets/art/bolum-cave.webp",
-      "nodeImage": "assets/art/dugum-cave.webp",
+      "image": "assets/art/bolum-w1-02.webp",
+      "nodeImage": "assets/art/dugum-w1-02.webp",
       "name": "Yarasa Mağarası",
       "objective": "crystal",
       "goal": 29,
@@ -895,8 +895,8 @@
       "hook": "Pırıl adı nereden bildiğini söylemedi; belki kendisi de bilmiyordu."
     },
     "w1-03": {
-      "image": "assets/art/bolum-golems.webp",
-      "nodeImage": "assets/art/dugum-golems.webp",
+      "image": "assets/art/bolum-w1-03.webp",
+      "nodeImage": "assets/art/dugum-w1-03.webp",
       "name": "Taş Bekçiler",
       "objective": "crystal",
       "goal": 33,
@@ -928,8 +928,8 @@
       "hook": "Taşkın kuleye baktı ve tek kelime etti: \"Komutan.\""
     },
     "w1-04": {
-      "image": "assets/art/bolum-forest.webp",
-      "nodeImage": "assets/art/dugum-forest.webp",
+      "image": "assets/art/bolum-w1-04.webp",
+      "nodeImage": "assets/art/dugum-w1-04.webp",
       "name": "Alacakaranlık Ormanı",
       "objective": "survive",
       "goal": 60,
@@ -959,8 +959,8 @@
       "hook": "Ormanın ardında bir mezarlık kapısı gıcırdadı."
     },
     "w1-05": {
-      "image": "assets/art/bolum-graveyard.webp",
-      "nodeImage": "assets/art/dugum-graveyard.webp",
+      "image": "assets/art/bolum-w1-05.webp",
+      "nodeImage": "assets/art/dugum-w1-05.webp",
       "name": "Hortlak Mezarlığı",
       "objective": "crystal",
       "goal": 38,
@@ -995,8 +995,8 @@
       "hook": "Buzul yolundan, bir ninni gibi ince bir ses geliyordu."
     },
     "w1-06": {
-      "image": "assets/art/bolum-cave.webp",
-      "nodeImage": "assets/art/dugum-cave.webp",
+      "image": "assets/art/bolum-w1-06.webp",
+      "nodeImage": "assets/art/dugum-w1-06.webp",
       "name": "Ninni Mağarası",
       "objective": "totem",
       "goal": 1,
@@ -1024,8 +1024,8 @@
       "hook": "Pırıl ninniyi sonuna kadar söyledi; kimse ona öğretmemişti."
     },
     "w1-07": {
-      "image": "assets/art/bolum-pass.webp",
-      "nodeImage": "assets/art/dugum-pass.webp",
+      "image": "assets/art/bolum-w1-07.webp",
+      "nodeImage": "assets/art/dugum-w1-07.webp",
       "name": "Donmuş Geçit",
       "objective": "crystal",
       "goal": 31,
@@ -1060,8 +1060,8 @@
       "hook": "Geçidin ucunda bir köy, kor gibi yanıyordu."
     },
     "w1-08": {
-      "image": "assets/art/bolum-village.webp",
-      "nodeImage": "assets/art/dugum-village.webp",
+      "image": "assets/art/bolum-w1-08.webp",
+      "nodeImage": "assets/art/dugum-w1-08.webp",
       "name": "Yanık Köy",
       "objective": "totem",
       "goal": 3,
@@ -1092,8 +1092,8 @@
       "hook": "Zerrin'in sessizliği, söylediği her şeyden daha fazla şey söyledi."
     },
     "w1-09": {
-      "image": "assets/art/bolum-tower.webp",
-      "nodeImage": "assets/art/dugum-tower.webp",
+      "image": "assets/art/bolum-w1-09.webp",
+      "nodeImage": "assets/art/dugum-w1-09.webp",
       "name": "Kemik Kule",
       "objective": "miniboss",
       "goal": 1,
@@ -1124,8 +1124,8 @@
       "hook": "Pırıl'ın ışığı ilk kez titredi, sonra kaleye doğru yöneldi."
     },
     "w2-02": {
-      "image": "assets/art/bolum-crystals.webp",
-      "nodeImage": "assets/art/dugum-crystals.webp",
+      "image": "assets/art/bolum-w2-02.webp",
+      "nodeImage": "assets/art/dugum-w2-02.webp",
       "name": "Kristal Yatağı",
       "objective": "crystal",
       "goal": 42,
@@ -1156,8 +1156,8 @@
       ]
     },
     "w3-09": {
-      "image": "assets/art/bolum-castle.webp",
-      "nodeImage": "assets/art/dugum-castle.webp",
+      "image": "assets/art/bolum-w3-09.webp",
+      "nodeImage": "assets/art/dugum-w3-09.webp",
       "name": "Gölge Kalesi",
       "objective": "boss",
       "goal": 1,
