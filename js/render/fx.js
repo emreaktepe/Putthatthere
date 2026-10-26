@@ -96,8 +96,10 @@ export function addHazard(x, z, r, delay, dmg, color, real = false) {
   g.position.set(x, 0.05, z);
   g.add(rm, fill);
   scene.add(g);
-  hazards.push({ x, z, r, t: delay, dur: delay, dmg, g, fill, mats: [rm.material, fill.material], real });
+  const h = { x, z, r, t: delay, dur: delay, dmg, g, fill, mats: [rm.material, fill.material], real };
+  hazards.push(h);
   if (dmg > 0) sfx("telegraph");
+  return h; // beceri uyarıları (skillrun.js) uyarıyı iptal edebilsin diye
 }
 export function dropHazard(h) { scene.remove(h.g); h.mats.forEach((m) => m.dispose()); }
 

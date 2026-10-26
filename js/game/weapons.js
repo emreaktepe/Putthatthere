@@ -6,6 +6,7 @@ import { ARENA, flatDist } from "../core/util.js";
 import { hurt } from "./combat.js";
 import { chainFalloff, chainTargets } from "./chain.js";
 import { dmgState, rollDamage } from "./damage.js";
+import { veilBlocks } from "./skills.js";
 import { addBolt, addFx, addHazard, burst, emit, makeShot, meteorGeo } from "../render/fx.js";
 import { glowSprite } from "../render/gfx.js";
 import { scene } from "../render/scene.js";
@@ -43,7 +44,7 @@ export function fireSpell(id, scale = 1) {
     let prev = origin;
     // gerçek zincir: ilk hedef menzil içindeki en yakın, sonrakiler öncekine en çok w.hop birim (hop yoksa eski seçim: oyuncuya en yakın n)
     const list = w.hop
-      ? chainTargets(wizard.position, enemies.map((e) => ({ e, x: e.mesh.position.x, z: e.mesh.position.z })), w.chain, w.range, w.hop).map((c) => c.e)
+      ? chainTargets(wizard.position, enemies.filter((e) => !veilBlocks(e.veiled, el)).map((e) => ({ e, x: e.mesh.position.x, z: e.mesh.position.z })), w.chain, w.range, w.hop).map((c) => c.e)
       : nearestEnemies(origin, w.chain, w.range);
     let k = 0;
     for (const e of list) {

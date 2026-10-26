@@ -149,3 +149,8 @@ Not: masaüstünde 26 % sol üstteki "Görevler" panelinin alt kenarıdır; orta
 - Yardım bilgisi aynı satırla bölüm giriş kartında ve bölüm başında 3 sn toast olarak gösterilir. "Yardım: Açık/Kapalı" düğmesi menüde ve duraklatma kartında (varsayılan açık).
 - Yeni öğe ipuçları: yalnızca bölüme ilk girişte, 0,8 sn sonra, 3 sn toast; en çok 2 satır. HUD yerleşimine dokunulmadı.
 - Görsel doğrulama (414x896) yapılmadı; elle kontrol edilmeli.
+
+## Düşman becerisi uyarıları ve ipucu toast'ı (Aşama B)
+- Her beceri uyarısı iki kanaldan okunur: düşman `windup` modunda (yeni animasyon yok) ve yerde halka. Renkler: kırmızı `#ff5544` = hasar verecek alan (Taş Bekçi sarsıntısı, ok işaretleri, Şövalye atılışı), mor `#b98bff` = Yarasa dalış hedefi (hasarsız işaret), açık mavi = uluma, yeşil = diriltme, turuncu = ateş lekesi, mor halka = Lanet Alanı. Eşzamanlı en çok 3 işaret; mobilde ek kalıcı Mesh <= 5.
+- Bölüm başında yeni açılan beceri için TEK satırlık ipucu toast'ı (3 sn, sessiz; metin `strings.skills.<id>`), oturumda her beceri için yalnızca bir kez; alıştırma kipinde ve DDA bildirimi çıkan girişte gösterilmez. Mevcut `hint` satırlarından SONRA kuyruğa girer.
+- Perdeli Ruh saydam (yaklaşık %30 opaklık) ve mermiler içinden geçer; Arcane ve Ay Işığı perdeyi deler.

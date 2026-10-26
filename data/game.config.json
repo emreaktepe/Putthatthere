@@ -21,6 +21,17 @@
     "finalLine": "Gölge Kral yenildi. Lanet kalktı.",
     "finalScore": "Toplam puan: **{score}**",
     "replay": "Yeniden oyna",
+    "skills": {
+      "veil": "Ruhlar uzaktayken sisle korunur; yaklaşınca katılaşırlar. Bekle, sonra vur.",
+      "batDive": "Yarasa sürüsü dalışa geçiyor: yerdeki halkadan çekil!",
+      "quake": "Taş Bekçi yeri sarsıyor: halkadan çık!",
+      "volley": "Okçu ok yağdırıyor: işaretli yerlerden uzaklaş!",
+      "howl": "Kurt uluyor: bitmeden vur, sürü hızlanmasın!",
+      "emberChain": "Kor Hortlaklar zincirleme patlar: uzaktan patlat!",
+      "revive": "Rahip düşenleri diriltiyor: önce onu devir!",
+      "aura": "Totemin halkasında düşmanlar daha az hasar alır: halkadan uzak dövüş.",
+      "leap": "Şövalye zıplıyor: işaretten çık, yorulunca vur!"
+    },
     "matchup": { "effective": "Etkili!", "resist": "Dirençli", "needKills": "Kristaller tamam. Kalan düşmanları da yen!" },
     "deathLines": [
       { "text": "Karanlık kazandı… bu gece." },
@@ -819,8 +830,8 @@
   },
   "levels": {
     "w1-01": {
-      "image": "assets/art/bolum-forest.webp",
-      "nodeImage": "assets/art/dugum-forest.webp",
+      "image": "assets/art/bolum-w1-01.webp",
+      "nodeImage": "assets/art/dugum-w1-01.webp",
       "name": "Fısıldayan Orman",
       "objective": "crystal",
       "goal": 25,
@@ -836,6 +847,7 @@
       "spawn": [{ "ghost": 2 }],
       "every": 6,
       "cap": 8,
+      "skills": ["veil"],
       "reward": "frost",
       "hint": ["Hasar aldıktan sonra bir buçuk saniye dokunulmazsın; o süreyi kaçmak için kullan."],
       "intro": [
@@ -853,8 +865,8 @@
       "hook": "Küçük ışık, ona yol göstermek için sanki yıllardır bekliyordu."
     },
     "w1-02": {
-      "image": "assets/art/bolum-cave.webp",
-      "nodeImage": "assets/art/dugum-cave.webp",
+      "image": "assets/art/bolum-w1-02.webp",
+      "nodeImage": "assets/art/dugum-w1-02.webp",
       "name": "Yarasa Mağarası",
       "objective": "crystal",
       "goal": 29,
@@ -870,6 +882,7 @@
       "spawn": [{ "bat": 1, "ghost": 2 }],
       "every": 9,
       "cap": 8,
+      "skills": ["veil", "batDive"],
       "hint": ["Buz Oku düşmanı üç saniye yavaşlatır; Yarasaya iyi gelir."],
       "intro": [
         { "speaker": "piril", "text": "Vızıltıyı duyuyor musun, Aldemir? Mağara canlı." },
@@ -882,8 +895,8 @@
       "hook": "Pırıl adı nereden bildiğini söylemedi; belki kendisi de bilmiyordu."
     },
     "w1-03": {
-      "image": "assets/art/bolum-golems.webp",
-      "nodeImage": "assets/art/dugum-golems.webp",
+      "image": "assets/art/bolum-w1-03.webp",
+      "nodeImage": "assets/art/dugum-w1-03.webp",
       "name": "Taş Bekçiler",
       "objective": "crystal",
       "goal": 33,
@@ -895,10 +908,11 @@
       "minKills": 14,
       "crystalDelay": 1.5,
       "crystalLure": true,
-      "start": { "ghost": 3, "bat": 2, "golem": 1 },
+      "start": { "ghost": 2, "bat": 2, "golem": 1 },
       "spawn": [{ "golem": 1, "bat": 2 }, { "ghost": 3 }],
-      "every": 9,
+      "every": 9.5,
       "cap": 9,
+      "skills": ["veil", "batDive", "quake"],
       "reward": "arcane",
       "hint": ["Taş Bekçiler yavaştır ama kolay yıkılmaz."],
       "intro": [
@@ -914,8 +928,8 @@
       "hook": "Taşkın kuleye baktı ve tek kelime etti: \"Komutan.\""
     },
     "w1-04": {
-      "image": "assets/art/bolum-forest.webp",
-      "nodeImage": "assets/art/dugum-forest.webp",
+      "image": "assets/art/bolum-w1-04.webp",
+      "nodeImage": "assets/art/dugum-w1-04.webp",
       "name": "Alacakaranlık Ormanı",
       "objective": "survive",
       "goal": 60,
@@ -928,6 +942,7 @@
       "spawn": [{ "ghost": 2, "bat": 1 }],
       "every": 10,
       "cap": 9,
+      "skills": ["veil", "batDive", "quake"],
       "ability": "shield",
       "hint": ["Kristal toplayarak ara sıra kalp kazanırsın; hayatta kalma bölümlerinde de."],
       "intro": [
@@ -944,8 +959,8 @@
       "hook": "Ormanın ardında bir mezarlık kapısı gıcırdadı."
     },
     "w1-05": {
-      "image": "assets/art/bolum-graveyard.webp",
-      "nodeImage": "assets/art/dugum-graveyard.webp",
+      "image": "assets/art/bolum-w1-05.webp",
+      "nodeImage": "assets/art/dugum-w1-05.webp",
       "name": "Hortlak Mezarlığı",
       "objective": "crystal",
       "goal": 38,
@@ -961,6 +976,7 @@
       "spawn": [{ "ghost": 2, "archer": 1 }],
       "every": 9,
       "cap": 10,
+      "skills": ["veil", "batDive", "quake", "volley"],
       "reward": "lightning",
       "hint": ["Kemik Okçu atıştan yarım saniye önce parlar; o an yönünü değiştir."],
       "intro": [
@@ -979,8 +995,8 @@
       "hook": "Buzul yolundan, bir ninni gibi ince bir ses geliyordu."
     },
     "w1-06": {
-      "image": "assets/art/bolum-cave.webp",
-      "nodeImage": "assets/art/dugum-cave.webp",
+      "image": "assets/art/bolum-w1-06.webp",
+      "nodeImage": "assets/art/dugum-w1-06.webp",
       "name": "Ninni Mağarası",
       "objective": "totem",
       "goal": 1,
@@ -989,10 +1005,11 @@
       "world": "Perde I · Uyanış",
       "map": { "x": 660, "y": 460, "icon": "🧊", "label": "right" },
       "crystals": 3,
-      "start": { "ghost": 2, "bat": 1 },
+      "start": { "ghost": 3, "bat": 2 },
       "spawn": [{ "ghost": 2, "bat": 1 }],
-      "every": 12,
-      "cap": 8,
+      "every": 11,
+      "cap": 9,
+      "skills": ["veil", "batDive", "quake", "volley", "aura"],
       "ability": "blink",
       "totems": [[0, -9]],
       "hint": ["Totem on iki saniyede bir Ruh doğurur; ne kadar erken yıkarsan o kadar rahat edersin."],
@@ -1007,8 +1024,8 @@
       "hook": "Pırıl ninniyi sonuna kadar söyledi; kimse ona öğretmemişti."
     },
     "w1-07": {
-      "image": "assets/art/bolum-pass.webp",
-      "nodeImage": "assets/art/dugum-pass.webp",
+      "image": "assets/art/bolum-w1-07.webp",
+      "nodeImage": "assets/art/dugum-w1-07.webp",
       "name": "Donmuş Geçit",
       "objective": "crystal",
       "goal": 31,
@@ -1025,6 +1042,7 @@
       "spawn": [{ "wolf": 1, "bat": 2 }],
       "every": 9,
       "cap": 11,
+      "skills": ["veil", "batDive", "quake", "volley", "aura"],
       "hint": [
         "Kurt çömelince hücuma geçer; yana sıçra, yorulunca vur.",
         "Işınlan seni beş adım ileri atar ve anlık dokunulmaz yapar."
@@ -1042,8 +1060,8 @@
       "hook": "Geçidin ucunda bir köy, kor gibi yanıyordu."
     },
     "w1-08": {
-      "image": "assets/art/bolum-village.webp",
-      "nodeImage": "assets/art/dugum-village.webp",
+      "image": "assets/art/bolum-w1-08.webp",
+      "nodeImage": "assets/art/dugum-w1-08.webp",
       "name": "Yanık Köy",
       "objective": "totem",
       "goal": 3,
@@ -1052,10 +1070,11 @@
       "world": "Perde I · Uyanış",
       "map": { "x": 563, "y": 311, "icon": "🔥", "label": "right" },
       "crystals": 3,
-      "start": { "ghost": 2, "ember": 3, "golem": 1 },
-      "spawn": [{ "ember": 1, "ghost": 2 }],
-      "every": 10,
-      "cap": 9,
+      "start": { "ghost": 2, "ember": 4, "golem": 2 },
+      "spawn": [{ "ember": 3, "ghost": 2 }],
+      "every": 7,
+      "cap": 11,
+      "skills": ["veil", "batDive", "quake", "volley", "aura", "emberChain"],
       "reward": "poison",
       "totems": [[-9, -8], [9, -8], [0, 9]],
       "hint": ["Kor Hortlak yaklaşınca kızarır ve patlar; yanındaki düşmanlara da zarar verir."],
@@ -1073,8 +1092,8 @@
       "hook": "Zerrin'in sessizliği, söylediği her şeyden daha fazla şey söyledi."
     },
     "w1-09": {
-      "image": "assets/art/bolum-tower.webp",
-      "nodeImage": "assets/art/dugum-tower.webp",
+      "image": "assets/art/bolum-w1-09.webp",
+      "nodeImage": "assets/art/dugum-w1-09.webp",
       "name": "Kemik Kule",
       "objective": "miniboss",
       "goal": 1,
@@ -1087,6 +1106,7 @@
       "spawn": [{ "archer": 1, "ghost": 2 }],
       "every": 7,
       "cap": 7,
+      "skills": ["veil", "batDive", "quake", "volley", "aura", "emberChain", "leap"],
       "reward": "nova",
       "ability": "timeslow",
       "hint": ["Şövalye yere vurmadan önce bir saniye bekler; o anda dört adım geri çekil."],
@@ -1104,8 +1124,8 @@
       "hook": "Pırıl'ın ışığı ilk kez titredi, sonra kaleye doğru yöneldi."
     },
     "w2-02": {
-      "image": "assets/art/bolum-crystals.webp",
-      "nodeImage": "assets/art/dugum-crystals.webp",
+      "image": "assets/art/bolum-w2-02.webp",
+      "nodeImage": "assets/art/dugum-w2-02.webp",
       "name": "Kristal Yatağı",
       "objective": "crystal",
       "goal": 42,
@@ -1116,10 +1136,11 @@
       "minKills": 18,
       "crystalDelay": 1.2,
       "crystalLure": true,
-      "start": { "ghost": 3, "bat": 3, "golem": 2, "archer": 2, "priest": 2 },
-      "spawn": [{ "priest": 1, "bat": 1 }, { "archer": 1, "bat": 1 }],
-      "every": 6,
-      "cap": 11,
+      "start": { "ghost": 2, "bat": 2, "golem": 1, "archer": 1, "priest": 1 },
+      "spawn": [{ "priest": 1, "bat": 1 }, { "archer": 1, "ghost": 1 }],
+      "every": 8,
+      "cap": 10,
+      "skills": ["veil", "batDive", "quake", "volley", "aura", "emberChain", "leap"],
       "reward": "meteor",
       "hint": ["Rahibin kalkanı tek vuruş emer; Zehir Bulutu kalkanı geçer."],
       "intro": [
@@ -1135,8 +1156,8 @@
       ]
     },
     "w3-09": {
-      "image": "assets/art/bolum-castle.webp",
-      "nodeImage": "assets/art/dugum-castle.webp",
+      "image": "assets/art/bolum-w3-09.webp",
+      "nodeImage": "assets/art/dugum-w3-09.webp",
       "name": "Gölge Kalesi",
       "objective": "boss",
       "goal": 1,

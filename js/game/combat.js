@@ -5,6 +5,8 @@ import { flatDist } from "../core/util.js";
 import { gameOver, levelClear } from "./flow.js";
 import { MULT, matchupLevel } from "./matchup.js";
 import { crystalGoalMet } from "./spawnmath.js";
+import { damageMul, onEmberBlast, onEnemyHurt, onEnemyKilled } from "./skillrun.js";
+import { veilBlocks } from "./skills.js";
 import { popTag } from "../ui/dmgtags.js";
 import { placePickup } from "./world.js";
 import { retireEnemy } from "../render/enemies.js";
@@ -25,10 +27,12 @@ export function hurt(e, dmg, slow, bypassShield = false, element = null) {
   if (e.dead) return;
   if (e.shielded) { burst(e.mesh.position, 0xbfe0ff, 4); sfx("shield_block"); return; } // Gölge Kral Faz 3 kalkanı
   if (e.shield > 0 && !bypassShield) { e.shield = 0; burst(e.mesh.position, 0x6bff9a, 6); sfx("shield_block"); return; }
+  if (veilBlocks(e.veiled, element)) { burst(e.mesh.position, 0xbfd8ff, 3); return; } // Sis Perdesi: Arcane/Ay Işığı dışında vurulamaz
   const lvl = matchupLevel(element, e.d.tags, e.d.res);
-  dmg *= MULT[lvl];
+  dmg *= MULT[lvl] * damageMul(e);
   if (lvl !== "N") popTag(e, lvl, colorOf(element));
   e.hp -= dmg;
+  onEnemyHurt(e);
   if (e.d.ai === "boss" && e.bp < 3) e.hp = Math.max(e.hp, e.maxHp * (e.bp === 1 ? 0.66 : 0.33) - 0.001); // faz atlanmasın
   if (slow) { e.slow = (slow && slow.t) || 3; e.slowK = (slow && slow.k) || 0.35; }
   burst(e.mesh.position, e.d.emissive === 0 ? 0xffffff : e.d.color, 5);
@@ -51,6 +55,7 @@ export function explodeEmber(e) {
   RT.shake = Math.max(RT.shake, 0.25);
   if (RT.invuln <= 0 && flatDist(p, wizard.position) < 2.5) damagePlayer(1);
   for (const o of [...enemies]) if (o !== e && !o.dead && flatDist(o.mesh.position, p) < 2.5) hurt(o, 1, false);
+  onEmberBlast(e); // Zincir Patlama + ateş lekesi (yalnız emberChain açıkken)
 }
 
 export function killEnemy(e) {
@@ -61,13 +66,14 @@ export function killEnemy(e) {
   RT.lastKill = RT.elapsed;
   enemies.splice(i, 1);
   if (e.blob) scene.remove(e.blob);
+  onEnemyKilled(e);
   retireEnemy(e); // 3B modeller ~0.35 sn "dead" animasyonu oynar; oynanış (hedefleme, çarpışma, puan, drop) yukarıda/aşağıda anında işlenir
   burst(e.mesh.position, e.d.color, 14);
   if (e.d.ai === "boss" || e.d.ai === "knight") { RT.shake = Math.max(RT.shake, 0.6); burst(e.mesh.position, 0xffffff, 30); }
   sfx("kill:" + e.d.model);
   if (e.d.ai === "bomber" && !e.exploded) explodeEmber(e);
   if (e.d.ai === "support") for (const o of enemies) if (flatDist(o.mesh.position, e.mesh.position) < 8) o.shield = 0;
-  if (!e.suicide) {
+  if (!e.suicide && !e.revived) { // diriltilen düşman puan/öldürme/düşme vermez (Diriltme sömürüsü yok)
     S.score += e.d.score;
     if (!e.d.static) {
       S.kills++;

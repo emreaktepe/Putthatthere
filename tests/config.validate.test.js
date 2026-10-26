@@ -268,7 +268,7 @@ test("varsayılan konfigürasyon: tüm görseller (84 yol) bağlı ve dosyaları
   assert.equal(paths.length, 84);
   for (const p of paths) assert.ok(fs.existsSync(new URL("../" + p, import.meta.url)), p + " dosyası var");
   assert.ok(Object.entries(base.perks).every(([id, x]) => x.image === `assets/art/ikon-perk-${id}.webp`) && Object.entries(base.enemies).every(([id, x]) => x.image === `assets/art/dusman-${id}.webp`));
-  // bölüm görselleri kimlikle aynı adlı değildir: yeni bölümler (w1-04, w1-06) ve 27 bölüm kimlikleri mevcut bölüm görselini yeniden kullanır
-  assert.ok(Object.values(base.levels).every((x) => /^assets\/art\/bolum-[a-z]+\.webp$/.test(x.image) && /^assets\/art\/dugum-[a-z]+\.webp$/.test(x.nodeImage)));
+  // bölüm görselleri artık kimlikle aynı adlı (bolum-w1-01.webp, dugum-w1-01.webp): her bölümün kendi görseli var
+  assert.ok(Object.entries(base.levels).every(([id, x]) => x.image === `assets/art/bolum-${id}.webp` && x.nodeImage === `assets/art/dugum-${id}.webp`));
   assert.equal(Object.keys(base.ui.icons).length, 14);
 });
