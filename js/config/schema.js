@@ -286,6 +286,9 @@ export const SCHEMA = obj({
     hint: arr(str(1, 100), 0, 2, { label: "Yeni öğe ipuçları (yalnızca ilk girişte, 3 sn bildirim; en çok 2)" }),
     intro: arr(dialogLine, 1, 4, { req: true, label: "Giriş anlatısı" }),
     outro: arr(dialogLine, 1, 4, { req: true, label: "Çıkış anlatısı" }),
+    hook: str(1, 120, { label: "Kanca (bölüm sonu çengeli; çıkış altında tek satır)" }),
+    objectiveText: str(1, 60, { label: "Hedef metni (boş: hedef türü şablonu)" }),
+    world: str(1, 40, { label: "Perde adı (örn. Perde I · Uyanış)" }),
     // 2. aşama (harita) için ayrılmış; şimdilik isteğe bağlı
     map: obj({
       x: num(0, 5000, { req: true }), y: num(0, 5000, { req: true }),

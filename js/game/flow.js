@@ -16,6 +16,7 @@ import { showMap } from "../ui/map.js";
 import { finalScreen, gameOverScreen, levelClearScreen, levelIntroScreen } from "../ui/result.js";
 import { unmount } from "../ui/screens.js";
 import { UI } from "../ui/text.js";
+import { starsFor } from "./stars.js";
 import { camp, continueGame, endPractice, hasSave, inPractice, initCampaign, newGame, persist, recordResult, startPractice, statuses } from "./campaign.js";
 import { clearWorld, spawnCrystal, spawnEnemy } from "./world.js";
 
@@ -178,7 +179,8 @@ export function levelClear() {
   const prevTotal = S.score;
   const bonus = Math.ceil(RT.timeLeft) * GAME.scoreTimeMul, levelBonus = GAME.scoreLevelBonus * (idx + 1);
   S.score += bonus + levelBonus;
-  recordResult(id, S.score - levelStartScore, RT.timeLeft);
+  const stars = practice ? 0 : starsFor({ objective: L.objective, hits: RT.hits });
+  recordResult(id, S.score - levelStartScore, RT.timeLeft, stars);
   renderHud();
 
   if (practice) { // alıştırma: ilerleme ve donanım değişmez, yalnızca en iyi sonuç kaydedilir
@@ -191,7 +193,7 @@ export function levelClear() {
     camp.completed.add(id);
     persist();
     props("final");
-    finalScreen({ outro: L.outro, score: S.score, onMap: () => openMap(id), onReplay: () => { newGame(); resetSession(); openMap(); } });
+    finalScreen({ outro: L.outro, stars, score: S.score, onMap: () => openMap(id), onReplay: () => { newGame(); resetSession(); openMap(); } });
     return;
   }
   const rewards = [];
@@ -200,7 +202,7 @@ export function levelClear() {
   if (S.hp < S.maxHp) S.hp = Math.min(S.hp + GAME.clearHeal, S.maxHp);
   props("clear");
   levelClearScreen({
-    idx, bonus, levelBonus, total: S.score, prevTotal, rewards, practice: false, choices: pickPerks(),
+    idx, bonus, levelBonus, total: S.score, prevTotal, rewards, practice: false, choices: pickPerks(), stars,
     onPick: (p) => {
       p.apply(S);
       S.perkCount[p.id] = (S.perkCount[p.id] || 0) + 1;

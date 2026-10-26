@@ -13,7 +13,7 @@
   "strings": {
     "title": "HEXORA: Büyücünün Gecesi",
     "opening": "Şafak yüzyıldır doğmadı. Gece Kalbi çatladı. Bunu düzeltebilecek tek kişi, o gece uyuyakalan büyücü: sensin.",
-    "tagline": "{levelCount} lanetli bölümden geç. Mana kristallerini topla, totemleri yık, düşmanları büyüyle durdur, yeni büyüler ve yetenekler kazan.",
+    "tagline": "Bir büyücü uyuyakaldı, bir vadi uyanamadı. {levelCount} bölümde şafağı geri getir.",
     "controlsHelp": "WASD / ok tuşları: yürü · Fare: nişan · Boşluk / tık: büyü · 1-7: büyü seç · Q / E / R: yetenekler",
     "mobileHelp": "Mobilde: ekranda parmağını sürükleyerek yürü, sağ alttaki ✦ butonuna basılı tutarak ateş et (nişan otomatik). Alttaki çubuğu kaydırarak büyü değiştir; yetenek düğmeleri ✦'nın üstünde belirir.",
     "startButton": "Büyüyü Başlat",
@@ -24,7 +24,16 @@
     "deathLines": [
       { "text": "Karanlık kazandı… bu gece." },
       { "speaker": "zerrin", "text": "Kalk. Bir yanlış daha yap, ama başka bir yanlış." },
-      { "text": "Pırıl solgunlaştı. Tekrar dene." }
+      { "text": "Pırıl solgunlaştı. Tekrar dene." },
+      { "speaker": "aldemir", "text": "Daha uykum yok. Bir daha." },
+      { "speaker": "piril", "text": "Ben hâlâ buradayım! Hadi!" },
+      { "speaker": "taskin", "text": "Tekrar." },
+      { "speaker": "zerrin", "text": "Ölmek de bir yöntemdir ama çok yavaş öğretir." },
+      { "speaker": "piril", "text": "Yanıp sönmek serbest. Sönüp kalmak yasak." },
+      { "text": "Gece güldü. Kısa sürecek." },
+      { "speaker": "aldemir", "text": "Bir kere uyudum, bir vadi bedel ödedi. İkinci kez pes etmem." },
+      { "speaker": "taskin", "text": "Kalk. Yürü." },
+      { "speaker": "piril", "text": "Bir kırıntı daha lazım. Bir daha!" }
     ],
     "objective": {
       "crystal": "{goal} mana kristali topla.",
@@ -726,10 +735,63 @@
           "chordBars": 1
         }
       }
+    },
+    "forest-dusk": {
+      "name": "Alacakaranlık Ormanı",
+      "bg": "#170a1f",
+      "floor": "#2a1636",
+      "ring": "#d98cb3",
+      "hemi": "#b0609a",
+      "moon": "#ffc9a0",
+      "fog": 0.04,
+      "floorKind": "grass",
+      "scenery": "forest",
+      "seed": 9,
+      "weather": { "n": 60, "col": "#ffb870", "vy": 0.12, "dx": 0.12, "size": 0.24, "add": true, "op": 0.75 },
+      "mist": 0.3,
+      "music": {
+        "root": 48,
+        "scale": [0, 2, 3, 5, 7, 9, 10],
+        "bpm": 62,
+        "chords": [0, 3, 6, 3],
+        "cut": 700,
+        "arpP": 0.5,
+        "arpWave": "triangle",
+        "bellP": 0.45,
+        "wind": 0.5,
+        "motif": true
+      }
+    },
+    "cave-ice": {
+      "name": "Ninni Mağarası",
+      "bg": "#08141f",
+      "floor": "#162a3a",
+      "ring": "#9ee8ff",
+      "hemi": "#7ab8ff",
+      "moon": "#d0ecff",
+      "fog": 0.03,
+      "floorKind": "snow",
+      "scenery": "cave",
+      "seed": 10,
+      "weather": { "n": 60, "col": "#d8f4ff", "vy": -0.08, "dx": 0.02, "size": 0.16, "add": true, "op": 0.7 },
+      "mist": 0.3,
+      "music": {
+        "root": 55,
+        "scale": [0, 1, 3, 5, 7, 8, 10],
+        "bpm": 56,
+        "chords": [0, 1, 0, 4],
+        "cut": 520,
+        "arpP": 0.3,
+        "arpWave": "sine",
+        "arpDec": 0.5,
+        "bellP": 0.6,
+        "wind": 0.3,
+        "padVol": 0.08
+      }
     }
   },
   "levels": {
-    "forest": {
+    "w1-01": {
       "image": "assets/art/bolum-forest.webp",
       "nodeImage": "assets/art/dugum-forest.webp",
       "name": "Fısıldayan Orman",
@@ -737,7 +799,8 @@
       "goal": 25,
       "time": 105,
       "theme": "forest",
-      "map": { "x": 577, "y": 547, "icon": "🌲", "label": "above" },
+      "world": "Perde I · Uyanış",
+      "map": { "x": 577, "y": 547, "icon": "🌲", "label": "below" },
       "start": { "ghost": 3 },
       "spawn": [{ "ghost": 1 }],
       "every": 8,
@@ -748,14 +811,17 @@
         {
           "speaker": "zerrin",
           "text": "Kule sustu, orman konuşuyor. Kristalleri topla; mana olmadan büyü olmaz."
-        }
+        },
+        { "speaker": "aldemir", "text": "O gece uyuyakaldım; bu gece uyanığım." }
       ],
       "outro": [
         { "speaker": "zerrin", "text": "Fena değil. Ormanın fısıltısı seni tanıdı." },
-        { "text": "Küçük bir ışık yolunu aydınlattı." }
-      ]
+        { "text": "Küçük bir ışık yolunu aydınlattı." },
+        { "speaker": "piril", "text": "Merhaba, Aldemir!" }
+      ],
+      "hook": "Küçük ışık, ona yol göstermek için sanki yıllardır bekliyordu."
     },
-    "cave": {
+    "w1-02": {
       "image": "assets/art/bolum-cave.webp",
       "nodeImage": "assets/art/dugum-cave.webp",
       "name": "Yarasa Mağarası",
@@ -763,24 +829,24 @@
       "goal": 29,
       "time": 120,
       "theme": "cave",
+      "world": "Perde I · Uyanış",
       "map": { "x": 201, "y": 520, "icon": "🦇", "label": "below" },
       "start": { "ghost": 1, "bat": 1 },
       "spawn": [{ "bat": 1, "ghost": 1 }],
       "every": 12,
       "cap": 6,
-      "reward": "arcane",
       "hint": ["Buz Oku düşmanı üç saniye yavaşlatır; Yarasaya iyi gelir."],
       "intro": [
-        { "speaker": "piril", "text": "Vızıltıyı duyuyor musun? Mağara canlı." }
+        { "speaker": "piril", "text": "Vızıltıyı duyuyor musun, Aldemir? Mağara canlı." },
+        { "speaker": "aldemir", "text": "Adımı nereden biliyorsun?" }
       ],
       "outro": [
-        {
-          "speaker": "zerrin",
-          "text": "Yarasalar korkudan değil, lanetten çıldırıyor. Üçlü büyü bunu halleder."
-        }
-      ]
+        { "speaker": "zerrin", "text": "Yarasalar korkudan değil, lanetten çıldırıyor." },
+        { "speaker": "piril", "text": "Karanlıkta hep biri elimi tutardı gibi geliyor." }
+      ],
+      "hook": "Pırıl adı nereden bildiğini söylemedi; belki kendisi de bilmiyordu."
     },
-    "golems": {
+    "w1-03": {
       "image": "assets/art/bolum-golems.webp",
       "nodeImage": "assets/art/dugum-golems.webp",
       "name": "Taş Bekçiler",
@@ -788,24 +854,57 @@
       "goal": 33,
       "time": 140,
       "theme": "golems",
+      "world": "Perde I · Uyanış",
       "map": { "x": 201, "y": 243, "icon": "🗿", "label": "right" },
       "start": { "ghost": 1, "bat": 1, "golem": 1 },
       "spawn": [{ "golem": 1, "bat": 1 }],
       "every": 12,
       "cap": 7,
-      "reward": "lightning",
+      "reward": "arcane",
+      "hint": ["Taş Bekçiler yavaştır ama kolay yıkılmaz."],
       "intro": [
         {
           "text": "Bu harabe bir zamanlar kralın nöbetçilerinin evi. Şimdi lanet, onları taşa gömdü."
-        }
+        },
+        { "speaker": "zerrin", "text": "Taş Bekçiler yavaş ama dayanıklı; bol ateş gerekecek." }
+      ],
+      "outro": [
+        { "text": "Taşkın taşlaşmış kabuğunu çatlattı." },
+        { "speaker": "taskin", "text": "Ben… yürüyebiliyorum. Peşindeyim." }
+      ],
+      "hook": "Taşkın kuleye baktı ve tek kelime etti: \"Komutan.\""
+    },
+    "w1-04": {
+      "image": "assets/art/bolum-forest.webp",
+      "nodeImage": "assets/art/dugum-forest.webp",
+      "name": "Alacakaranlık Ormanı",
+      "objective": "survive",
+      "goal": 60,
+      "time": 60,
+      "theme": "forest-dusk",
+      "world": "Perde I · Uyanış",
+      "map": { "x": 410, "y": 310, "icon": "🌅", "label": "left" },
+      "crystals": 2,
+      "start": { "ghost": 1, "bat": 1, "golem": 1 },
+      "spawn": [{ "ghost": 1, "bat": 1 }],
+      "every": 12,
+      "cap": 6,
+      "ability": "shield",
+      "hint": ["Kristal toplayarak ara sıra kalp kazanırsın; hayatta kalma bölümlerinde de."],
+      "intro": [
+        { "speaker": "zerrin", "text": "Burada ne gece var ne gündüz. Altmış saniye ayakta kal." },
+        { "speaker": "taskin", "text": "Nöbet." }
       ],
       "outro": [
         {
-          "text": "Taşkın taşlaşmış kabuğunu çatlattı: 'Ben… yürüyebiliyorum. Peşindeyim.' Yıldırım çarptığında lanet bir an titredi."
-        }
-      ]
+          "speaker": "aldemir",
+          "text": "Bir vuruşu emer, diyorlar. Keşke her şey bir vuruşla bitseydi."
+        },
+        { "speaker": "piril", "text": "Yürü yeter!" }
+      ],
+      "hook": "Ormanın ardında bir mezarlık kapısı gıcırdadı."
     },
-    "graveyard": {
+    "w1-05": {
       "image": "assets/art/bolum-graveyard.webp",
       "nodeImage": "assets/art/dugum-graveyard.webp",
       "name": "Hortlak Mezarlığı",
@@ -813,51 +912,89 @@
       "goal": 38,
       "time": 155,
       "theme": "graveyard",
+      "world": "Perde I · Uyanış",
       "map": { "x": 331, "y": 393, "icon": "🪦", "label": "right" },
-      "start": { "ghost": 2, "bat": 1, "golem": 1, "archer": 1 },
+      "start": { "ghost": 2, "bat": 2, "golem": 1, "archer": 2 },
       "spawn": [{ "ghost": 1, "archer": 1 }],
       "every": 9,
-      "cap": 8,
-      "ability": "shield",
+      "cap": 9,
+      "reward": "lightning",
       "hint": ["Kemik Okçu atıştan yarım saniye önce parlar; o an yönünü değiştir."],
       "intro": [
         {
           "text": "Mezarlar açık, mezarcı yok. Kemik Okçuları menzilden vurur; hareket etmeyi bırakma."
-        }
+        },
+        { "speaker": "aldemir", "text": "Burada yatanların çoğu ben yokken öldü." }
       ],
       "outro": [
         {
           "speaker": "zerrin",
           "text": "Kralın askerleri bile huzur bulamıyor. Gece Kalbi'nin çatlağı büyüyor."
-        }
-      ]
+        },
+        { "speaker": "aldemir", "text": "Zaman kaybedemeyiz." }
+      ],
+      "hook": "Buzul yolundan, bir ninni gibi ince bir ses geliyordu."
     },
-    "pass": {
+    "w1-06": {
+      "image": "assets/art/bolum-cave.webp",
+      "nodeImage": "assets/art/dugum-cave.webp",
+      "name": "Ninni Mağarası",
+      "objective": "totem",
+      "goal": 1,
+      "time": 150,
+      "theme": "cave-ice",
+      "world": "Perde I · Uyanış",
+      "map": { "x": 660, "y": 460, "icon": "🧊", "label": "right" },
+      "crystals": 3,
+      "start": { "ghost": 1, "bat": 1 },
+      "spawn": [{ "ghost": 1, "bat": 1 }],
+      "every": 12,
+      "cap": 6,
+      "ability": "blink",
+      "totems": [[0, -9]],
+      "hint": ["Totem on iki saniyede bir Ruh doğurur; ne kadar erken yıkarsan o kadar rahat edersin."],
+      "intro": [
+        { "speaker": "piril", "text": "Çok sessiz. Bu sessizlik… tanıdık." },
+        { "speaker": "zerrin", "text": "Tek bir totem yeter; yık da mağara nefes alsın." }
+      ],
+      "outro": [
+        { "text": "Totem çatladı; mağarada eski bir ninni yankılandı." },
+        { "speaker": "piril", "text": "Bu şarkıyı biliyorum. Kim söylerdi bana?" }
+      ],
+      "hook": "Pırıl ninniyi sonuna kadar söyledi; kimse ona öğretmemişti."
+    },
+    "w1-07": {
       "image": "assets/art/bolum-pass.webp",
       "nodeImage": "assets/art/dugum-pass.webp",
       "name": "Donmuş Geçit",
-      "objective": "survive",
-      "goal": 60,
-      "time": 60,
+      "objective": "crystal",
+      "goal": 31,
+      "time": 105,
       "theme": "pass",
+      "world": "Perde I · Uyanış",
+      "objectiveText": "Süre dolmadan 31 kristal topla.",
       "map": { "x": 884, "y": 167, "icon": "❄️", "label": "below" },
-      "crystals": 2,
-      "start": { "ghost": 2, "bat": 1, "wolf": 1 },
+      "start": { "ghost": 2, "bat": 3, "wolf": 4 },
       "spawn": [{ "wolf": 1, "bat": 1 }],
-      "every": 10,
-      "cap": 8,
-      "ability": "blink",
-      "hint": ["Kurt çömelince hücuma geçer; yana sıçra, yorulunca vur.", "Kristal toplayarak ara sıra kalp kazanırsın; hayatta kalma bölümlerinde de."],
+      "every": 8,
+      "cap": 11,
+      "hint": [
+        "Kurt çömelince hücuma geçer; yana sıçra, yorulunca vur.",
+        "Işınlan seni beş adım ileri atar ve anlık dokunulmaz yapar."
+      ],
       "intro": [
-        { "text": "Rüzgâr kemiğe işliyor. Kurt ruhları sürü halinde geliyor; sadece ayakta kal." }
+        { "text": "Rüzgâr kemiğe işliyor. Kurt ruhları sürü hâlinde geliyor; zaman daralıyor." },
+        { "speaker": "zerrin", "text": "Kurt çömelince Işınlan'ı kullan!" }
       ],
       "outro": [
         {
           "text": "Şafağa daha çok var, ama Pırıl'ın ışığı ilk kez gerçek bir sıcaklık gibi hissettirdi."
-        }
-      ]
+        },
+        { "speaker": "piril", "text": "Üşümüyorum. Ama sen titriyorsun, Aldemir." }
+      ],
+      "hook": "Geçidin ucunda bir köy, kor gibi yanıyordu."
     },
-    "village": {
+    "w1-08": {
       "image": "assets/art/bolum-village.webp",
       "nodeImage": "assets/art/dugum-village.webp",
       "name": "Yanık Köy",
@@ -865,25 +1002,61 @@
       "goal": 3,
       "time": 200,
       "theme": "village",
+      "world": "Perde I · Uyanış",
       "map": { "x": 563, "y": 311, "icon": "🔥", "label": "right" },
       "crystals": 3,
-      "start": { "ghost": 1, "ember": 2 },
+      "start": { "ghost": 1, "ember": 3, "golem": 1 },
       "spawn": [{ "ember": 1, "ghost": 1 }],
-      "every": 16,
-      "cap": 7,
+      "every": 10,
+      "cap": 8,
       "reward": "poison",
       "totems": [[-9, -8], [9, -8], [0, 9]],
-      "hint": ["Totem on iki saniyede bir Ruh doğurur; ne kadar erken yıkarsan o kadar rahat edersin.", "Kor Hortlak yaklaşınca kızarır ve patlar; yanındaki düşmanlara da zarar verir."],
+      "hint": ["Kor Hortlak yaklaşınca kızarır ve patlar; yanındaki düşmanlara da zarar verir."],
       "intro": [
         {
-          "text": "Köy yanmadı, lanet onu hatırlatıyor. Totemleri yık; kor hortlaklar yakınında patlıyor."
-        }
+          "text": "Köy yanmadı, lanet yangını hatırlıyor. Totemleri yık; kor hortlaklar yakınında patlıyor."
+        },
+        { "speaker": "taskin", "text": "Patlar. Dikkat." }
       ],
       "outro": [
-        { "text": "Totem parçalanınca Pırıl titredi: 'Bu ses… babamın sesi.' Zerrin sustu." }
-      ]
+        { "text": "Son totem parçalanınca Pırıl titredi." },
+        { "speaker": "piril", "text": "Bu ses… babamın sesi." },
+        { "text": "Zerrin sustu." }
+      ],
+      "hook": "Zerrin'in sessizliği, söylediği her şeyden daha fazla şey söyledi."
     },
-    "crystals": {
+    "w1-09": {
+      "image": "assets/art/bolum-tower.webp",
+      "nodeImage": "assets/art/dugum-tower.webp",
+      "name": "Kemik Kule",
+      "objective": "miniboss",
+      "goal": 1,
+      "time": 120,
+      "theme": "tower",
+      "world": "Perde I · Uyanış",
+      "objectiveText": "Baş Nöbetçi'yi yen!",
+      "map": { "x": 242, "y": 147, "icon": "🏰", "label": "right" },
+      "start": { "knight": 1, "archer": 2, "wolf": 1 },
+      "spawn": [{ "archer": 1, "ghost": 1 }],
+      "every": 6,
+      "cap": 6,
+      "reward": "nova",
+      "ability": "timeslow",
+      "hint": ["Şövalye yere vurmadan önce bir saniye bekler; o anda dört adım geri çekil."],
+      "intro": [
+        {
+          "text": "Kralın baş nöbetçisi kuleyi bırakmadı. Şövalye ağır ama bir vuruşu seni gönderir."
+        },
+        { "speaker": "taskin", "text": "Komutan." }
+      ],
+      "outro": [
+        { "text": "Şövalye toza döndü; uzaktaki kaleden bir ses süzüldü." },
+        { "speaker": "veyis", "text": "Kızım… neredesin?" },
+        { "speaker": "piril", "text": "Beni… çağırıyor." }
+      ],
+      "hook": "Pırıl'ın ışığı ilk kez titredi, sonra kaleye doğru yöneldi."
+    },
+    "w2-02": {
       "image": "assets/art/bolum-crystals.webp",
       "nodeImage": "assets/art/dugum-crystals.webp",
       "name": "Kristal Yatağı",
@@ -910,34 +1083,7 @@
         }
       ]
     },
-    "tower": {
-      "image": "assets/art/bolum-tower.webp",
-      "nodeImage": "assets/art/dugum-tower.webp",
-      "name": "Kemik Kule",
-      "objective": "miniboss",
-      "goal": 1,
-      "time": 120,
-      "theme": "tower",
-      "map": { "x": 242, "y": 147, "icon": "🏰", "label": "right" },
-      "start": { "knight": 1, "archer": 1, "wolf": 1 },
-      "spawn": [{ "archer": 1, "ghost": 1 }],
-      "every": 7,
-      "cap": 7,
-      "reward": "nova",
-      "ability": "timeslow",
-      "hint": ["Şövalye yere vurmadan önce bir saniye bekler; o anda dört adım geri çekil."],
-      "intro": [
-        {
-          "text": "Kralın baş nöbetçisi kuleyi bırakmadı. Şövalye ağır ama bir vuruşu seni gönderir."
-        }
-      ],
-      "outro": [
-        {
-          "text": "Şövalye toza döndü. Kale kapısı açıldı ve yukarıdan bir ses duyuldu: 'Kızım… neredesin?'"
-        }
-      ]
-    },
-    "castle": {
+    "w3-09": {
       "image": "assets/art/bolum-castle.webp",
       "nodeImage": "assets/art/dugum-castle.webp",
       "name": "Gölge Kalesi",
@@ -963,17 +1109,19 @@
     }
   },
   "campaign": {
-    "order": ["forest", "cave", "golems", "graveyard", "pass", "village", "crystals", "tower", "castle"],
-    "start": "forest",
+    "order": ["w1-01", "w1-02", "w1-03", "w1-04", "w1-05", "w1-06", "w1-07", "w1-08", "w1-09", "w2-02", "w3-09"],
+    "start": "w1-01",
     "edges": [
-      { "from": "forest", "to": "cave", "via": [[400,570]], "style": "dotted" },
-      { "from": "cave", "to": "golems", "via": [[110,390]], "style": "dotted" },
-      { "from": "golems", "to": "graveyard", "via": [[290,310]], "style": "dotted" },
-      { "from": "graveyard", "to": "pass", "via": [[450,450],[700,420],[800,250]], "style": "dotted" },
-      { "from": "pass", "to": "village", "via": [[760,150],[640,250]], "style": "dotted" },
-      { "from": "village", "to": "crystals", "via": [[700,330]], "style": "dotted" },
-      { "from": "crystals", "to": "tower", "via": [[780,240],[520,215],[360,190]], "style": "dotted" },
-      { "from": "tower", "to": "castle", "via": [[420,120]], "style": "dotted" }
+      { "from": "w1-01", "to": "w1-02", "via": [[400, 570]], "style": "dotted" },
+      { "from": "w1-02", "to": "w1-03", "via": [[110, 390]], "style": "dotted" },
+      { "from": "w1-03", "to": "w1-04", "via": [[330, 215]], "style": "dotted" },
+      { "from": "w1-04", "to": "w1-05", "via": [[390, 370]], "style": "dotted" },
+      { "from": "w1-05", "to": "w1-06", "via": [[450, 450]], "style": "dotted" },
+      { "from": "w1-06", "to": "w1-07", "via": [[760, 360], [820, 240]], "style": "dotted" },
+      { "from": "w1-07", "to": "w1-08", "via": [[760, 150], [640, 250]], "style": "dotted" },
+      { "from": "w1-08", "to": "w1-09", "via": [[470, 235], [360, 170]], "style": "dotted" },
+      { "from": "w1-09", "to": "w2-02", "via": [[420, 95], [540, 55], [730, 55], [800, 200]], "style": "dotted" },
+      { "from": "w2-02", "to": "w3-09", "via": [[740, 260]], "style": "dotted" }
     ]
   },
   "ui": {

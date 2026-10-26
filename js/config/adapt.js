@@ -116,6 +116,7 @@ export function adapt(cfg) {
     o.intro = L.intro.map(line);
     o.outro = L.outro.map(line);
     o.id = id;
+    for (const f of ["hook", "objectiveText", "world"]) if (L[f]) o[f] = L[f];
     if (L.image) o.image = L.image;
     if (L.nodeImage) o.nodeImage = L.nodeImage;
     if (L.map) o.map = { ...L.map };

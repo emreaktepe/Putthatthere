@@ -3,6 +3,8 @@
 // Saf: DOM'a dokunmaz, depolama parametre olarak verilir (Node'da test edilir). Depolama hatasında sessizce vazgeçer.
 // Boyut: bölüm başına son MAX_ATTEMPTS deneme + toplam sayaçlar; toplam MAX_BYTES altında (aşarsa en eski denemeler atılır).
 
+import { mapIdKeys } from "./legacyids.js";
+
 export const TELEMETRY_KEY = "buyucu_telemetri";
 export const TELEMETRY_VERSION = 1;
 export const MAX_ATTEMPTS = 20;
@@ -22,8 +24,9 @@ const emptyLevel = () => ({ att: 0, win: 0, die: 0, quit: 0, timeout: 0, ft: 0, 
 export function sanitizeTelemetry(raw) {
   const out = emptyTelemetry();
   if (!isObj(raw) || raw.v !== TELEMETRY_VERSION || !isObj(raw.levels)) return out;
-  for (const id of Object.keys(raw.levels).slice(0, MAX_LEVELS)) {
-    const b = raw.levels[id];
+  const levels = mapIdKeys(raw.levels); // eski bölüm kimlikleri sessizce yeni kimliğe taşınır (js/core/legacyids.js)
+  for (const id of Object.keys(levels).slice(0, MAX_LEVELS)) {
+    const b = levels[id];
     if (!ID_RE.test(id) || FORBIDDEN.has(id) || !isObj(b)) continue;
     const L = emptyLevel();
     for (const k of ["att", "win", "die", "quit", "timeout", "ft", "ftWin"]) L[k] = Math.floor(num(b[k], 0, 1e6));

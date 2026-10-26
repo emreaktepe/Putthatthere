@@ -21,7 +21,7 @@ test("diffOps: değişiklik yok -> boş; yama taban üzerine uygulanınca çalı
   const w = copy(base);
   w.game.startHp = 5;
   w.enemies.ghost.hp = 3.5;
-  w.levels.forest.intro[0].text = "Merhaba";
+  w.levels["w1-01"].intro[0].text = "Merhaba";
   delete w.enemies.ghost.zig;
   w.campaign.order = [...w.campaign.order].reverse();
   const ops = diffOps(base, w);
@@ -60,7 +60,7 @@ test("changeRows: eklendi/silindi/değişti ve Türkçe etiket", () => {
 test("addItem/removeItem: bölüm ekleme sırayı ve yolu günceller, silme başvuruları temizler", () => {
   const c = copy(base);
   assert.ok(checkNewId(c, "levels", "Büyük"));
-  assert.ok(checkNewId(c, "levels", "forest"));
+  assert.ok(checkNewId(c, "levels", "w1-01"));
   const n = c.campaign.order.length;
   const r = addItem(c, "levels", "yeni_bolum");
   assert.ok(r.ok);
@@ -95,7 +95,7 @@ test("duplicateItem: kopya yeni kimlikle eklenir, özgün korunur", () => {
 test("routeOf/countByTab: yol -> sekme", () => {
   assert.equal(routeOf("/enemies/ghost/hp").tab, "dusmanlar");
   assert.deepEqual([routeOf("/enemies/ghost/hp").coll, routeOf("/enemies/ghost/hp").id], ["enemies", "ghost"]);
-  assert.equal(routeOf("/levels/cave/map/x").tab, "bolumler");
+  assert.equal(routeOf("/levels/w1-02/map/x").tab, "bolumler");
   assert.equal(routeOf("/themes/night/music/bpm").tab, "ses");
   assert.equal(routeOf("/strings/title").tab, "genel");
   const c = countByTab([{ path: "/enemies/a", severity: "error" }, { path: "/enemies/b", severity: "warning" }, { path: "/game/x", severity: "error" }]);

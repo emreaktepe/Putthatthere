@@ -731,3 +731,72 @@ forest 97/100/100 · cave 98/100/100 · golems 94/100/100 · graveyard 64/100/10
 
 ### 12.6 Ölçülmeyenler / kalan varsayımlar
 Doğrulanan: V9 (yürüyen bot kristal bölümlerini geçiyor), V17 (9 bölüm x 3 bot x 200 koşu ≈ 15 sn). Ölçülmeyen: diğer tüm V'ler; model p ve bot oranlarının insanla ilişkisi; mobil `cap`; DDA'nın gerçek etkisi; 2-4 dk bölüm süresi. Yapılmayanlar: `difficulty` config bloğu (DDA çarpanları `js/game/dda.js` sabiti), yenilgi başlık çiftleri (§6.6), kazanma serisi (§3.6).
+
+
+---
+
+## 13. Perde I uygulama notları (gelistirme odası)
+
+Kapsam: mevcut 9 bölümün yeni kimliklere taşınması, Perde I'in 2 yeni bölümü (w1-04, w1-06), yıldız (★) rozetleri, eski kayıt/telemetri göçü, Perde I hikâye metinlerinin config'e aktarılması. **Perde II/III bölümleri, yeni hedef türleri (dalga/bölge/eskort), meta-ilerleme, 3B/görsel üretimi YOK** (Emre: "Perde II-III, Perde I'in oyuncu testinden sonra"). **Tüm sayılar VARSAYIMDIR; oyuncu testi yapılmadı.**
+
+### 13.1 Kimlik haritası ve geçici köprü kararı
+| Eski | Yeni | Not |
+|---|---|---|
+| forest, cave, golems | w1-01, w1-02, w1-03 | |
+| (YENİ) | w1-04 Alacakaranlık Ormanı | tema `forest-dusk`, hayatta kal 60 sn |
+| graveyard | w1-05 | |
+| (YENİ) | w1-06 Ninni Mağarası | tema `cave-ice`, 1 totem |
+| pass | w1-07 | hayatta kal -> zamanlı kristal (31 kristal) |
+| village, tower | w1-08, w1-09 | |
+| crystals | **w2-02 (geçici köprü)** | metin/sayı DEĞİŞMEDİ |
+| castle | **w3-09 (final boss)** | metin/sayı DEĞİŞMEDİ |
+
+Kampanya zinciri (11 bölüm, doğrusal): w1-01 ... w1-09 -> w2-02 -> w3-09. Perde II/III yapılınca w2-02 ve w3-09 arasına 7 + 8 bölüm girer (kenar `w2-02 -> w3-09` bölünür); köprü seçimi, §4.1'in kimlik haritasını aynen izler (en az riskli yol: belgenin kendi kimlikleri, yeni kimlik uydurulmadı). Final boss son bölümdür; oyun baştan sona oynanır ve tamamlanır (test: `tests/perde1.test.js`).
+
+### 13.2 Ödül takvimi (eski -> yeni)
+| Bölüm | Eski ödül | Yeni ödül |
+|---|---|---|
+| w1-01 (forest) | Buz Oku | Buz Oku |
+| w1-02 (cave) | Üçlü Büyü | - |
+| w1-03 (golems) | Yıldırım | **Üçlü Büyü** |
+| w1-04 | (yeni) | **Mana Kalkanı** (yetenek) |
+| w1-05 (graveyard) | Mana Kalkanı | **Yıldırım** |
+| w1-06 | (yeni) | **Işınlan** (yetenek) |
+| w1-07 (pass) | Işınlan | - |
+| w1-08 (village) | Zehir Bulutu | Zehir Bulutu |
+| w1-09 (tower) | Ay Işığı Halkası + Zaman Çatlağı | **GEÇİCİ: aynı** (plan §4.4 "-" der; Perde II'ye taşınana kadar burada kalır ki 7 büyü/3 yetenek final bosa kadar kazanılsın) |
+| w2-02 (crystals) | Meteor | Meteor (plan: w2-03; Perde II yapılınca taşınır) |
+
+Perk havuzu ve diğer mekanikler değişmedi.
+
+### 13.3 Config sayıları (önce [Aşama 1] -> sonra)
+| Bölüm | start | spawn / every / cap | goal / time | model Z / p |
+|---|---|---|---|---|
+| w1-01..03 | değişmedi | değişmedi | değişmedi | 1.00/.92 · 1.16/.89 · 1.34/.84 |
+| w1-04 (yeni) | ghost1 bat1 golem1 | ghost1 bat1 / 12 / 6, `crystals` 2 | 60 / 60 | 1.35/.84 |
+| w1-05 (graveyard) | ghost2 bat1 golem1 archer1 -> **ghost2 bat2 golem1 archer2** | ghost1 archer1 / 9 / 8 -> **9** | 38 / 155 | .82 -> 1.59/.77 |
+| w1-06 (yeni) | ghost1 bat1 + 1 totem `[0,-9]`, `crystals` 3 | ghost1 bat1 / 12 / 6 | 1 / 150 | 1.25/.86 |
+| w1-07 (pass) | ghost2 bat1 wolf1 -> **ghost2 bat3 wolf4** | wolf1 bat1 / 10 -> **8** / 8 -> **11** | hayatta kal 60/60 -> **kristal 31 / 105** | .77 -> 1.66/.75 |
+| w1-08 (village) | ghost1 ember2 -> **ghost1 ember3 golem1** | ember1 ghost1 / 16 -> **10** / 7 -> **8** | 3 totem / 200 | .65 -> 1.98->2.19/.59 |
+| w1-09 (tower) | knight1 archer1 wolf1 -> **knight1 archer2 wolf1** | archer1 ghost1 / 7 -> **6** / 7 -> **6** | 1 / 120 | .55 -> 2.56/.48 |
+| w2-02, w3-09 | değişmedi | değişmedi | değişmedi | 1.61/.76 · 2.74/.44 |
+Sapmalar: w1-07 `time` 95 değil **105** (plan: 1.25x; doğrulayıcı kristal süre payını >= 1.4x ister, 31 x 2.4 x 1.4 = 104; zamanlı kristal için ayrı eşik W_BALANCE'a eklenmedi). w1-09 için denendi: knight1 archer2 wolf2 / every 5 / cap 7 modelde Z 3.69 (p .26; final boss Z'sini aşıyor ve sert); plan değerine (Z 2.56, p .48) dönüldü. `npm run validate`: 0 hata, 0 uyarı.
+
+### 13.4 Bot sonuçları (yaklaşık; `npm run balance`, N=200, seed=1; yürüyen / orta / iyi)
+w1-01 97/100/100 · w1-02 98/100/100 · w1-03 94/95/100 · w1-04 100/100/100 · w1-05 73/87/100 · w1-06 0/100/100 · w1-07 97/100/100 · w1-08 0/100/100 · w1-09 0/100/100 · w2-02 96/99/100 · w3-09 0/93/100. Aşama 1'e göre farklar: w1-05 (graveyard) orta 100 -> 87; w1-03 95; w1-09 orta bot hâlâ %100 (15 sn). **Yorum:** bot kalibre edilmemiştir (bkz. §12.4); totem ve mini-boss bölümlerinde "orta" botun %100 geçmesi bot modelinin zayıf noktasıdır (isabet/kaçış katsayıları), bölümün gerçek kolaylığı değildir. Bölümleri bot yerine doğrulayıcı modelle (Z/p) hedefe çektim; bot bandı "evet" yalnızca w1-01, 02, 03, 05. Gerçek ayar için 5-8 kişilik oyuncu testi (telemetri: admin "Doğrulama" sekmesi) gerekir.
+
+### 13.5 Yıldız (★) rozetleri (`js/game/stars.js`, `tests/perde1.test.js`)
+★1 "Yolcu" (bitir) · ★2 "Sakınan" (en çok 2 vuruş; mini-boss/boss 3) · ★3 "Dokunulmaz" (hasarsız). Vuruş = `RT.hits` (kalkanın emdiği vuruş sayılmaz; DDA yardımı yıldızı değiştirmez). Kayıt: `best.levels.<id>.stars` (0-3, yalnız artar; isteğe bağlı alan). Alıştırmada yazılmaz. Gösterim: bölüm sonu satırı (rozet adı + açıklama), harita düğümünde ★★☆, panelde çip (tamamlanmış ama yıldız verisi olmayan eski kayıt en az ★1 gösterir), final ekranında. **Yapılmadı:** "Rüzgâr Adımı" hız rozeti (ölçüt "rekor hız" belgede tanımsız), hedef dağılımı ölçümü (§3.7 hedefi: ★>=2 %35-45, ★3 %8-15 [V13]: oyuncu testi gerekir).
+
+### 13.6 Kayıt ve telemetri göçü
+`buyucu_save` v1 -> **v2** (`js/core/save.js`, `MIGRATIONS[1]`): `completed`, `currentLevel`, `best.levels` anahtarları `js/core/legacyids.js` tablosuyla yeni kimliklere taşınır; açık büyüler/yetenekler/perk'ler/puan aynen korunur. Eski ham kayıt `buyucu_save_backup_v1` anahtarına bir kez yedeklenir (bozuk JSON/geçersiz alan da yedeklenir), göç eden kayıt hemen yazılır; depolama hatasında oyun çökmez. Telemetri `buyucu_telemetri` sürümü değişmedi; yüklemede bölüm anahtarları yeni kimliğe taşınır. Göç idempotenttir (yeni kimlikler tabloda anahtar değildir). Tam kayıtlı oyuncuda (9 bölüm tamam) w1-04 ve w1-06 "açık, tamamlanmamış" görünür; ödülleri zaten sahip olduğundan tekrar verilmez. **Kimlik biçimi:** `ID_RE` tireyi kabul eder (`w1-01`, `forest-dusk`); admin/doğrulayıcı mesajları güncellendi.
+
+### 13.7 Şema değişiklikleri (`schemaVersion` 1, yalnızca isteğe bağlı alanlar)
+`levels.<id>.hook` (<= 120), `objectiveText` (<= 60; w1-07 "Süre dolmadan 31 kristal topla.", w1-09 "Baş Nöbetçi'yi yen!"), `world` (<= 40; "Perde I · Uyanış", intro kartı ve geniş harita panelinde görünür). Admin formu şemadan üretildiği için alanlar kendiliğinden çıkar. `deathLines` üst sınırı 12 kaldı (12 satır girildi). Slogan: §6.8 #4.
+
+### 13.8 Kalan işler / riskler
+- Perde II (w2-01, w2-03..09) ve Perde III (w3-01..08), yeni hedef türleri, `worlds` perde kartları, kırıntı kartları, `enemies.*.lore` yapılmadı.
+- **Menü alt başlığı** `UI.menu.subtitle`/`BRAND.slogan` "Bir büyü. Dokuz bölüm. Tek kader." sabit (marka testi); kampanya 11 bölüm gösteriyor. Marka metni bu paketin dışındadır, Emre karar versin.
+- Zerrin/Taşkın ölüm repliklerinin perde/ilerleme süzgeci yok (Taşkın satırları w1-03 öncesinde de çıkabilir; Perde III'te Zerrin satırı çıkmamalı).
+- Yeni bölümler mevcut görselleri yeniden kullanır (w1-04 = orman kapağı, w1-06 = mağara kapağı); harita koordinatları elle seçildi, görsel doğrulama yapılmadı (etiket çakışması yaklaşık hesapla [iki bölüm etiketi + düğümler] elendi; forest düğüm etiketi "above" -> "below").
+- Tarayıcıda yalnızca `?dev=1&level=w1-01` ve `w1-09` açılışı headless Chrome ile 40 sn denendi: konsolda hata yok (yalnız THREE.Clock kullanımdan kalkma bilgisi); oyun akışı/yıldız ekranları elle oynanmadı.

@@ -233,31 +233,31 @@ test("figür görünürlüğü: Zerrin her bölümde, Taşkın golems sonrası, 
   const vis = (o) => PV.visibleProps({ ...base, ...o });
   assert.equal(PV.PROP_IDS.length, 3);
   // menü/harita: hiçbiri
-  assert.deepEqual(vis({ phase: "none", levelId: "forest", completed: new Set() }), []);
+  assert.deepEqual(vis({ phase: "none", levelId: "w1-01", completed: new Set() }), []);
   // Zerrin tüm bölümlerde ve tüm aşamalarda
   for (const id of LEVEL_IDS) for (const phase of ["intro", "play", "clear"]) assert.ok(vis({ phase, levelId: id, completed: new Set() }).includes("zerrin"), id + phase);
   // Taşkın: golems tamamlanmadan yok
-  assert.ok(!vis({ phase: "intro", levelId: "graveyard", completed: new Set(["forest", "cave"]) }).includes("taskin"));
-  assert.ok(!vis({ phase: "play", levelId: "golems", completed: new Set(["forest", "cave"]) }).includes("taskin"));
+  assert.ok(!vis({ phase: "intro", levelId: "w1-05", completed: new Set(["w1-01", "w1-02"]) }).includes("taskin"));
+  assert.ok(!vis({ phase: "play", levelId: "w1-03", completed: new Set(["w1-01", "w1-02"]) }).includes("taskin"));
   // golems tamamlanınca golems'te (tekrar) ve sonraki bölümlerde var
-  const done = new Set(["forest", "cave", "golems"]);
-  for (const id of LEVEL_IDS.slice(LEVEL_IDS.indexOf("golems"))) assert.ok(vis({ phase: "play", levelId: id, completed: done }).includes("taskin"), id);
+  const done = new Set(["w1-01", "w1-02", "w1-03"]);
+  for (const id of LEVEL_IDS.slice(LEVEL_IDS.indexOf("w1-03"))) assert.ok(vis({ phase: "play", levelId: id, completed: done }).includes("taskin"), id);
   // alıştırma/önceki bölüm tekrarında hikâye tutarlı: golems'ten önceki bölümde yok
-  assert.ok(!vis({ phase: "intro", levelId: "forest", completed: done }).includes("taskin"));
+  assert.ok(!vis({ phase: "intro", levelId: "w1-01", completed: done }).includes("taskin"));
   // kayıt dizi olarak da gelebilir
-  assert.ok(vis({ phase: "intro", levelId: "pass", completed: ["golems"] }).includes("taskin"));
+  assert.ok(vis({ phase: "intro", levelId: "w1-07", completed: ["w1-03"] }).includes("taskin"));
   // Veyis: yalnız castle finalinde
-  assert.ok(vis({ phase: "final", levelId: "castle", completed: done }).includes("veyis"));
-  assert.ok(!vis({ phase: "clear", levelId: "castle", completed: done }).includes("veyis"));
-  assert.ok(!vis({ phase: "play", levelId: "castle", completed: done }).includes("veyis"));
-  assert.ok(!vis({ phase: "final", levelId: "tower", completed: done }).includes("veyis"));
+  assert.ok(vis({ phase: "final", levelId: "w3-09", completed: done }).includes("veyis"));
+  assert.ok(!vis({ phase: "clear", levelId: "w3-09", completed: done }).includes("veyis"));
+  assert.ok(!vis({ phase: "play", levelId: "w3-09", completed: done }).includes("veyis"));
+  assert.ok(!vis({ phase: "final", levelId: "w1-09", completed: done }).includes("veyis"));
 });
 
 test("figür görünürlüğü: düşük kalitede yalnız finaldeki Veyis", () => {
-  const o = { levelIds: LEVEL_IDS, completed: new Set(["golems"]), quality: "basic" };
-  assert.deepEqual(PV.visibleProps({ ...o, phase: "intro", levelId: "forest" }), []);
-  assert.deepEqual(PV.visibleProps({ ...o, phase: "play", levelId: "pass" }), []);
-  assert.deepEqual(PV.visibleProps({ ...o, phase: "final", levelId: "castle" }), ["veyis"]);
+  const o = { levelIds: LEVEL_IDS, completed: new Set(["w1-03"]), quality: "basic" };
+  assert.deepEqual(PV.visibleProps({ ...o, phase: "intro", levelId: "w1-01" }), []);
+  assert.deepEqual(PV.visibleProps({ ...o, phase: "play", levelId: "w1-07" }), []);
+  assert.deepEqual(PV.visibleProps({ ...o, phase: "final", levelId: "w3-09" }), ["veyis"]);
 });
 
 test("figür yerleşimi: arena dışı kenar, birbirinden ve dekordan ayrı; ringPos bu daireleri atlar", () => {

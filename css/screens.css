@@ -445,3 +445,16 @@
 /* Yatay telefon: harita küçük olduğundan etiketler çakışır; yalnızca seçili / üzerine gelinen / odaklanan düğümün etiketi görünür */
 .map-screen.lp .node .label { opacity: 0; pointer-events: none; transition: opacity .15s; }
 .map-screen.lp .node.sel .label, .map-screen.lp .node:hover .label, .map-screen.lp .node:focus-visible .label { opacity: 1; }
+
+/* Yıldız (★) rozetleri: bölüm sonu satırı, harita düğümü ve panel çipi (js/game/stars.js) */
+.stars-row .stars-name { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.stars-row .stars-name b { color: var(--gold-light); }
+.stars-row .stars-name small { color: var(--muted); font-size: 13px; }
+.stars-row .stars-glyph { color: var(--gold-light); letter-spacing: 2px; font-size: 20px; white-space: nowrap; }
+.final-stars { margin: 6px auto 0; max-width: 420px; }
+.star-chip { color: var(--gold-light); letter-spacing: 1px; }
+.node-stars { paint-order: stroke; stroke: rgba(6, 8, 24, .85); stroke-width: 3px; letter-spacing: 0.04em; pointer-events: none; }
+.node-stars .on { fill: var(--gold-light); }
+.node-stars .off { fill: rgba(255, 255, 255, .35); }
+.hook { margin: 10px 2px 0; font-style: italic; color: var(--gold-light); font-size: 15px; line-height: 1.4; }
+.eyebrow.world { display: block; text-align: center; letter-spacing: .08em; color: var(--gold-light); }

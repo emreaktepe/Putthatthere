@@ -5,6 +5,7 @@ import { ENEMY_NAMES, LEVELS, LEVEL_IDS, MAP, TOTEM_ID, WEAPONS } from "../core/
 import { h, svg } from "../core/dom.js";
 import { edges } from "../game/campaign.js";
 import { buildMapGraph, mapPoints } from "../game/progress.js";
+import { displayStars, starText } from "../game/stars.js";
 import { artBg, artOr, artPath, pickArt } from "./art.js";
 import { icon, ICON_PATHS } from "./icons.js";
 import { ambient } from "./menu.js";
@@ -14,6 +15,7 @@ import { button, mount, scope } from "./screens.js";
 import { UI, objectiveText } from "./text.js";
 import { BRAND } from "./brandmodel.js";
 
+const fmtStars = (n) => UI.stars.count.replace("{n}", String(n));
 const STATE_LABEL = { completed: UI.map.done, available: UI.map.open, locked: UI.map.locked };
 
 // arka plan: parşömen yerine gece manzarası; uzak dağ silüetleri (yalnız yatay yerleşimde)
@@ -40,6 +42,13 @@ function nodeMedal(id, L, r) {
   return svg("g", null, svg("clipPath", { id: cid }, svg("circle", { r })), im);
 }
 
+// düğüm üstü yıldız şeridi: kazanılan dolu, kalanlar sönük (SVG metin; erişilebilir ad düğümün aria-label'ında)
+function nodeStars(n, r) {
+  const t = svg("text", { class: "node-stars", x: -r * 0.12, y: r * 0.68, "text-anchor": "middle", "dominant-baseline": "central", "font-size": r * 0.36, "aria-hidden": "true" });
+  for (let i = 0; i < 3; i++) t.append(svg("tspan", { class: i < n ? "on" : "off" }, "★"));
+  return t;
+}
+
 // opts: { completed:Set, statuses, best, score, focusId, freshId, onPlay(id, practice), onBack }
 export function showMap(opts) {
   const sc = scope();
@@ -64,6 +73,10 @@ export function showMap(opts) {
   const defaultId = () => opts.focusId || LEVEL_IDS.find((id) => opts.statuses[id] === "available") || LEVEL_IDS[0];
   // ilk cümle: bölümün giriş metninden (yalnız gerçek veri)
   const teaser = (L) => { const t = L.intro && L.intro[0] && L.intro[0].text; if (!t) return ""; const m = String(t).match(/^.*?[.!?…](?=\s|$)/); return (m ? m[0] : String(t)).trim(); };
+
+  // en iyi yıldız sayısı (tamamlanmış bölümde en az ★1); tamamlanmamışta gösterilmez
+  const starsOf = (id, st) => displayStars(opts.best.levels[id], st === "completed");
+  const starChip = (id, st) => { const n = starsOf(id, st); return n ? h("span", { class: "chip star-chip", title: UI.stars.title, "aria-label": fmtStars(n) }, starText(n)) : null; };
 
   function renderSheet(focus = false) {
     root.classList.toggle("sheet-open", !!selected);
@@ -94,6 +107,7 @@ export function showMap(opts) {
         h("div", { class: "sheet-meta" },
           h("span", { class: "chip", title: UI.map.time }, icon("hourglass"), `${m.time} ${UI.map.sec}`),
           m.best ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(m.best)) : null,
+          starChip(selected, st),
           m.reward ? h("span", { class: "chip", title: UI.map.reward }, h("span", { class: "chip-ic", "aria-hidden": "true" }, rewardIcon), m.reward.name) : null),
         more),
       h("div", { class: "sheet-detail" },
@@ -123,10 +137,11 @@ export function showMap(opts) {
     sheet.replaceChildren(
       h("div", { class: "sheet-body" },
         coverImg(L),
-        h("div", { class: "sheet-title" }, h("small", { class: "eyebrow" }, `${i + 1}/${LEVELS.length} · ${STATE_LABEL[st]}`), h("h3", null, L.name)),
+        h("div", { class: "sheet-title" }, h("small", { class: "eyebrow" }, `${L.world ? L.world + " · " : ""}${i + 1}/${LEVELS.length} · ${STATE_LABEL[st]}`), h("h3", null, L.name)),
         h("div", { class: "sheet-meta" },
           h("span", { class: "chip", title: UI.map.time }, icon("hourglass"), `${m.time} ${UI.map.sec}`),
-          m.best ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(m.best)) : null),
+          m.best ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(m.best)) : null,
+          starChip(selected, st)),
         h("p", { class: "sheet-obj" }, icon("target"), h("span", null, h("small", null, UI.map.goal), objectiveText(L))),
         m.reward ? h("div", { class: "sheet-reward", title: UI.map.reward }, h("span", { class: "chip-ic", "aria-hidden": "true" }, rewardIcon), h("span", { class: "rw-txt" }, h("small", null, UI.map.reward), h("b", null, m.reward.name)), rw && rw.key ? h("kbd", { class: "rw-key" }, String(rw.key)) : null) : null,
         h("div", { class: "sheet-foes" }, h("small", null, UI.map.foes), h("ul", { class: "chips foe-row", "aria-label": UI.map.foes }, ...foes.map((k) => h("li", { class: "chip", title: ENEMY_NAMES[k] }, foeBadge(k), ENEMY_NAMES[k])))),
@@ -223,7 +238,7 @@ export function showMap(opts) {
       pills.push(pl);
       const gEl = svg("g", {
         class: "node " + st + (opts.freshId === n.id ? " fresh" : "") + (selected === n.id ? " sel" : ""), "data-id": n.id, transform: `translate(${n.x} ${n.y})`,
-        role: "button", tabindex: "0", "aria-label": `Bölüm ${n.index + 1}: ${L.name}, ${STATE_LABEL[st].toLowerCase()}`,
+        role: "button", tabindex: "0", "aria-label": `Bölüm ${n.index + 1}: ${L.name}, ${STATE_LABEL[st].toLowerCase()}${starsOf(n.id, st) ? ", " + fmtStars(starsOf(n.id, st)) : ""}`,
       },
         svg("circle", { class: "halo", r: r + 8 }),
         svg("circle", { class: "ring", r: r + 4 }),
@@ -235,6 +250,7 @@ export function showMap(opts) {
         svg("circle", { class: "num-bg", cx: -r * 0.72, cy: -r * 0.72, r: r * 0.38 }),
         svg("text", { class: "num", x: -r * 0.72, y: -r * 0.72, "text-anchor": "middle", "dominant-baseline": "central", "font-size": r * 0.42 }, String(n.index + 1)),
         st === "completed" ? svg("polygon", { class: "node-star", points: starPath(r * 0.72, r * 0.72, r * 0.44) }) : null,
+        st === "completed" ? nodeStars(starsOf(n.id, st), r) : null,
         pl.g,
         svg("circle", { class: "hit", r: hitR }));
       gEl.addEventListener("click", () => select(n.id));

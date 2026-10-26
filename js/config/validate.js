@@ -210,7 +210,7 @@ function walk(value, spec, path, ctx, key) {
       if (keys.length < spec.min || keys.length > spec.max) err("E_LENGTH", path, `${name} öğe sayısı ${keys.length}: ${spec.min}–${spec.max} olmalı`, { value: keys.length, expect: `${spec.min}..${spec.max}` });
       const out = {};
       for (const k of keys) {
-        if (!ID_RE.test(k)) err("E_FORMAT", [...path, k], `Kimlik ${JSON.stringify(k)} geçersiz: küçük harfle başlayan, a-z 0-9 _ içeren 2–24 karakter olmalı`, { value: k, expect: String(ID_RE) });
+        if (!ID_RE.test(k)) err("E_FORMAT", [...path, k], `Kimlik ${JSON.stringify(k)} geçersiz: küçük harfle başlayan, a-z 0-9 _ - içeren 2–24 karakter olmalı`, { value: k, expect: String(ID_RE) });
         const r = walk(value[k], spec.item, [...path, k], ctx, k);
         if (r !== undefined) out[k] = r;
       }

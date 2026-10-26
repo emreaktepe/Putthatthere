@@ -22,8 +22,8 @@ export const PROP_IDS = Object.keys(PROP_SPECS);
 export const RESERVED = ["zerrin", "taskin"].map((k) => [...PROP_SPECS[k].at, PROP_SPECS[k].r]);
 export const reservedHit = (x, z) => RESERVED.some(([cx, cz, r]) => (x - cx) ** 2 + (z - cz) ** 2 < r * r);
 
-export const TASKIN_UNLOCK = "golems"; // bu bölüm tamamlanınca Taşkın dost figür olur
-export const FINAL_LEVEL = "castle";
+export const TASKIN_UNLOCK = "w1-03"; // bu bölüm tamamlanınca Taşkın dost figür olur
+export const FINAL_LEVEL = "w3-09";
 // harabe sahnesindeki Taşkın heykeli (scenery.js) yalnız golems tamamlanmadan görünür; tamamlanınca canlı Taşkın figürü onun yerini alır
 export const taskinStatueVisible = (completed) => !(completed instanceof Set ? completed : new Set(completed || [])).has(TASKIN_UNLOCK);
 

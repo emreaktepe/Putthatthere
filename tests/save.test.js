@@ -29,7 +29,7 @@ test("kayıt: bozuk JSON, yanlış tür ve bilinmeyen kimlikler oyunu çökertme
   assert.equal(loadSave(ctx, st).status, "corrupt");
   st.setItem(SAVE_KEY, JSON.stringify({ v: 99 }));
   assert.equal(loadSave(ctx, st).status, "newer");
-  st.setItem(SAVE_KEY, JSON.stringify({ v: 1, completed: ["forest", "yok", "forest"], currentLevel: "yok", run: { hp: "x", unlocked: ["silinmis"], weapon: "silinmis", abilities: ["gizli"], perkCount: { __proto__: 5 } }, best: { score: -4, levels: { yok: { score: 9 } } } }));
+  st.setItem(SAVE_KEY, JSON.stringify({ v: 2, completed: ["forest", "yok", "forest"], currentLevel: "yok", run: { hp: "x", unlocked: ["silinmis"], weapon: "silinmis", abilities: ["gizli"], perkCount: { __proto__: 5 } }, best: { score: -4, levels: { yok: { score: 9 } } } }));
   const r = loadSave(ctx, st);
   assert.equal(r.status, "ok");
   assert.deepEqual(r.save.completed, ["forest"]);

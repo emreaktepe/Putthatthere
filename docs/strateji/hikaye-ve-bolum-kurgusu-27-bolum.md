@@ -1137,3 +1137,25 @@ Büyük risk: **metin hacmi.** 27 bölüm x (intro+outro) + 27 kırıntı + 27 k
 - **Oyun tasarımcısı:** Bu belge hedef türü, yıldız, DDA ve rozet tanımlarını DEĞİŞTİRMEDİ; yalnız metin ekledi. `knight_ii..iv` adları ve `objectiveText` gereksinimi sizi ilgilendirir.
 - **Görsel/içerik:** 12 yeni tema (bölüm 3.0.2), 18 yeni bölüm kapağı ve düğüm görseli, Nöbetçi portresi (isteğe bağlı), perde kartı arka planları (yeni değil: mevcut kapakların yeniden kullanımı mümkün).
 - **Test/yayın:** Spoiler sırası kontrolü (bölüm 8.2) ve "Mira" taraması yayın öncesi kontrol listesine girmeli.
+
+
+---
+
+## 9. Config'e aktarım durumu (gelistirme odası, Perde I)
+
+Perde I (w1-01..w1-09) metinleri `data/game.config.json` içine **belgeden birebir** aktarıldı (kod: gelistirme odası; sayılar tasarım belgesi §13).
+
+| Aktarılan | Nerede |
+|---|---|
+| Bölüm adı, giriş/çıkış diyalogları (w1-01..09) | `levels.<id>.name/intro/outro` (konuşmacısız satır = anlatı) |
+| Kanca (w1-01..09) | `levels.<id>.hook` (YENİ isteğe bağlı alan, <= 120; bölüm sonu kartında outro altında italik) |
+| Perde adı "Perde I · Uyanış" | `levels.<id>.world` (YENİ isteğe bağlı alan, <= 40; intro kartı + geniş harita paneli). `worlds` yapısı (alt başlık, giriş/çıkış kartı) YAPILMADI |
+| Hedef metni | w1-07 "Süre dolmadan 31 kristal topla." ve w1-09 "Baş Nöbetçi'yi yen!" -> `levels.<id>.objectiveText` (YENİ isteğe bağlı alan, <= 60); diğerleri `strings.objective` şablonu |
+| Yeni öğe ipuçları | `levels.<id>.hint` (§6.9 #1, #3, #4, #6, #7, #8, #9, #10, #11; w1-03 için "Yeni öğe" satırı). **Kullanılmadı:** #2 (w1-01'de 2. ipucu sınırı 2'dir, mevcut ipucu kaldı), #5 (Yıldırım henüz kazanılmamışken w1-05'te gösterilmez) |
+| Yenilgi repliği | `strings.deathLines` ilk 12 satır (§2.6), sınır 12 olduğu için şema değişmedi |
+| Slogan | `strings.tagline` = §6.8 #4 ("Bir büyücü uyuyakaldı, bir vadi uyanamadı. {levelCount} bölümde şafağı geri getir.") |
+| Yıldız rozet adları/açıklamaları (§6.3) | `js/ui/text.js` `UI.stars` (config'e değil; "Rüzgâr Adımı" hız rozeti yapılmadı). ★2 mini-boss/boss açıklaması "En çok üç vuruş yiyerek bitirdin." (belgede yoktu, ★2 eşiği 3 vuruş olduğu için tek cümle eklendi) |
+
+**Aktarılmayanlar:** kırıntı kartları (§2.3), perde kartları, DDA `difficulty.dda.notice[]` (Aşama 1'de `strings.dda.notice2..4` zaten var), `gameOver.titles[]` (§6.6), `clear.titles[]`/`pickPerks[]` (§6.5), harita ipuçları (§6.7), `tips[]`, düşman lore, karakter bio güncellemeleri, `nobetci` karakteri ("Baş Nöbetçi" taunt/yenilgi repliği yok), Perde II/III metinleri ve w2-02/w3-09 yeniden yazımları (köprü bölümlerinde ESKİ metin duruyor: w2-02 çıkışı "Kalbin son kırığı kalede…" kale w3-09 olarak hâlâ bir sonraki bölüm olduğundan çelişmiyor).
+
+Kısaltma/değişiklik: yok (tüm Perde I satırları 240 sınırının çok altında). Konuşmacı kimlikleri: `zerrin`, `aldemir`, `piril`, `taskin`, `veyis`. Kanon testi: Perde I metinlerinde "Mira" geçmez (`tests/perde1.test.js`).

@@ -15,9 +15,12 @@ export const UI = {
     pauseNote: "Oyun donduruldu. Süre ve düşmanlar bekliyor.", soundOn: "Ses: Açık", soundOff: "Ses: Kapalı", pauseKeys: "Esc / P: Devam", weapons: "Büyüler", abilities: "Yetenekler", camera: "Kamera açısı", lockedSpells: "{n} kilitli büyü",
   },
   result: { tip: "İpucu", helpOn: "Yardım açık", hp: "Can", back: "Haritaya dön", total: "Toplam", timeBonus: "Süre bonusu", levelBonus: "Bölüm bonusu", newSpell: "Yeni büyü", newAbility: "Yeni yetenek", key: "Tuş", damage: "Hasar", cooldown: "Bekleme", practiceDone: "Alıştırma tamamlandı", confirm: "Emin misin? Tekrar dokun", seeMap: "Haritayı gör" },
+  // yıldız rozetleri (docs/strateji/hikaye-ve-bolum-kurgusu-27-bolum.md §6.3; ölçüt: js/game/stars.js)
+  stars: { title: "Yıldız", count: "{n}/3 yıldız", badges: [{ name: "Yolcu", desc: "Bölümü tamamladın." }, { name: "Sakınan", desc: "En çok iki vuruş yiyerek bitirdin." }, { name: "Dokunulmaz", desc: "Hiç hasar almadan bitirdin." }], bossDesc: "En çok üç vuruş yiyerek bitirdin.", next: "Sonraki: {name}" },
 };
 
 export function objectiveText(L) {
+  if (L.objectiveText) return L.objectiveText;
   const O = STRINGS.objective;
   switch (L.objective) {
     case "crystal": return fmt(O.crystal, { goal: L.goal });

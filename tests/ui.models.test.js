@@ -112,7 +112,7 @@ test("heartPair: yalnızca iki görsel de geçerliyse kullanılır (yoksa SVG ka
 test("adapt: görsel alanları çalışma zamanı verisine geçer; yoksa alan eklenmez", () => {
   const base = JSON.parse(fs.readFileSync(new URL("../data/game.config.json", import.meta.url), "utf8"));
   base.perks.hp.image = "assets/art/ikon-perk-hp.webp"; base.enemies.ghost.image = "assets/art/dusman-ghost.webp";
-  base.levels.forest.image = "assets/art/bolum-forest.webp"; base.levels.forest.nodeImage = "assets/art/dugum-forest.webp";
+  base.levels["w1-01"].image = "assets/art/bolum-forest.webp"; base.levels["w1-01"].nodeImage = "assets/art/dugum-forest.webp";
   base.ui = { icons: { camera: "assets/art/ui-kamera.webp" } };
   const A = adapt(validate(base).sanitized);
   assert.equal(A.WEAPONS.fire.image, "assets/art/ikon-buyu-fire.webp");

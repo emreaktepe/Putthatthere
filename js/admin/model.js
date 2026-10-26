@@ -33,7 +33,7 @@ export const COLLECTIONS = {
 };
 
 export function checkNewId(cfg, coll, id) {
-  if (typeof id !== "string" || !ID_RE.test(id)) return "Kimlik: küçük harfle başlayan, 2-24 karakter; yalnızca a-z, 0-9 ve _";
+  if (typeof id !== "string" || !ID_RE.test(id)) return "Kimlik: küçük harfle başlayan, 2-24 karakter; yalnızca a-z, 0-9, _ ve -";
   if (has(cfg[coll] || {}, id)) return "Bu kimlik zaten var";
   return null;
 }
