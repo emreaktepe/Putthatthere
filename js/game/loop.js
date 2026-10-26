@@ -7,6 +7,8 @@ import { timeFactor } from "./abilities.js";
 import { updateEnemies } from "./ai.js";
 import { damagePlayer, hurt } from "./combat.js";
 import { gameOver, levelClear } from "./flow.js";
+import { scaledEvery } from "./dda.js";
+import { effectiveCap } from "./spawnmath.js";
 import { isTouch, keys, mouse, ray } from "./input.js";
 import { cast, fireSpell, nearestEnemies } from "./weapons.js";
 import { liveCount, placePickup, spawnCrystal, spawnEnemy } from "./world.js";
@@ -18,7 +20,7 @@ import { rotateMove } from "./cameramath.js";
 import { sceneryTick } from "../render/scenery.js";
 import { tickProps } from "../render/props3d.js";
 import { animatePiril, animateWizard, guide, guideGeo, orbTip, piril, shieldBall, wizard } from "../render/wizard.js";
-import { renderHud, updateAbilityUi } from "../ui/hud.js";
+import { renderHud, toast, updateAbilityUi } from "../ui/hud.js";
 import { stepDt } from "../ui/models.js";
 
 export let trailTick = 0; // iz kıvılcımı sayacı
@@ -28,6 +30,8 @@ export const hit = new THREE.Vector3();
 export const clock = new THREE.Clock();
 
 export function update(dt, t) {
+  RT.elapsed += dt;
+  while (RT.hintQ.length && RT.hintQ[0].at <= RT.elapsed) toast(RT.hintQ.shift().text, 3000, true); // ilk giriş ipuçları (oyun saatiyle: duraklatınca bekler)
   RT.cooldown -= dt;
   RT.invuln -= dt;
   for (const id of ABILITY_ORDER) abilCd[id] = Math.max(abilCd[id] - dt, 0);
@@ -198,7 +202,7 @@ export function update(dt, t) {
           RT.collected++;
           if (S.rain && Math.random() < S.rain) RT.collected++; // Mana Yağmuru
           if (RT.collected >= L.goal) { levelClear(); return; }
-        } else if (Math.random() < 0.35) placePickup("heart", p.mesh.position.clone().setY(0.9)); // diğer hedeflerde kristal kalp/mana ödülüdür
+        } else if (Math.random() < 0.35 * RT.dda.heartMul) placePickup("heart", p.mesh.position.clone().setY(0.9)); // diğer hedeflerde kristal kalp/mana ödülüdür
       }
     }
   }
@@ -207,10 +211,11 @@ export function update(dt, t) {
   const L = LEVELS[S.level];
   if (L.spawn.length) {
     RT.spawnTimer += dt;
-    if (RT.spawnTimer > L.every && liveCount() < L.cap) {
+    const capNow = effectiveCap(L.cap, L.objective, RT.elapsed - RT.lastKill);
+    if (RT.spawnTimer > scaledEvery(L.every, RT.dda.spawnMul) && liveCount() < capNow) {
       RT.spawnTimer = 0;
       const wave = L.spawn[Math.floor(Math.random() * L.spawn.length)];
-      for (const [type, n] of Object.entries(wave)) for (let k = 0; k < n; k++) if (liveCount() < L.cap) spawnEnemy(type);
+      for (const [type, n] of Object.entries(wave)) for (let k = 0; k < n; k++) if (liveCount() < capNow) spawnEnemy(type);
     }
   }
 
@@ -218,7 +223,7 @@ export function update(dt, t) {
   if (RT.timeLeft <= 0) {
     RT.timeLeft = 0;
     renderHud();
-    if (L.objective === "survive") levelClear(); else gameOver();
+    if (L.objective === "survive") levelClear(); else gameOver("timeout");
     return;
   }
   renderHud();

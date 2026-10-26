@@ -142,3 +142,10 @@ Not: masaüstünde 26 % sol üstteki "Görevler" panelinin alt kenarıdır; orta
 - Harita görünümü `mapView`: svg `viewBox` sütunu dolduracak şekilde yakınlaştırılır ama düğüm ve etiketler hiçbir zaman kırpılmaz (en az "meet", en çok "slice"); düğümler görselle birlikte kaydığı için hizalı kalır. Kalan boşluk blur zemin katmanıdır.
 - Yatay telefonda etiketler çakıştığı için yalnızca seçili / hover / odaklı düğümün etiketi görünür (CSS `.lp`).
 - Etiket yönleri (levels.*.map.label): forest above, cave below, golems right, graveyard right, pass below, village right, crystals below, tower right, castle left.
+
+
+## Aşama 1 notu: yenilgi ekranı ve yardım (DDA) bilgisi
+- Yenilgi ekranı: "Tekrar dene" birincil ve odaklı; tıklayınca bölüm giriş kartı ATLANIR, savaş doğrudan başlar (kart yalnızca ilk girişte). "Haritaya dön" ikincil. Kartta, varsa, bir sonraki denemenin yardım bilgisi (`.dda-note`, çerçeveli tek satır) ve bölümün ipucu satırı (`.tip-line`, soluk) görünür; mobilde 12 px.
+- Yardım bilgisi aynı satırla bölüm giriş kartında ve bölüm başında 3 sn toast olarak gösterilir. "Yardım: Açık/Kapalı" düğmesi menüde ve duraklatma kartında (varsayılan açık).
+- Yeni öğe ipuçları: yalnızca bölüme ilk girişte, 0,8 sn sonra, 3 sn toast; en çok 2 satır. HUD yerleşimine dokunulmadı.
+- Görsel doğrulama (414x896) yapılmadı; elle kontrol edilmeli.

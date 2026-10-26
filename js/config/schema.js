@@ -136,6 +136,12 @@ export const SCHEMA = obj({
       newAbility: str(1, 100, { req: true, ph: ["name", "key"], label: "Yeni yetenek" }),
       pickPerk: str(1, 60, { req: true, label: "Perk seç" }),
     }, { label: "Bölüm sonu" })),
+    // Aşama 1: dinamik yardım (DDA) bilgi satırları; kademe 2/3/4+ (bkz. js/game/dda.js). İsteğe bağlı: yoksa bilgi satırı gösterilmez
+    dda: obj({
+      notice2: str(1, 120, { label: "Yardım bilgisi: 2. ölümden sonra" }),
+      notice3: str(1, 120, { label: "Yardım bilgisi: 3. ölümden sonra" }),
+      notice4: str(1, 140, { label: "Yardım bilgisi: 4+. ölümden sonra" }),
+    }, { label: "Dinamik yardım metinleri" }),
     toasts: R(obj({
       bossPhase2: str(1, 200, { req: true, label: "Boss faz 2" }),
       bossPhase3: str(1, 200, { req: true, label: "Boss faz 3" }),
@@ -277,6 +283,7 @@ export const SCHEMA = obj({
     totems: arr(arr(num(-12, 12), 2, 2), 1, 6, { label: "Totem konumları [x,z]" }),
     image: art({ label: "Bölüm kapak görseli (3:2)" }),
     nodeImage: art({ label: "Harita düğümü madalyonu (kare)" }),
+    hint: arr(str(1, 100), 0, 2, { label: "Yeni öğe ipuçları (yalnızca ilk girişte, 3 sn bildirim; en çok 2)" }),
     intro: arr(dialogLine, 1, 4, { req: true, label: "Giriş anlatısı" }),
     outro: arr(dialogLine, 1, 4, { req: true, label: "Çıkış anlatısı" }),
     // 2. aşama (harita) için ayrılmış; şimdilik isteğe bağlı

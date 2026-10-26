@@ -112,6 +112,7 @@ export function adapt(cfg) {
     if (L.reward) o.reward = L.reward;
     if (L.ability) o.ability = L.ability;
     if (L.totems) o.totems = L.totems.map((t) => [...t]);
+    if (L.hint && L.hint.length) o.hint = [...L.hint];
     o.intro = L.intro.map(line);
     o.outro = L.outro.map(line);
     o.id = id;

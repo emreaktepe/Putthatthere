@@ -4,6 +4,7 @@ import { WEAPONS } from "../core/data.js";
 import { RT, S, UP, aim, aimPoint, echoQ, enemies, shots, strikes } from "../core/state.js";
 import { ARENA, flatDist } from "../core/util.js";
 import { hurt } from "./combat.js";
+import { dmgState, rollDamage } from "./damage.js";
 import { addBolt, addFx, addHazard, burst, emit, makeShot, meteorGeo } from "../render/fx.js";
 import { glowSprite } from "../render/gfx.js";
 import { scene } from "../render/scene.js";
@@ -29,7 +30,7 @@ export function cast() {
 export function fireSpell(id) {
   const w = WEAPONS[id];
   const origin = wizard.position.clone().setY(1.7);
-  const dmg = w.dmg * S.dmgMul;
+  const dmg = rollDamage(w.dmg, S.dmgMul, dmgState); // kesirli çarpan birikir: +%25 her 4. vuruşta +1 (plan B5)
   sfx("cast:" + id);
   wiz.kick = 0.18;
   emit(origin, w.color, 4, 2, 0.3);

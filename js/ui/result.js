@@ -39,8 +39,14 @@ export function coverImg(L) {
   return im ? h("div", { class: "cover" }, im) : null;
 }
 
+// DDA bilgi satırı: yardım kademesi varsa ne değiştiğini söyler (şeffaflık; metin config strings.dda). Kademe 1+ için kademe-1 anahtarı: notice<tier+1>
+export function ddaNote(dda) {
+  const t = dda && dda.tier > 0 && STRINGS.dda ? STRINGS.dda["notice" + (dda.tier + 1)] : "";
+  return t ? h("p", { class: "dda-note", role: "status" }, icon("shield"), h("span", null, t)) : null;
+}
+
 // ---------- Bölüm girişi ----------
-export function levelIntroScreen({ idx, practice, onEnter, onBack }) {
+export function levelIntroScreen({ idx, practice, onEnter, onBack, dda = null }) {
   const L = LEVELS[idx], T = STRINGS.level, sc = scope();
   const title = fmt(T.title, { n: idx + 1, name: L.name });
   const node = h("section", { class: "card screen-card intro-card gold-frame", "aria-label": title },
@@ -55,6 +61,7 @@ export function levelIntroScreen({ idx, practice, onEnter, onBack }) {
         h("div", { class: "obj" }, icon("target"), h("span", null, objectiveText(L))),
         h("div", { class: "obj-foes" }, h("small", { class: "eyebrow" }, UI.map.foes), foeChips(L)),
         h("p", { class: "stat-line" }, icon("hourglass"), h("span", null, `${UI.map.time}: `, h("b", null, `${L.time} ${UI.map.sec}`)), h("i", { class: "dot", "aria-hidden": "true" }), icon("heart"), h("span", null, `${UI.result.hp}: `, h("b", null, `${Math.ceil(S.hp)}/${S.maxHp}`))),
+        ddaNote(dda),
         h("p", { class: "hint" }, T.hint))),
     h("div", { class: "btn-row" }, button(T.enter, onEnter, { ic: "play", autofocus: true }), button(UI.result.back, onBack, { kind: "ghost", ic: "back" })));
   mount(node, sc, { music: "menu", cls: "dim card-stage" });
@@ -144,13 +151,15 @@ export function levelClearScreen({ idx, bonus, levelBonus, total, prevTotal, rew
 }
 
 // ---------- Yenilgi ----------
-export function gameOverScreen({ line, idx, practice, onRetry, onMap, onRestart }) {
+export function gameOverScreen({ line, idx, practice, onRetry, onMap, onRestart, dda = null, tip = "" }) {
   const T = STRINGS.gameOver, sc = scope();
   const node = h("section", { class: "card screen-card over-card gold-frame", "aria-label": "Yenilgi" },
     ornaments(),
     h("div", { class: "over-sigil", "aria-hidden": "true" }, "☠"),
     dialogView([line]),
     h("p", { class: "stat-line" }, fmt(T.stats, { n: idx + 1, score: S.score })),
+    ddaNote(dda),
+    tip ? h("p", { class: "tip-line" }, h("b", null, UI.result.tip + ": "), tip) : null,
     h("div", { class: "btn-row col" },
       button(T.retry, onRetry, { small: T.retryNote, autofocus: true }),
       button(UI.result.back, onMap, { kind: "ghost", ic: "back" }),

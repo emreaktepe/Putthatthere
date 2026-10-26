@@ -676,3 +676,58 @@ Boyut: S ≈ 0.5-1, M ≈ 2-4, L ≈ 5-10 iş günü [V19]. Odalar: mimari, geli
 - **Zaman çizelgesi:** ödüller w1-01 (Buz), w1-03 (Üçlü), w1-04 (Kalkan), w1-05 (Yıldırım), w1-06 (Işınlan), w1-08 (Zehir), w2-03 (Meteor), w2-06 (Ay Halkası), w2-08 (Zaman Çatlağı); senarist bunları sahnelerle eşleştirebilir.
 - **Görsel/icerik odası için:** 13 yeni tema varyantı, 18 yeni bölüm kapağı + düğüm görseli (mevcutlar yeniden kullanılabilir), 3 elit Şövalye (yeni model gerekmez).
 - **Gelistirme/mimari için:** bölüm 5.2 iş listesi ve 7.1 şema önerisi; mevcut config ve kod bu çalışmada değiştirilmedi.
+
+
+---
+
+## 12. Aşama 1 uygulama notları (gelistirme odası)
+
+Kapsam: "önce dinamiklerin doğru çalışması" (ölçüm araçları + mevcut 9 bölümün 5 sorununa çözüm/temel). Yeni bölüm, hikâye metni göçü, yeni hedef türü, meta-ilerleme, kayıt şeması değişikliği YOK. **Tüm sayılar VARSAYIMDIR; gerçek oyuncu testi yapılmadı.** Tarayıcıda elle oynanmadı (yalnız Node testleri/bot); UI kodu gözden geçirildi, görsel doğrulama yapılmadı.
+
+### 12.1 Yapılanlar
+| Parça | Dosya |
+|---|---|
+| Denge modeli (TP, B30, P(n), Z, p) ve W_BALANCE kuralları | `js/config/balance.js`, `js/config/validate.js` |
+| DDA (saf mantık; 2/3/4+. ölümde kademe), yardım ayarı `buyucu_ayar`, oturum sayacı | `js/game/dda.js`, `js/core/settings.js`, `js/game/track.js`, `flow.js`, `loop.js`, `combat.js` |
+| Yerel telemetri `buyucu_telemetri` v1 + admin "Doğrulama" sekmesinde özet / JSON dışa aktar / sıfırla | `js/core/telemetry.js`, `js/admin/app.js` |
+| Denge botu `npm run balance` | `tools/balance-sim.mjs`, `tools/balance/{sim,targets}.mjs` |
+| Doğma ≥ 8 birim, boss faz-1 `cap`, hasar yuvarlama (taşıma), durgunluk baskısı | `js/game/{spawnmath,damage,world,ai,weapons}.js` |
+| Hızlı tekrar dene (kart yok, tek dokunuş), DDA bilgi satırı, ilk-giriş ipucu toast'ları, "Yardım: Açık/Kapalı" (menü + duraklatma) | `flow.js`, `ui/{result,pause,menu,text}.js`, `css/screens.css` |
+| Şema: `strings.dda.notice2..4`, `levels.<id>.hint[]` (isteğe bağlı; `schemaVersion` değişmedi) | `js/config/schema.js`, `adapt.js` |
+| Testler | `tests/stage1.test.js` (+ eşdeğerlik testleri bilinçli güncellendi) |
+
+### 12.2 Beş sorunun durumu
+| # | Sorun | Durum |
+|---|---|---|
+| a | Kampanya kısa / süre baskısı yok | **Çözüldü (config)**: hedef/süre/doğma planın §4.4-4.5 sayılarına çekildi; süre payı kristalde 1,75x; doğrulayıcı süre payını 1,4-2,2x bandında tutar. Bot süresi bölüm başına ~20-60 sn (insan için ~1-2 dk beklenir [V11]); 2-4 dk hedefi kartlarla ölçülmedi. |
+| b | Kristal bölümünde ateş zorunlu değil | **Kısmen**: yürüyen bot ölçümü sorunu DOĞRULADI (kristal bölümlerinin %65-98'ini geçiyor). Küçük mekanik eklendi (kristal bölümünde son öldürmeden beri 8 sn'de `cap` +1, en çok +4); etkisi botta zayıf (graveyard %80 → %65). Kesin çözüm Aşama 2'ye ertelendi. |
+| c | Zorluk planlı artmıyor | **Çözüldü (model düzeyinde)**: Z 1,00 → 1,16 → 1,19 → 1,37 → 1,60 → 1,99 → 2,09 → 2,34 → 3,04 (monoton, sıçrama ≤ x1,35, sınavlar hariç; final zirve). Eski: 1,00 → 2,28 → 2,15 → 2,26 → **4,48** → 3,16 → 2,09 → 2,93 → 3,56. Bot ile doğrulanmadı (bkz. 12.4). |
+| d | Öğretim boşlukları + tekrar dene | **Çözüldü**: tekrar denemede kart atlanır, tek dokunuş; yenilgi ekranında ipucu + DDA satırı; 8 bölüme §6.9 ipucu toast'ı (köy 2 satır). Zaman Çatlağı / Ay Halkası'nın ilk kullanımının finalde olması: hikâye/ödül sırası değişmediği için **kısmen** (castle'a Zaman Çatlağı ipucu eklendi; asıl çözüm yeni bölümlerde). |
+| e | Perk/doğma hataları | **Çözüldü**: 5 perk'e `maxStacks` (hız 3, güç 5, el hızı 4, mıknatıs 2, taş deri 3); Güç Tılsımı kesirli hasarı biriktirir (+%25 → her 4. vuruş +1; hp 1-2 düşmanlara da etki); doğma oyuncudan ≥ 8 birim; boss faz-1 çağrısı `cap`'e saygılı. |
+
+### 12.3 Config'te değişen sayılar (önce → sonra)
+| Bölüm | goal | time | start | spawn / every / cap | B30 | model p |
+|---|---|---|---|---|---|---|
+| forest | 6 → 25 | 50 → 105 | ghost3 | ghost1 / 8 / 5 → **6** | 7,4 → 7,4 | .92 → .92 |
+| cave | 8 → 29 | 55 → 120 | ghost2 bat3 → **ghost1 bat1** | bat1 ghost1 / 7 → **12** / 7 → **6** | 19,3 → 9,8 | .56 → .89 |
+| golems | 10 → 33 | 60 → 140 | ghost2 bat2 golem2 → **ghost1 bat1 golem1** | golem1 bat1 / 7 → **12** / 8 → **7** | 22,3 → 12,3 | .60 → .88 |
+| graveyard | 12 → 38 | 65 → 155 | ghost3 bat2 golem2 archer2 → **ghost2 bat1 golem1 archer1** | ghost1 archer1 / 6 → **9** / 10 → **8** | 29,2 → 17,7 | .57 → .83 |
+| pass (hayatta kal) | 45 → 60 | 45 → 60 | ghost3 bat3 wolf2 → **ghost2 bat1 wolf1** | wolf2 bat1 → **wolf1 bat1** / 5 → **10** / 9 → **8** | 52,2 → 18,6 | .17 → .77 |
+| village (totem) | 3 | 75 → 200 | ghost3 golem2 ember3 → **ghost1 ember2** | ember1 ghost1 / 6 → **16** / 10 → **7** | 43,5 → 27,4 | .35 → .65 |
+| crystals | 14 → 42 | 80 → 170 | aynı | aynı | 41,1 | .62 |
+| tower (mini-boss) | 1 | 85 → 120 | knight1 archer2 wolf2 → **knight1 archer1 wolf1** | archer1 ghost1 / 6 → **7** / 9 → **7** | 32,7 → 26,1 | .40 → .55 |
+| castle (boss) | 1 | 100 → 180 | boss1 | boss `summons2` archer+bat → **archer** | 29,4 → 25,1 | .28 → .37 |
+
+Hedef p (model): .92 .90 .87 .82 .76 .70 .64 .50 .40 (plan §2.3'ten, kampanya sırasına yumuşak tırmanış olarak türetildi; `tools/balance/targets.mjs`). Ödül sırası, hikâye, tema, hedef türü değişmedi.
+
+### 12.4 Bot sonuçları (yaklaşık; `npm run balance`, N=200, seed=1; yürüyen / orta / iyi geçme oranı)
+forest 97/100/100 · cave 98/100/100 · golems 94/100/100 · graveyard 64/100/100 · pass 100/100/100 · village 0/100/100 · crystals 82/93/100 · tower 0/100/100 · castle 0/89/99.
+
+**Yorum:** Botlar hedef orandan (92 → 40) çok daha başarılı: "orta" bot hedef bandın (±12) içinde yalnızca forest/cave. Nedenleri: isabet/tepki katsayıları tahmin [V2], Yıldırım otomatik hedefleme sade modelde fazla güçlü, bölümler arası can taşıması yok (iyimser), mermi uçuşu ve taktik hata yok. **Botlar kalibre edilmedi; mutlak orandan çok profiller arası fark ve bölüm sırası okunmalı.** Bulgular: yürüyen bot totem/mini-boss/boss'u geçemez (beklenen), hayatta kal bölümünü hep geçer, kristal bölümlerini yüksek oranda geçer (V9 doğrulandı). Aşama 1 çıkış kriteri "yetkin bot hedef ±12" SAĞLANAMADI; kalibrasyon oyuncu verisiyle yapılmalı. Gerçek `ai.js` Three.js'e bağlı olduğundan ithal edilemedi: basitleştirilmiş yeniden yazım kullanıldı (sınırlamalar `tools/balance/sim.mjs` başlığında).
+
+### 12.5 DDA ve telemetri davranışı
+- DDA: aynı bölümde art arda 2. ölümden sonra akış −%10 / başlangıç −%15 / kalp +%25; 3.: −%20 / −%25 / +%50 / +1 can; 4.+: −%30 / −%35 / x2 / +1 can / hazır kalkan / süre x1,2 (hayatta kal'da süre değişmez; Şövalye/Kral/totem sayısı sabit). Bölüm geçilince sıfırlanır, alıştırmada uygulanmaz, oturum belleğindedir. Bilgi satırı: yenilgi ekranı, giriş kartı, bölüm başı toast (metin senaryo belgesi §6.2). "Yardım: Açık/Kapalı" menüde ve duraklatma kartında; varsayılan açık; `buyucu_ayar` `{v:1,dda}`.
+- Telemetri: `buyucu_telemetri` v1: bölüm başına deneme / kazanma / ölüm / yarıda bırakma / süre aşımı / ilk-deneme / süre toplamları / vuruş + son 20 deneme; tarih, kimlik, ağ isteği yok; < 50 KB; depolama hatasında sessiz; alıştırma ve `?dev=1` kaydedilmez; yalnızca admin sayfasında görünür.
+
+### 12.6 Ölçülmeyenler / kalan varsayımlar
+Doğrulanan: V9 (yürüyen bot kristal bölümlerini geçiyor), V17 (9 bölüm x 3 bot x 200 koşu ≈ 15 sn). Ölçülmeyen: diğer tüm V'ler; model p ve bot oranlarının insanla ilişkisi; mobil `cap`; DDA'nın gerçek etkisi; 2-4 dk bölüm süresi. Yapılmayanlar: `difficulty` config bloğu (DDA çarpanları `js/game/dda.js` sabiti), yenilgi başlık çiftleri (§6.6), kazanma serisi (§3.6).

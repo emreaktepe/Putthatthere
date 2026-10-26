@@ -64,6 +64,11 @@
       "newAbility": "Yeni yetenek: **{name}** ({key} tuşu / düğme)",
       "pickPerk": "Bir yetenek seç:"
     },
+    "dda": {
+      "notice2": "Pırıl bu sefer seni kolluyor: düşmanlar biraz seyrek, kalpler biraz sık.",
+      "notice3": "Pırıl ışığını artırdı: bu denemede +1 can ve daha az düşman var.",
+      "notice4": "Pırıl kalkanını açtı: +1 can, hazır kalkan ve biraz daha süre. Yardımı duraklatma ekranından kapatabilirsin."
+    },
     "toasts": {
       "bossPhase2": "Faz 2 · Gölge Dalgası — yerdeki kırmızı halkalardan kaç! (+10 sn)",
       "bossPhase3": "Faz 3 · Kızın Işığı — Pırıl'ın 3 ışık kristalini topla; kalkan kırılınca vur! (+10 sn)",
@@ -287,7 +292,7 @@
       "spin": true,
       "noCap": true,
       "summons1": ["ghost", "ghost"],
-      "summons2": ["archer", "bat"]
+      "summons2": ["archer"]
     }
   },
   "weapons": {
@@ -387,24 +392,28 @@
       "image": "assets/art/ikon-perk-speed.webp",
       "name": "Rüzgâr Ayakkabıları",
       "desc": "Hareket hızı +15%",
+      "maxStacks": 3,
       "effect": { "kind": "mul", "stat": "speedMul", "value": 1.15 }
     },
     "power": {
       "image": "assets/art/ikon-perk-power.webp",
       "name": "Güç Tılsımı",
       "desc": "Tüm büyülerin hasarı +25%",
+      "maxStacks": 5,
       "effect": { "kind": "mul", "stat": "dmgMul", "value": 1.25 }
     },
     "haste": {
       "image": "assets/art/ikon-perk-haste.webp",
       "name": "Hızlı Parmaklar",
       "desc": "Büyü bekleme süresi -20%",
+      "maxStacks": 4,
       "effect": { "kind": "mul", "stat": "cdMul", "value": 0.8 }
     },
     "magnet": {
       "image": "assets/art/ikon-perk-magnet.webp",
       "name": "Mana Mıknatısı",
       "desc": "Kristaller ve kalpler sana çekilir",
+      "maxStacks": 2,
       "effect": { "kind": "add", "stat": "magnet", "value": 3.5 }
     },
     "vampire": {
@@ -440,6 +449,7 @@
       "image": "assets/art/ikon-perk-stone.webp",
       "name": "Taş Deri",
       "desc": "Sonraki 2 bölümde alınan ilk hasar %50 azalır",
+      "maxStacks": 3,
       "effect": { "kind": "flag", "stat": "stoneLevels", "value": 2 }
     },
     "rain": {
@@ -724,15 +734,16 @@
       "nodeImage": "assets/art/dugum-forest.webp",
       "name": "Fısıldayan Orman",
       "objective": "crystal",
-      "goal": 6,
-      "time": 50,
+      "goal": 25,
+      "time": 105,
       "theme": "forest",
       "map": { "x": 577, "y": 547, "icon": "🌲", "label": "above" },
       "start": { "ghost": 3 },
       "spawn": [{ "ghost": 1 }],
       "every": 8,
-      "cap": 5,
+      "cap": 6,
       "reward": "frost",
+      "hint": ["Hasar aldıktan sonra bir buçuk saniye dokunulmazsın; o süreyi kaçmak için kullan."],
       "intro": [
         {
           "speaker": "zerrin",
@@ -749,15 +760,16 @@
       "nodeImage": "assets/art/dugum-cave.webp",
       "name": "Yarasa Mağarası",
       "objective": "crystal",
-      "goal": 8,
-      "time": 55,
+      "goal": 29,
+      "time": 120,
       "theme": "cave",
       "map": { "x": 201, "y": 520, "icon": "🦇", "label": "below" },
-      "start": { "ghost": 2, "bat": 3 },
+      "start": { "ghost": 1, "bat": 1 },
       "spawn": [{ "bat": 1, "ghost": 1 }],
-      "every": 7,
-      "cap": 7,
+      "every": 12,
+      "cap": 6,
       "reward": "arcane",
+      "hint": ["Buz Oku düşmanı üç saniye yavaşlatır; Yarasaya iyi gelir."],
       "intro": [
         { "speaker": "piril", "text": "Vızıltıyı duyuyor musun? Mağara canlı." }
       ],
@@ -773,14 +785,14 @@
       "nodeImage": "assets/art/dugum-golems.webp",
       "name": "Taş Bekçiler",
       "objective": "crystal",
-      "goal": 10,
-      "time": 60,
+      "goal": 33,
+      "time": 140,
       "theme": "golems",
       "map": { "x": 201, "y": 243, "icon": "🗿", "label": "right" },
-      "start": { "ghost": 2, "bat": 2, "golem": 2 },
+      "start": { "ghost": 1, "bat": 1, "golem": 1 },
       "spawn": [{ "golem": 1, "bat": 1 }],
-      "every": 7,
-      "cap": 8,
+      "every": 12,
+      "cap": 7,
       "reward": "lightning",
       "intro": [
         {
@@ -798,15 +810,16 @@
       "nodeImage": "assets/art/dugum-graveyard.webp",
       "name": "Hortlak Mezarlığı",
       "objective": "crystal",
-      "goal": 12,
-      "time": 65,
+      "goal": 38,
+      "time": 155,
       "theme": "graveyard",
       "map": { "x": 331, "y": 393, "icon": "🪦", "label": "right" },
-      "start": { "ghost": 3, "bat": 2, "golem": 2, "archer": 2 },
+      "start": { "ghost": 2, "bat": 1, "golem": 1, "archer": 1 },
       "spawn": [{ "ghost": 1, "archer": 1 }],
-      "every": 6,
-      "cap": 10,
+      "every": 9,
+      "cap": 8,
       "ability": "shield",
+      "hint": ["Kemik Okçu atıştan yarım saniye önce parlar; o an yönünü değiştir."],
       "intro": [
         {
           "text": "Mezarlar açık, mezarcı yok. Kemik Okçuları menzilden vurur; hareket etmeyi bırakma."
@@ -824,16 +837,17 @@
       "nodeImage": "assets/art/dugum-pass.webp",
       "name": "Donmuş Geçit",
       "objective": "survive",
-      "goal": 45,
-      "time": 45,
+      "goal": 60,
+      "time": 60,
       "theme": "pass",
       "map": { "x": 884, "y": 167, "icon": "❄️", "label": "below" },
       "crystals": 2,
-      "start": { "ghost": 3, "bat": 3, "wolf": 2 },
-      "spawn": [{ "wolf": 2, "bat": 1 }],
-      "every": 5,
-      "cap": 9,
+      "start": { "ghost": 2, "bat": 1, "wolf": 1 },
+      "spawn": [{ "wolf": 1, "bat": 1 }],
+      "every": 10,
+      "cap": 8,
       "ability": "blink",
+      "hint": ["Kurt çömelince hücuma geçer; yana sıçra, yorulunca vur.", "Kristal toplayarak ara sıra kalp kazanırsın; hayatta kalma bölümlerinde de."],
       "intro": [
         { "text": "Rüzgâr kemiğe işliyor. Kurt ruhları sürü halinde geliyor; sadece ayakta kal." }
       ],
@@ -849,16 +863,17 @@
       "name": "Yanık Köy",
       "objective": "totem",
       "goal": 3,
-      "time": 75,
+      "time": 200,
       "theme": "village",
       "map": { "x": 563, "y": 311, "icon": "🔥", "label": "right" },
       "crystals": 3,
-      "start": { "ghost": 3, "golem": 2, "ember": 3 },
+      "start": { "ghost": 1, "ember": 2 },
       "spawn": [{ "ember": 1, "ghost": 1 }],
-      "every": 6,
-      "cap": 10,
+      "every": 16,
+      "cap": 7,
       "reward": "poison",
       "totems": [[-9, -8], [9, -8], [0, 9]],
+      "hint": ["Totem on iki saniyede bir Ruh doğurur; ne kadar erken yıkarsan o kadar rahat edersin.", "Kor Hortlak yaklaşınca kızarır ve patlar; yanındaki düşmanlara da zarar verir."],
       "intro": [
         {
           "text": "Köy yanmadı, lanet onu hatırlatıyor. Totemleri yık; kor hortlaklar yakınında patlıyor."
@@ -873,8 +888,8 @@
       "nodeImage": "assets/art/dugum-crystals.webp",
       "name": "Kristal Yatağı",
       "objective": "crystal",
-      "goal": 14,
-      "time": 80,
+      "goal": 42,
+      "time": 170,
       "theme": "crystals",
       "map": { "x": 829, "y": 342, "icon": "💎", "label": "below" },
       "start": { "ghost": 3, "bat": 3, "golem": 2, "archer": 2, "priest": 2 },
@@ -882,6 +897,7 @@
       "every": 6,
       "cap": 11,
       "reward": "meteor",
+      "hint": ["Rahibin kalkanı tek vuruş emer; Zehir Bulutu kalkanı geçer."],
       "intro": [
         {
           "text": "Gece Kalbi'nin kırıkları burada parlıyor. Rahipler düşmanları iyileştirir; önce onları bul."
@@ -900,15 +916,16 @@
       "name": "Kemik Kule",
       "objective": "miniboss",
       "goal": 1,
-      "time": 85,
+      "time": 120,
       "theme": "tower",
       "map": { "x": 242, "y": 147, "icon": "🏰", "label": "right" },
-      "start": { "knight": 1, "archer": 2, "wolf": 2 },
+      "start": { "knight": 1, "archer": 1, "wolf": 1 },
       "spawn": [{ "archer": 1, "ghost": 1 }],
-      "every": 6,
-      "cap": 9,
+      "every": 7,
+      "cap": 7,
       "reward": "nova",
       "ability": "timeslow",
+      "hint": ["Şövalye yere vurmadan önce bir saniye bekler; o anda dört adım geri çekil."],
       "intro": [
         {
           "text": "Kralın baş nöbetçisi kuleyi bırakmadı. Şövalye ağır ama bir vuruşu seni gönderir."
@@ -926,13 +943,14 @@
       "name": "Gölge Kalesi",
       "objective": "boss",
       "goal": 1,
-      "time": 100,
+      "time": 180,
       "theme": "castle",
       "map": { "x": 645, "y": 109, "icon": "👑", "label": "left" },
       "start": { "boss": 1 },
       "spawn": [],
       "every": 6,
       "cap": 8,
+      "hint": ["Zaman Çatlağı düşmanları üç saniye yavaşlatır; sen normal hızda kalırsın."],
       "intro": [
         { "speaker": "veyis", "text": "Kızımı geri verin. Şafak gelirse onu bir daha göremem." },
         { "speaker": "zerrin", "text": "Aldemir, ona acıma ama unutma da." }

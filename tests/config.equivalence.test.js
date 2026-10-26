@@ -23,13 +23,27 @@ test("repo JSON'u doğrulayıcıdan hatasız ve uyarısız geçer", () => {
   assert.deepEqual(res.warnings, []);
 });
 
-test("LEVELS eşdeğer (EK: id, map; intro/outro satır nesnesi)", () => {
+// AŞAMA 1 BİLİNÇLİ DENGE DEĞİŞİKLİĞİ (docs/strateji/oyun-tasarimi-zorluk-ve-bolum-plani.md "Aşama 1 uygulama notları"):
+// eski (legacy) bölüm sayıları yerine aşağıdaki YENİ değerler beklenir; hikâye metni, ödül, tema, hedef türü DEĞİŞMEDİ (legacy ile aynı kalır).
+// Sayılar VARSAYIMDIR (model: js/config/balance.js; tehdit hedefleri tests/balance.test.js).
+const BALANCE_V2 = {
+  0: { goal: 25, time: 105, start: { ghost: 3 }, spawn: [{ ghost: 1 }], every: 8, cap: 6 },
+  1: { goal: 29, time: 120, start: { ghost: 1, bat: 1 }, spawn: [{ bat: 1, ghost: 1 }], every: 12, cap: 6 },
+  2: { goal: 33, time: 140, start: { ghost: 1, bat: 1, golem: 1 }, spawn: [{ golem: 1, bat: 1 }], every: 12, cap: 7 },
+  3: { goal: 38, time: 155, start: { ghost: 2, bat: 1, golem: 1, archer: 1 }, spawn: [{ ghost: 1, archer: 1 }], every: 9, cap: 8 },
+  4: { goal: 60, time: 60, start: { ghost: 2, bat: 1, wolf: 1 }, spawn: [{ wolf: 1, bat: 1 }], every: 10, cap: 8 },
+  5: { time: 200, start: { ghost: 1, ember: 2 }, spawn: [{ ember: 1, ghost: 1 }], every: 16, cap: 7 },
+  6: { goal: 42, time: 170 },
+  7: { time: 120, start: { knight: 1, archer: 1, wolf: 1 }, spawn: [{ archer: 1, ghost: 1 }], every: 7, cap: 7 },
+  8: { time: 180 },
+};
+test("LEVELS eşdeğer (EK: id, map, hint; intro/outro satır nesnesi; sayılar BALANCE_V2)", () => {
   assert.equal(A.LEVELS.length, L.LEVELS.length);
   A.LEVELS.forEach((lv, i) => {
-    const got = strip(lv, ["id", "map", "image", "nodeImage"]);
+    const got = strip(lv, ["id", "map", "image", "nodeImage", "hint"]);
     got.intro = got.intro.map((l) => strip(l, ["color"]));
     got.outro = got.outro.map((l) => strip(l, ["color"]));
-    const want = { ...L.LEVELS[i], intro: L.LEVELS[i].intro.map(parseLine), outro: L.LEVELS[i].outro.map(parseLine) };
+    const want = { ...L.LEVELS[i], ...BALANCE_V2[i], intro: L.LEVELS[i].intro.map(parseLine), outro: L.LEVELS[i].outro.map(parseLine) };
     assert.deepEqual(got, want, `bölüm ${i + 1}`);
   });
 });
@@ -58,7 +72,7 @@ test("ENEMIES / ENEMY_NAMES eşdeğer (EK: name, shortName, scale, model, summon
   // koda gömülü kimlikler artık veride
   assert.equal(A.ENEMIES.totem.summon, "ghost");
   assert.deepEqual(A.ENEMIES.boss.summons1, ["ghost", "ghost"]);
-  assert.deepEqual(A.ENEMIES.boss.summons2, ["archer", "bat"]);
+  assert.deepEqual(A.ENEMIES.boss.summons2, ["archer"]); // Aşama 1 bilinçli: eski ["archer","bat"]; final boss modeli %28 -> ~%37 (plan §3.8-D)
   assert.equal(A.ENEMIES.knight.shortName, "Şövalye");
   assert.equal(A.ENEMIES.boss.shortName, "Kral");
   assert.equal(A.TOTEM_ID, "totem");
@@ -126,6 +140,8 @@ test("PERKS: kimlik/ad/açıklama/sıra eşdeğer", () => {
   assert.deepEqual(A.PERKS.map((p) => [p.id, p.name, p.desc]), legacy.map((p) => [p.id, p.name, p.desc]));
 });
 
+// AŞAMA 1 BİLİNÇLİ DEĞİŞİKLİK: bu 5 perk'e azami yığın eklendi (eski: sınırsız). Beklenen ok() = eski ok() VE yığın < sınır.
+const NEW_LIMITS = { speed: 3, power: 5, haste: 4, magnet: 2, stone: 3 };
 test("PERKS: ok() ve apply() rastgele oyun dizilerinde eski kapanışlarla birebir", () => {
   const R = rng(12345);
   let steps = 0;
@@ -135,10 +151,10 @@ test("PERKS: ok() ve apply() rastgele oyun dizilerinde eski kapanışlarla bireb
     for (let step = 0; step < 24; step++) {
       // eski ok(): kapanış S1'i okur; yeni ok(S2)
       legacy.forEach((p, i) => {
-        const oldOk = p.ok ? !!p.ok() : true;
+        const oldOk = (p.ok ? !!p.ok() : true) && (NEW_LIMITS[p.id] === undefined || (S1.perkCount[p.id] || 0) < NEW_LIMITS[p.id]);
         assert.equal(A.PERKS[i].ok(S2), oldOk, `ok ${p.id} run ${run} adım ${step}`);
       });
-      const pool = legacy.map((p, i) => i).filter((i) => (legacy[i].ok ? legacy[i].ok() : true));
+      const pool = legacy.map((p, i) => i).filter((i) => (legacy[i].ok ? legacy[i].ok() : true) && (NEW_LIMITS[legacy[i].id] === undefined || (S1.perkCount[legacy[i].id] || 0) < NEW_LIMITS[legacy[i].id]));
       if (!pool.length) break;
       const i = pool[Math.floor(R() * pool.length)];
       legacy[i].apply(); A.PERKS[i].apply(S2);

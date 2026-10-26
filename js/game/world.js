@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { ENEMIES } from "../core/data.js";
 import { RT, bolts, clouds, echoQ, enemies, enemyShots, fxs, hazards, pickups, shots, strikes } from "../core/state.js";
 import { ARENA, rand } from "../core/util.js";
+import { wizard } from "../render/wizard.js";
+import { pickSpawnPoint } from "./spawnmath.js";
 import { BLOB_GEO, BLOB_MAT, buildEnemy, clearDying, disposeEnemy } from "../render/enemies.js";
 import { PICKUP_LOOK, burst, dropHazard, removeObj, resetSparks } from "../render/fx.js";
 import { glowSprite } from "../render/gfx.js";
@@ -25,8 +27,8 @@ export function spawnEnemy(type, at) {
   const { obj, mat: m, base, anim, baked, vis, shieldK } = buildEnemy(type);
   if (at) obj.position.set(at.x, d.y, at.z);
   else {
-    const a = Math.random() * Math.PI * 2;
-    obj.position.set(Math.cos(a) * ARENA, d.y, Math.sin(a) * ARENA);
+    const sp = pickSpawnPoint(wizard.position, Math.random, ARENA); // oyuncudan en az 8 birim uzak (plan B7)
+    obj.position.set(sp.x, d.y, sp.z);
   }
   obj.scale.setScalar(0.001); // belirme animasyonu applyLook içinde büyür
   scene.add(obj);
