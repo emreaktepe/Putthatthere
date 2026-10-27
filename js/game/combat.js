@@ -10,7 +10,10 @@ import { veilBlocks } from "./skills.js";
 import { popTag } from "../ui/dmgtags.js";
 import { placePickup } from "./world.js";
 import { retireEnemy } from "../render/enemies.js";
-import { addFx, burst } from "../render/fx.js";
+import { addFx, burst, emit } from "../render/fx.js";
+import { deathRing } from "../render/combatfx.js";
+import { FX } from "./fxsettings.js";
+import { hitSparks, hitStopFor } from "../core/fxlevel.js";
 import { scene } from "../render/scene.js";
 import { wizard } from "../render/wizard.js";
 import { flashHurt, renderHud } from "../ui/hud.js";
@@ -30,14 +33,15 @@ export function hurt(e, dmg, slow, bypassShield = false, element = null) {
   if (veilBlocks(e.veiled, element)) { burst(e.mesh.position, 0xbfd8ff, 3); return; } // Sis Perdesi: Arcane/Ay Işığı dışında vurulamaz
   const lvl = matchupLevel(element, e.d.tags, e.d.res);
   dmg *= MULT[lvl] * damageMul(e);
+  e.lastLvl = lvl;
   if (lvl !== "N") popTag(e, lvl, colorOf(element));
   e.hp -= dmg;
   onEnemyHurt(e);
   if (e.d.ai === "boss" && e.bp < 3) e.hp = Math.max(e.hp, e.maxHp * (e.bp === 1 ? 0.66 : 0.33) - 0.001); // faz atlanmasın
   if (slow) { e.slow = (slow && slow.t) || 3; e.slowK = (slow && slow.k) || 0.35; }
-  burst(e.mesh.position, e.d.emissive === 0 ? 0xffffff : e.d.color, 5);
+  emit(e.mesh.position, element ? colorOf(element) : (e.d.emissive === 0 ? 0xffffff : e.d.color), hitSparks(FX, lvl), 4, 0.5); // vuruş kıvılcımı: vuran silahın rengi (Etkili: 2 kat)
   e.hurtT = 0.28; // 3B model "hurt" modu
-  e.flash = 0.1; // vuruş geri bildirimi: beyaz parlama + hafif geri itme
+  e.flash = lvl === "E" ? 0.18 : 0.1; // Etkili vuruşta daha uzun beyaz parlama // vuruş geri bildirimi: beyaz parlama + hafif geri itme
   if (!e.d.static && e.d.ai !== "boss" && e.d.ai !== "knight") {
     const dx = e.mesh.position.x - wizard.position.x, dz = e.mesh.position.z - wizard.position.z, l = Math.hypot(dx, dz) || 1;
     e.kx = (dx / l) * 3; e.kz = (dz / l) * 3;
@@ -68,7 +72,11 @@ export function killEnemy(e) {
   if (e.blob) scene.remove(e.blob);
   onEnemyKilled(e);
   retireEnemy(e); // 3B modeller ~0.35 sn "dead" animasyonu oynar; oynanış (hedefleme, çarpışma, puan, drop) yukarıda/aşağıda anında işlenir
-  burst(e.mesh.position, e.d.color, 14);
+  emit(e.mesh.position, e.d.color, Math.round(14 * FX.sparkMul), 4, 0.6);
+  if (FX.deathRing) deathRing(e.mesh.position.x, e.mesh.position.z, e.d.color, 1 + e.d.r * 1.2); // ölüm halkası
+  { const heavy = e.d.ai === "boss" || e.d.ai === "knight" || e.d.hp >= 6, hs = hitStopFor({ profile: FX, kill: true, heavy, effective: e.lastLvl === "E", now: RT.elapsed, last: RT.hitStopAt ?? -9 });
+    if (hs > 0) { RT.hitStop = hs; RT.hitStopAt = RT.elapsed; }
+    if (e.lastLvl === "E" || heavy) RT.shake = Math.max(RT.shake, heavy ? 0.12 : 0.05); } // hafif sarsıntı (FX.shake ile ölçeklenir)
   if (e.d.ai === "boss" || e.d.ai === "knight") { RT.shake = Math.max(RT.shake, 0.6); burst(e.mesh.position, 0xffffff, 30); }
   sfx("kill:" + e.d.model);
   if (e.d.ai === "bomber" && !e.exploded) explodeEmber(e);

@@ -7,6 +7,9 @@ const settings = loadCam();
 const p0 = presetById(settings.preset);
 export const rig = { yaw: settings.yaw, yawTarget: settings.yaw, elev: p0.elev, dist: p0.dist, lookY: p0.lookY, zoom: settings.zoom, preset: settings.preset };
 const held = new Set();
+const sweep = { t: 0, dur: 1.2 }; // bölüm başı süpürme: geniş-yüksek açıdan oyun açısına
+export function startSweep(dur = 1.2) { sweep.t = sweep.dur = dur; }
+export const skipSweep = () => { if (sweep.t > 0.15) sweep.t = 0.15; };
 let drag = null, snap = true, listener = null;
 
 export const setCamListener = (fn) => { listener = fn; };
@@ -25,6 +28,7 @@ export function zoomBy(f) { rig.zoom = clamp(rig.zoom * f, ZOOM_MIN, ZOOM_MAX); 
 const playing = () => document.body.classList.contains("playing");
 addEventListener("keydown", (e) => {
   if (!playing()) return;
+  skipSweep();
   if (e.code === "KeyZ" || e.code === "KeyC") held.add(e.code);
   else if (e.code === "KeyV" && !e.repeat) cyclePreset();
 });
@@ -35,6 +39,7 @@ addEventListener("wheel", (e) => {
   zoomBy(e.deltaY > 0 ? 1.08 : 1 / 1.08);
 }, { passive: true });
 addEventListener("pointerdown", (e) => {
+  if (playing()) skipSweep();
   if (e.button === 2 && e.pointerType === "mouse" && playing()) drag = { id: e.pointerId, x: e.clientX };
 });
 addEventListener("pointermove", (e) => {
@@ -59,7 +64,9 @@ export function updateCamera(dt, fx, fz, shake) {
     rig.lookY = damp(rig.lookY, p.lookY, 6, dt);
     rig.yaw = dampAngle(rig.yaw, rig.yawTarget, 9, dt);
   }
-  const o = camOffset(rig.elev, rig.dist, rig.yaw);
+  let sk = 0;
+  if (sweep.t > 0) { sweep.t = Math.max(0, sweep.t - dt); const u = sweep.t / sweep.dur; sk = u * u * (3 - 2 * u); }
+  const o = camOffset(rig.elev + 12 * sk, rig.dist * (1 + 0.4 * sk), rig.yaw);
   camera.position.set(fx + o.x + shake(1), o.y + shake(0.5), fz + o.z + shake(1));
   camera.lookAt(fx, rig.lookY, fz);
   camera.updateMatrixWorld();

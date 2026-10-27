@@ -848,3 +848,52 @@ Eşzamanlı yer işareti en çok 3 (her biri 2 Mesh: halka + dolgu; yalnızca te
 - Yarasa dalışında "yerde ince çizgi" yerine kilitli hedef noktasında halka var (çizgi için yeni geometri gerekirdi); sapma.
 - `howl`/`revive` Perde II bölümlerine eklenince bota işlenmeli; beceri TP+ değerleri (`SKILLS.*.tp`) henüz statik denge modeline bağlı değil.
 - El ile denenecekler: w1-03 Taş Bekçi sarsıntısı (halka okunuyor mu, 4.5 birim tetikleyici fazla mı), w1-05 ok yağmuru (3 işaret kaçılabilir mi), w1-08 zincir patlama + ateş lekesi (haksız hissi), w1-09 Şövalye atılışı ve yorgunluk penceresi, w1-01 perdeli Ruh (Ateş/Buz ile vurulamayan Ruh sıkıcı mı), ipucu toast'ları.
+
+## Aşama C uygulama notları (geliştirme odası)
+
+Durum: KISMEN UYGULANDI (çevre tehlikeleri, savaş geri bildirimi, doğma uyarısı, kamera süpürmesi, sınır nabzı). Tüm sayılar VARSAYIMDIR; gerçek oyuncu testi ve gerçek cihaz kare hızı ölçümü YOK.
+
+### Yapılanlar
+- **Çevre tehlikeleri:** `levels.<id>.hazards = [{ kind, every?, maxActive? }]` (isteğe bağlı; şema `HAZARD_IDS`, bölümde en çok 2 tür, `maxActive` 1-3; adapt aktarır; admin formu genel dizi/nesne satırıyla düzenler). Saf mantık `js/game/hazards.js` (tablo, yerleşim, durum makinesi, DDA, buz kayması, `hazardSteps`); oyuna bağlayan `js/game/hazardrun.js` (3 yuvalı havuz, yuva başına TEK mesh; `loop.update` içinde `updateHazards`, hareket `playerVel` ile). 4 genel tür:
+
+| Tür | Uyarı | Etki | Oyuncuya | Düşmana | Aralık |
+|---|---|---|---|---|---|
+| `poison` zehir bulutu | 1.3 sn | 2.5 sn alan, r 2.0, saniyede 1 tick | 1 | 0.5 | 14 sn |
+| `fall` düşen darbe | 1.2 sn | tek çarpma, r 2.0 | 1 | 2 | 7 sn |
+| `fire` ateş fışkırması | 1.2 sn | 2 sn alev, r 1.8, saniyede 1 tick | 1 | 1 | 10 sn |
+| `ice` buz yaması | 1.0 sn | 7 sn, r 3.2, hasar yok | kayar (yön değiştirme gecikmeli) | yavaşlar x0.7 (buz türleri bağışık) | 15 sn |
+
+  Adalet: ilk tehlike en erken 8 sn; hasarlı tehlikenin merkezi oyuncudan >= 1.5 birim (adayların ~yarısı hareket yönünün 2.4 önüne hafif tahminle); canlı tehlike/beceri işaretiyle çakışmaz; beceri işaretleri >= 3 iken başlamaz; hasar sonrası mevcut dokunulmazlık (1.5 sn) sürer; DDA kademesi aralığı x(1+0.25 kademe), kademe 2'de tür başına bir az, kademe 3'te oyuncu hasarı <= 1; alıştırma kipinde DDA zaten yok (tehlike tam). Eşzamanlı en çok 3 (Düşük kalitede 2). Düşman hasarı kaynak etiketi çıkarmaz (element yok).
+- **Savaş geri bildirimi** (`js/core/fxlevel.js` saf + `js/game/fxsettings.js`): vuruş kıvılcımı vuran silahın renginde (normal 5, Etkili 10; Düşükte yarım), Etkili vuruşta daha uzun parlama, ölüm halkası + düşman rengi patlama (havuz 2 mesh), ağır/Etkili öldürmede hit-stop (40 ms Etkili, 60 ms boss/şövalye/hp>=6; 0.35 sn bekleme; Düşük ve reduced-motion'da kapalı), hafif sarsıntı (Etkili öldürme 0.05, ağır 0.12; `FX.shake` çarpanı: Düşük x0.5, reduced-motion 0), mermi izi sıklığı (Yüksek 2 karede bir, Düşük/reduced 4), sınır çerçevesi nabzı. Yüzen hasar sayısı YAPILMADI: mevcut "Etkili!/Dirençli" etiketi (`dmgtags.js`) korundu.
+- **Doğma uyarı halkası** (`spawnwarn.js`, `spawnmath.js` saf kısım): doğal doğuşlarda düşman 0.5 sn halka sonrası çıkar; nokta oyuncudan >= 9 seçilir (doğduğunda ~6.5); kuyruktakiler cap'e sayılır; halka havuzu 3 (Düşük 2), dolarsa düşman anında çıkar. Bölüm başı dizilim, boss/beceri doğuşları etkilenmez.
+- **Bölüm başı kamera süpürmesi:** 1.2 sn, yüksek-geniş açıdan oyun açısına (`camera.js startSweep`); dokunma/tuş kısaltır; reduced-motion'da kapalı.
+
+### Bölüm -> tehlike
+| Bölüm | Tehlike | Yeni tür |
+|---|---|---|
+| w1-01 | yok (öğretim) | - |
+| w1-02 | fall | fall |
+| w1-03 | fall | - |
+| w1-04 | poison | poison |
+| w1-05 | yok (nefes) | - |
+| w1-06 | fall | - |
+| w1-07 | ice | ice |
+| w1-08 | fire | fire |
+| w1-09, w2-02, w3-09 | yok (boss sınavı / köprü: belgedeki sütun/diken/rezonans/kızıl halka türleri bu işte YOK) | - |
+
+W_BALANCE: bölümde ilk kez görülen tehlike türü > 1 ise uyarı (`hazardSteps`); türün en çok 2 / `maxActive` <= 3 şema hatasıdır.
+
+### Performans / havuzlar (ölçülmedi)
+Yeni kalıcı mesh havuzları: tehlike 3, doğma halkası 3, ölüm halkası 2 = en kötü anda +8 çizim çağrısı (tipik +3..5; görünmeyen mesh çizilmez); parçacıklar mevcut 480'lik ortak havuzu kullanır; her karede nesne üretimi yok (tek `enemies.slice()` yalnız hasarlı tick/çarpma anında). Beceri işaretleriyle birlikte w1-08'de geçici tepe belge bütçesini aşabilir; gerçek cihazda ölçülmedi. Düşükte: tehlike <= 2, doğma halkası 2, ölüm halkası/hit-stop/sınır nabzı kapalı, sarsıntı ve kıvılcım yarım.
+
+### Bot (`sim.mjs`, N=100, seed 1; YAKLAŞIK, kalibre DEĞİL; yürüyen/acemi/orta/iyi/usta)
+Tehlikeler soyut: uyarılı alan hasarı (poison/fire ek tick'li leke), bot `watch` olasılığıyla görür/kaçar; düşmana etki ve buz kayması MODELLENMEDİ. Önce -> sonra (kazanma %, orta bot): w1-02 84 -> 82, w1-03 70 -> 72, w1-04 100 -> 100, w1-06 100 -> 100, w1-08 70 -> 68 (acemi 0 -> 1, iyi 94 -> 95); w1-07 buz hasarsız olduğundan değişmedi (99). Tehlikesiz bölümler (w1-01, 05, 09) aynı. Etki bot gürültüsü sınırında: tehlike baskıdan çok okunurluk/ustalık katmanıdır.
+
+### Karşılama ekranı (1280x800) bulgusu
+Headless Chrome ile 1280x800 karşılama hem 0.5 sn hem 6 sn sanal süre sonunda AMBLEM ve ARKA PLAN görseliyle doğru çiziliyor. Kod okuması: görseller `index.html`'de preload'lu; `.art-bg` `position:absolute; inset:0`, amblem `aspect-ratio` kabında; masaüstüne özgü sıfır boyut/gizleme kuralı YOK. Kök neden KESİN DEĞİL: Ofis'in ekran görüntüsü, JS ile sonradan eklenen `<img decoding="async">` görsellerinin henüz çözülmeden/animasyon ilk karesinde (arka plan/amblem opacity 0'dan başlar, HEXORA SVG anında görünür) alınmış bir ara kare olarak açıklanıyor. Kod değiştirilmedi; gerçek hata yeniden üretilemedi.
+
+### Yapılmayanlar
+Arena iç engel kayaları ve dairesel sınır (§7.2), atmosfer varyasyonları (katmanlı sis/ışık huzmesi/aurora, §7.3), yüzen hasar sayıları, ince mermi izi sprite'ı (mevcut kıvılcım izi sıklığı ayarlandı), belgedeki diğer tehlike türleri (sütun hattı, diriliş mezarı, rezonans, kemik diken, kızıl halka, rün), Perde II/III bölümleri. Yeni tehlikeler bota kısmen soyut eklendi; tehlike ölümü telemetrisi eklenmedi.
+
+### Ölçülemeyenler / elle denenecekler
+Tehlikelerin adil hissi (1.2 sn uyarı yeterli mi, `fall` 1 hasar, ön tahmin yeri), buz kaymasının kontrol hissi, hit-stop/sarsıntının rahatsız edip etmediği, mobil akıcılık ve gerçek çizim çağrısı, doğma halkasının doğma baskısını azaltıp azaltmadığı (düşman 0.5 sn geç çıkar; denge botu bunu modellemez). Doğrulama: `?dev=1&level=w1-02` headless Chrome (bölüme girip 28 sn sanal süre): konsolda hata yok (yalnızca THREE.Clock kullanımdan kalkıyor ve sesin kullanıcı hareketi bekleme uyarıları).

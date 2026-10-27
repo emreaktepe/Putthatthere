@@ -154,3 +154,6 @@ Not: masaüstünde 26 % sol üstteki "Görevler" panelinin alt kenarıdır; orta
 - Her beceri uyarısı iki kanaldan okunur: düşman `windup` modunda (yeni animasyon yok) ve yerde halka. Renkler: kırmızı `#ff5544` = hasar verecek alan (Taş Bekçi sarsıntısı, ok işaretleri, Şövalye atılışı), mor `#b98bff` = Yarasa dalış hedefi (hasarsız işaret), açık mavi = uluma, yeşil = diriltme, turuncu = ateş lekesi, mor halka = Lanet Alanı. Eşzamanlı en çok 3 işaret; mobilde ek kalıcı Mesh <= 5.
 - Bölüm başında yeni açılan beceri için TEK satırlık ipucu toast'ı (3 sn, sessiz; metin `strings.skills.<id>`), oturumda her beceri için yalnızca bir kez; alıştırma kipinde ve DDA bildirimi çıkan girişte gösterilmez. Mevcut `hint` satırlarından SONRA kuyruğa girer.
 - Perdeli Ruh saydam (yaklaşık %30 opaklık) ve mermiler içinden geçer; Arcane ve Ay Işığı perdeyi deler.
+
+## Aşama C notu (savaş alanı gösterişi)
+Çevre tehlikeleri (zehir, düşen darbe, ateş, buz), doğma uyarı halkası, ölüm halkası, hit-stop ve bölüm başı kamera süpürmesi eklendi. Hepsi Düşük kalitede azalır/kapanır; `prefers-reduced-motion` hit-stop, sarsıntı ve süpürmeyi kapatır (`js/core/fxlevel.js`). Karşılama ekranında masaüstü amblem/arka plan eksikliği yeniden üretilemedi (ayrıntı strateji belgesi, Aşama C notları).
