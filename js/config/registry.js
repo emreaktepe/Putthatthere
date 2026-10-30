@@ -72,5 +72,8 @@ export const TAGS = Object.keys(TAG_RULES);
 // ---- düşman becerileri (js/game/skills.js SKILLS; Aşama B). levels.<id>.skills bu kimliklerden oluşur ----
 export const SKILL_IDS = ["veil", "batDive", "quake", "volley", "howl", "emberChain", "revive", "aura", "leap"];
 
+// ---- çevre tehlikeleri (js/game/hazards.js HAZARDS; Aşama C). levels.<id>.hazards[].kind bu kimliklerden biri ----
+export const HAZARD_IDS = ["poison", "fall", "fire", "ice"];
+
 // iç içe enum listelerine ad ile erişim (schema.js `enm("AI_KINDS")`)
-export const ENUMS = { AI_KINDS, MODEL_KINDS, FLOOR_KINDS, SCENERY_KINDS, OBJECTIVES, ROLES, WAVES, LABEL_POS, MAP_PRESETS, ELEMENTS, TAGS, MATCH_LEVELS, SKILL_IDS };
+export const ENUMS = { AI_KINDS, MODEL_KINDS, FLOOR_KINDS, SCENERY_KINDS, OBJECTIVES, ROLES, WAVES, LABEL_POS, MAP_PRESETS, ELEMENTS, TAGS, MATCH_LEVELS, SKILL_IDS, HAZARD_IDS };

@@ -50,3 +50,19 @@ export function pickCrystalPoint(player, foes, rnd, lim, lure) {
 
 // K4 minKills: kristal hedefi tamam (toplanan >= goal) VE bu bölümde öldürülen düşman >= minKills (minKills yoksa/0 ise yalnız kristal). Saf.
 export const crystalGoalMet = (L, collected, kills) => collected >= L.goal && kills >= (L.minKills || 0);
+
+// ---- Aşama C: doğma uyarı halkası (§7.5) ----
+// Düşman doğmadan SPAWN_WARN sn önce yerde halka görünür; bu sürede oyuncu yaklaşabileceği için nokta 2.5 birim daha uzak seçilir
+// (doğduğu anda hâlâ >= ~6.5 birim: B7 haksız temas koruması). Kuyruk girdisi { type, x, z, t }. VARSAYIM: 0.5 sn, en çok 3 eşzamanlı halka.
+export const SPAWN_WARN = 0.5, SPAWN_RING_MAX = 3;
+export const WARNED_SPAWN = { minDist: NEAR_SPAWN.minDist + 2.5, rMin: NEAR_SPAWN.rMin };
+export const pickWarnedSpawnPoint = (player, rnd, arena) => pickSpawnPointNear(player, rnd, arena, WARNED_SPAWN);
+// süresi dolanları q'dan çıkarıp out'a koyar (out boşaltılır; nesne üretmez); dönüş out.length
+export function drainSpawnQueue(q, dt, out) {
+  out.length = 0;
+  for (let i = 0; i < q.length;) {
+    q[i].t -= dt;
+    if (q[i].t <= 0) out.push(q.splice(i, 1)[0]); else i++;
+  }
+  return out.length;
+}

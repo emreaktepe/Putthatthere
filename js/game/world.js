@@ -5,6 +5,8 @@ import { ARENA, rand } from "../core/util.js";
 import { wizard } from "../render/wizard.js";
 import { pickCrystalPoint, pickSpawnPointNear } from "./spawnmath.js";
 import { initEnemySkills, resetSkills } from "./skillrun.js";
+import { resetHazards } from "./hazardrun.js";
+import { resetCombatFx } from "../render/combatfx.js";
 import { WEAPONS } from "../core/data.js";
 import { ELEMENTS } from "../config/registry.js";
 import { weakElements } from "./matchup.js";
@@ -83,6 +85,7 @@ export function clearWorld() {
   clearDying();
   resetSkills();
   resetSparks();
+  resetHazards(); resetCombatFx();
   RT.bossRef = null;
   RT.shieldT = RT.timeslowT = 0;
 }

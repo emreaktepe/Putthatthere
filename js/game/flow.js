@@ -21,6 +21,10 @@ import { eligibleDeathLines } from "./deathlines.js";
 import { camp, continueGame, endPractice, hasSave, inPractice, initCampaign, newGame, persist, recordResult, startPractice, statuses } from "./campaign.js";
 import { clearWorld, spawnCrystal, spawnEnemy } from "./world.js";
 import { skillHintTexts } from "./skillrun.js";
+import { initHazards, resetHazards } from "./hazardrun.js";
+import { FX, refreshFx } from "./fxsettings.js";
+import { resetSpawns } from "./spawnwarn.js";
+import { startSweep } from "../render/camera.js";
 
 let levelStartScore = 0;
 
@@ -85,6 +89,7 @@ export function introLevel({ quick = false } = {}) {
   const L = LEVELS[S.level];
   takeSnapshot();
   clearWorld();
+  resetSpawns(); resetHazards(); refreshFx(); RT.hitStop = 0; RT.hitStopAt = -9;
   applyTheme(L.theme);
   wizard.position.set(0, 0, 0);
   props("intro");
@@ -99,6 +104,7 @@ export function introLevel({ quick = false } = {}) {
 export function startLevel() {
   const L = LEVELS[S.level];
   clearWorld();
+  resetSpawns(); resetHazards(); refreshFx(); RT.hitStop = 0; RT.hitStopAt = -9;
   const id = LEVEL_IDS[S.level], practice = inPractice(), dda = currentDda(id, practice); // yardım kademesi (alıştırmada yok)
   RT.dda = dda; RT.elapsed = 0; RT.lastKill = 0; RT.hits = 0; RT.hintQ = []; RT.ddaHp = 0; dmgState.carry = 0;
   RT.collected = 0; RT.crystalQ = []; RT.needKillsShown = false; RT.totemsDown = 0; RT.timeLeft = L.objective === "survive" ? L.time : L.time * dda.timeMul; RT.cooldown = 0; RT.invuln = 1; RT.spawnTimer = 0; RT.bossSummon = 5;
@@ -118,6 +124,8 @@ export function startLevel() {
   props("play");
   unmount();
   document.body.classList.add("playing");
+  initHazards(); // levels.<id>.hazards (RT.dda ayarlandıktan sonra)
+  if (FX.sweep) startSweep(1.2); // bölüm başı kamera süpürmesi (dokunma/tuşla kısalır; reduced-motion kapalı)
   RT.running = true;
   if (dda.bonusHp) { RT.ddaHp = dda.bonusHp; S.maxHp += dda.bonusHp; S.hp += dda.bonusHp; } // bölüm bitince söner (levelClear)
   if (dda.startShield) RT.shieldT = (ABILITIES.shield && ABILITIES.shield.params && ABILITIES.shield.params.duration) || 8;

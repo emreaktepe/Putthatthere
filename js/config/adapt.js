@@ -117,6 +117,7 @@ export function adapt(cfg) {
     if (L.reward) o.reward = L.reward;
     if (L.ability) o.ability = L.ability;
     if (L.skills && L.skills.length) o.skills = [...L.skills];
+    if (L.hazards && L.hazards.length) o.hazards = L.hazards.map((h) => ({ ...h }));
     if (L.totems) o.totems = L.totems.map((t) => [...t]);
     if (L.hint && L.hint.length) o.hint = [...L.hint];
     o.intro = L.intro.map(line);

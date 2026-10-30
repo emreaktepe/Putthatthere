@@ -6,7 +6,7 @@
 //    js/game/dda.js, js/game/damage.js, js/game/spawnmath.js, js/config/{validate,adapt}.js (perk ok/apply dahil).
 //  * Aşama A uyarlaması (docs/strateji/savas-sistemi-ve-perde-2-3-tasarimi.md §8.1-8.3): element/direnç çarpanı (matchup.js), gerçek Yıldırım zinciri (chain.js),
 //    minKills + crystalDelay + crystalLure, yakın doğma, mermi UÇUŞ SÜRESİ (d/v; hedef ölürse boşa), tepki gecikmesi (yeni hedefe tgtDelay), dikkat boşluğu,
-//    mesafe/hareket isabet cezası, matris farkında silah politikası (policy), kristal seçiminde nearP. Aşama B: düşman becerileri (veil, batDive, quake, volley, emberChain, aura, leap; howl/revive tanımlı ama hiçbir bölümde açık değil) js/game/skills.js sayılarıyla soyut işlenir: uyarı süresi + alan hasarı + bot kaçınma (profil `watch` = uyarıyı görme olasılığı, tgtDelay = tepki gecikmesi). Çevre tehlikeleri henüz YOK.
+//    mesafe/hareket isabet cezası, matris farkında silah politikası (policy), kristal seçiminde nearP. Aşama B: düşman becerileri (veil, batDive, quake, volley, emberChain, aura, leap; howl/revive tanımlı ama hiçbir bölümde açık değil) js/game/skills.js sayılarıyla soyut işlenir: uyarı süresi + alan hasarı + bot kaçınma (profil `watch` = uyarıyı görme olasılığı, tgtDelay = tepki gecikmesi). Aşama C: çevre tehlikeleri soyut (uyarılı alan hasarı; poison/fire ek olarak tick'li leke; bot `watch` olasılığıyla görür/kaçar; düşmana etkisi ve buz kayması MODELLENMEZ = tehlike botun aleyhine, düşman faydası yok). `opts.noHazards` ile kapatılır (önce/sonra karşılaştırması).
 //  * Mermi isabeti hâlâ olasılıkla belirlenir (isabet oranı bot profilinin parametresidir, VARSAYIM V2); uçuş süresi sonrası uygulanır.
 //  * Bot gerçek bir insan değildir: tepki süresi, kaçış, hedef seçimi basit kurallardır. Oyuncu bölüm başında tam canla ve kampanya sırasına göre
 //    (n bölüm = n perk seçimi, bölüm ödülleriyle açılan büyü/yetenek) başlar; bölümler arası can taşıması YOKTUR (iyimser).
@@ -21,6 +21,7 @@ import { rollDamage } from "../../js/game/damage.js";
 import { crystalGoalMet, effectiveCap, pickCrystalPoint, pickSpawnPointNear } from "../../js/game/spawnmath.js";
 import { MULT, matchupLevel } from "../../js/game/matchup.js";
 import { chainFalloff, chainTargets } from "../../js/game/chain.js";
+import { ddaDef, entryTick, hazardDefs, newEntry, pickHazardPoint } from "../../js/game/hazards.js";
 import { SKILLS, auraMul, canTrigger, emberChainVictims, initSkill, onWindupEnd, skillDamageMul, skillFor, tickCd, veilBlocks, veilStep, volleyPoints } from "../../js/game/skills.js";
 
 export const ARENA = 14;
@@ -95,6 +96,7 @@ export function simulate(A, idx, prof, seed, opts = {}) {
   let result = null, lastKill = 0;
 
   const patches = []; // ateş lekeleri
+  const hzEntries = opts.noHazards ? [] : hazardDefs(L.hazards).filter((d) => d.dmgP > 0).map((d) => newEntry(ddaDef(d, dda.tier)));
   const enemies = [], eshots = [], pickups = [], clouds = [], strikes = [], hazards = [], pend = [], crystalQ = [];
   const wdmg = {}, evo = { all: 0, eff: 0 }; // M5/M7 ölçümü: silah x düşman türü hasarı; Etkili hasar olayı oranı
   let a20sum = 0, a20n = 0, a10sum = 0, a10n = 0, a60sum = 0, a60n = 0, favCrystal = null;
@@ -501,12 +503,18 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     for (let i = hazards.length - 1; i >= 0; i--) {
       const h = hazards[i];
       h.t -= dt * es;
-      if (h.t <= 0) { hazards.splice(i, 1); if (h.dmg > 0 && invuln <= 0 && d2(P.x, P.z, h.x, h.z) < h.r) hitPlayer(h.dmg); }
+      if (h.t <= 0) { hazards.splice(i, 1); if (h.env) patches.push({ x: h.x, z: h.z, t: h.env.life, tick: 0.3, seen: h.seen, r: h.env.r, dmg: h.env.dmgP, every: h.env.tick }); if (h.dmg > 0 && invuln <= 0 && d2(P.x, P.z, h.x, h.z) < h.r) hitPlayer(h.dmg); }
+    }
+    for (const en of hzEntries) { // Aşama C çevre tehlikeleri (soyut)
+      if (hazards.length + patches.length < 3 && entryTick(en, dt, true, rnd)) {
+        const p = pickHazardPoint(en.def, P, { x: 0, z: 0 }, false, rnd, ARENA);
+        if (p) { const seen = rnd() < prof.watch, dd = en.def; hazards.push({ x: p.x, z: p.z, r: dd.r, t: dd.warn, dur: dd.warn, dmg: dd.tick > 0 ? 0 : dd.dmgP, seen, env: dd.tick > 0 ? dd : null }); }
+      }
     }
     for (let i = patches.length - 1; i >= 0; i--) {
       const q = patches[i];
       q.t -= dt; q.tick -= dt;
-      if (q.tick <= 0) { q.tick = 1; if (invuln <= 0 && d2(q.x, q.z, P.x, P.z) < SKILLS.emberChain.patchR) hitPlayer(SKILLS.emberChain.patchDmg); }
+      if (q.tick <= 0) { q.tick = q.every || 1; if (invuln <= 0 && d2(q.x, q.z, P.x, P.z) < (q.r ?? SKILLS.emberChain.patchR)) hitPlayer(q.dmg ?? SKILLS.emberChain.patchDmg); }
       if (q.t <= 0) patches.splice(i, 1);
     }
     if (result) break;

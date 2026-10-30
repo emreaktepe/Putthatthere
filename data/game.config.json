@@ -883,6 +883,7 @@
       "every": 9,
       "cap": 8,
       "skills": ["veil", "batDive"],
+      "hazards": [{ "kind": "fall" }],
       "hint": ["Buz Oku düşmanı üç saniye yavaşlatır; Yarasaya iyi gelir."],
       "intro": [
         { "speaker": "piril", "text": "Vızıltıyı duyuyor musun, Aldemir? Mağara canlı." },
@@ -913,6 +914,7 @@
       "every": 9.5,
       "cap": 9,
       "skills": ["veil", "batDive", "quake"],
+      "hazards": [{ "kind": "fall" }],
       "reward": "arcane",
       "hint": ["Taş Bekçiler yavaştır ama kolay yıkılmaz."],
       "intro": [
@@ -943,6 +945,7 @@
       "every": 10,
       "cap": 9,
       "skills": ["veil", "batDive", "quake"],
+      "hazards": [{ "kind": "poison" }],
       "ability": "shield",
       "hint": ["Kristal toplayarak ara sıra kalp kazanırsın; hayatta kalma bölümlerinde de."],
       "intro": [
@@ -1010,6 +1013,7 @@
       "every": 11,
       "cap": 9,
       "skills": ["veil", "batDive", "quake", "volley", "aura"],
+      "hazards": [{ "kind": "fall" }],
       "ability": "blink",
       "totems": [[0, -9]],
       "hint": ["Totem on iki saniyede bir Ruh doğurur; ne kadar erken yıkarsan o kadar rahat edersin."],
@@ -1043,6 +1047,7 @@
       "every": 9,
       "cap": 11,
       "skills": ["veil", "batDive", "quake", "volley", "aura"],
+      "hazards": [{ "kind": "ice" }],
       "hint": [
         "Kurt çömelince hücuma geçer; yana sıçra, yorulunca vur.",
         "Işınlan seni beş adım ileri atar ve anlık dokunulmaz yapar."
@@ -1075,6 +1080,7 @@
       "every": 7,
       "cap": 11,
       "skills": ["veil", "batDive", "quake", "volley", "aura", "emberChain"],
+      "hazards": [{ "kind": "fire" }],
       "reward": "poison",
       "totems": [[-9, -8], [9, -8], [0, 9]],
       "hint": ["Kor Hortlak yaklaşınca kızarır ve patlar; yanındaki düşmanlara da zarar verir."],

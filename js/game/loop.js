@@ -12,11 +12,15 @@ import { crystalGoalMet, effectiveCap } from "./spawnmath.js";
 import { isTouch, keys, mouse, ray } from "./input.js";
 import { cast, fireSpell, nearestEnemies } from "./weapons.js";
 import { updateSkills } from "./skillrun.js";
+import { playerVel, updateHazards } from "./hazardrun.js";
+import { FX } from "./fxsettings.js";
+import { pendingSpawns, queueSpawn, tickSpawns } from "./spawnwarn.js";
+import { tickCombatFx } from "../render/combatfx.js";
 import { veilBlocks } from "./skills.js";
 import { liveCount, placePickup, spawnCrystal, spawnEnemy } from "./world.js";
 import { tickDying } from "../render/enemies.js";
 import { addCloud, addFx, burst, dropHazard, emit, removeObj, updateSparks } from "../render/fx.js";
-import { camera, renderer, ring, scene, updateWeather, wand } from "../render/scene.js";
+import { borderMat, camera, renderer, ring, scene, updateWeather, wand } from "../render/scene.js";
 import { rig, updateCamera } from "../render/camera.js";
 import { rotateMove } from "./cameramath.js";
 import { sceneryTick } from "../render/scenery.js";
@@ -63,7 +67,7 @@ export function update(dt, t) {
   if (dir.lengthSq() > 1) dir.normalize();
   { const m = rotateMove(dir.x, dir.z, rig.yaw); dir.set(m.x, 0, m.z); } // yürüme kamera-göreli: W/joystick yukarı = ekranda yukarı
   if (dir.lengthSq() > 0.01) moveDir.copy(dir).normalize();
-  wizard.position.addScaledVector(dir, GAME.baseSpeed * PLAYER.speedMul * S.speedMul * dt);
+  { const v = playerVel(dir.x, dir.z, GAME.baseSpeed * PLAYER.speedMul * S.speedMul, dt); wizard.position.x += v.x * dt; wizard.position.z += v.z * dt; } // buz yamasında kayar
   wizard.position.x = THREE.MathUtils.clamp(wizard.position.x, -ARENA + 0.5, ARENA - 0.5);
   wizard.position.z = THREE.MathUtils.clamp(wizard.position.z, -ARENA + 0.5, ARENA - 0.5);
 
@@ -92,12 +96,15 @@ export function update(dt, t) {
   if (!RT.running) return;
   updateSkills(dt, t);
   if (!RT.running) return;
+  updateHazards(dt, t); // çevre tehlikeleri (levels.<id>.hazards)
+  if (!RT.running) return;
+  tickSpawns(dt); // doğma uyarı halkası süresi dolan düşmanlar çıkar
 
   // Oyuncu mermileri
   for (let i = shots.length - 1; i >= 0; i--) {
     const s = shots[i];
     s.mesh.position.addScaledVector(s.v, dt);
-    if ((trailTick + i) % 2 === 0) emit(s.mesh.position, s.color, 1, 0.5, 0.25); // iz bırakan kıvılcım
+    if ((trailTick + i) % FX.trailEvery === 0) emit(s.mesh.position, s.color, 1, 0.5, 0.25); // iz bırakan kıvılcım
     s.life -= dt;
     let gone = s.life <= 0;
     if (s.cloud) {
@@ -227,10 +234,10 @@ export function update(dt, t) {
   if (L.spawn.length) {
     RT.spawnTimer += dt;
     const capNow = effectiveCap(L.cap, L.objective, RT.elapsed - RT.lastKill);
-    if (RT.spawnTimer > scaledEvery(L.every, RT.dda.spawnMul) && liveCount() < capNow) {
+    if (RT.spawnTimer > scaledEvery(L.every, RT.dda.spawnMul) && liveCount() + pendingSpawns() < capNow) {
       RT.spawnTimer = 0;
       const wave = L.spawn[Math.floor(Math.random() * L.spawn.length)];
-      for (const [type, n] of Object.entries(wave)) for (let k = 0; k < n; k++) if (liveCount() < capNow) spawnEnemy(type);
+      for (const [type, n] of Object.entries(wave)) for (let k = 0; k < n; k++) if (liveCount() + pendingSpawns() < capNow) queueSpawn(type);
     }
   }
 
@@ -246,13 +253,15 @@ export function update(dt, t) {
 
 export function startLoop() {
   renderer.setAnimationLoop(() => {
-  const dt = stepDt(Math.min(clock.getDelta(), 0.05), RT.paused);
+  let dt = stepDt(Math.min(clock.getDelta(), 0.05), RT.paused);
   if (RT.paused) { renderer.render(scene, camera); return; } // duraklatma: oyun saati, zamanlayıcılar ve girdi donar; yalnızca son kare çizilir
+  if (RT.hitStop > 0) { RT.hitStop -= dt; dt = 0; } // hit-stop: oyun saati donar (görüntü, kamera ve ses sürer)
   const t = clock.elapsedTime;
   ring.rotation.z += dt * 0.3;
+  if (FX.borderGlow) borderMat.opacity = 0.38 + 0.12 * Math.sin(t * 1.6); // sınır çerçevesi nabzı
   const focus = wizard.position.clone().multiplyScalar(0.6);
   RT.shake = Math.max(RT.shake - dt * 2.5, 0);
-  updateCamera(dt, focus.x, focus.z, (k) => rand(RT.shake * k));
+  updateCamera(dt, focus.x, focus.z, (k) => rand(RT.shake * k * FX.shake));
   animateWizard(dt, t);
   updateWeather(dt, t, wizard.position.x, wizard.position.z);
   sceneryTick(dt, t);
@@ -260,6 +269,7 @@ export function startLoop() {
   wand.intensity = 30 + Math.sin(t * 13) * 3 + Math.random() * 2; // asa ışığı titremesi
   pickups.forEach((p, i) => { p.mesh.position.y = 0.9 + Math.sin(t * 2.5 + i) * 0.2; p.mesh.rotation.y += dt * 1.5; });
   updateSparks(dt);
+  tickCombatFx(dt);
   for (let i = bolts.length - 1; i >= 0; i--) {
     bolts[i].userData.life -= dt;
     bolts[i].material.opacity = Math.max(bolts[i].userData.life / 0.18, 0);
@@ -280,7 +290,7 @@ export function startLoop() {
   tickDying(dt, t); // ölen 3B model düşmanların ~0.35 sn'lik görsel ölümü (oynanış ölümü çoktan işlendi)
 
   if (RT.running) {
-    update(dt, t);
+    if (dt > 0) update(dt, t);
     // Pırıl'ın Işığı: en yakın kristale çizgi
     let g = false;
     if (RT.running && S.piril) {

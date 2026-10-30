@@ -4,7 +4,7 @@
 // Alan tanımı: { t: tür, req?: zorunlu, def?: varsayılan, label?: Türkçe etiket, ... türe özgü sınırlar }
 // Türler: int, num, str, hex, bool, enum, ref, arr, obj, map (id'li nesne), rec (ref anahtarlı nesne)
 
-import { ART_RE, ELEMENTS, ENUMS, ID_RE, SKILL_IDS, UI_ICON_KEYS, WEATHER_MAX } from "./registry.js";
+import { ART_RE, ELEMENTS, ENUMS, HAZARD_IDS, ID_RE, SKILL_IDS, UI_ICON_KEYS, WEATHER_MAX } from "./registry.js";
 
 export const CONFIG_SCHEMA_VERSION = 1;
 
@@ -307,6 +307,11 @@ export const SCHEMA = obj({
     ability: ref("abilities", { label: "Ödül yetenek" }),
     totems: arr(arr(num(-12, 12), 2, 2), 1, 6, { label: "Totem konumları [x,z]" }),
     skills: arr(enm("SKILL_IDS"), 0, 9, { label: "Açık düşman becerileri (kademeli: bölümde en çok 1 yeni)" }),
+    hazards: arr(obj({
+      kind: enm("HAZARD_IDS", { req: true, label: "Tehlike türü" }),
+      every: num(4, 40, { label: "Doğma aralığı (sn; boş: türün varsayılanı)" }),
+      maxActive: int(1, 3, { label: "Aynı anda en çok (boş: türün varsayılanı)" }),
+    }, { label: "Çevre tehlikesi" }), 0, 2, { label: "Çevre tehlikeleri (bölümde en çok 2 tür; bölümde en çok 1 yeni tür önerilir)" }),
     image: art({ label: "Bölüm kapak görseli (3:2)" }),
     nodeImage: art({ label: "Harita düğümü madalyonu (kare)" }),
     hint: arr(str(1, 100), 0, 2, { label: "Yeni öğe ipuçları (yalnızca ilk girişte, 3 sn bildirim; en çok 2)" }),

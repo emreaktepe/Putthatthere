@@ -4,6 +4,7 @@
 // UYARI: Tüm katsayılar VARSAYIMDIR (plan V3-V6); gerçek oyuncu/bot verisiyle kalibre edilmedi. Sonuçlar "sıralama aracı"dır, mutlak p değildir.
 
 import { skillSteps } from "../game/skills.js";
+import { hazardSteps } from "../game/hazards.js";
 
 export const TP = { hpExp: 0.45, speedBase: 0.5, speedK: 0.25, ai: { chase: 1, ranged: 1.5, charge: 1.3, bomber: 1, support: 1.5, knight: 1.3, boss: 1.5 }, totem: 3.0 };
 // "mesafe tutan / hücumlu" düşmanlar için etkin hız (plan §1.2 notu)
@@ -145,6 +146,10 @@ export function balanceIssues(cfg) {
     for (const st of skillSteps(lv, order)) {
       if (st.added.length > 1) out.push({ path: ["levels", st.id, "skills"], message: `Bu bölümde ${st.added.length} beceri ilk kez açılıyor (${st.added.join(", ")}): kademeli tanıtma için bölüm başına en çok 1 yeni beceri önerilir` });
       if (st.dropped.length) out.push({ path: ["levels", st.id, "skills"], message: `Önceki bölümde açık olan beceri(ler) kapanıyor (${st.dropped.join(", ")}): beceri kümesi önceki bölümlerin üst kümesi olmalı` });
+    }
+    // Aşama C: çevre tehlikesi türleri kademeli tanıtılır (bölümde ilk kez görülen tür <= 1)
+    for (const st of hazardSteps(lv, order)) {
+      if (st.added.length > 1) out.push({ path: ["levels", st.id, "hazards"], message: `Bu bölümde ${st.added.length} çevre tehlikesi türü ilk kez görünüyor (${st.added.join(", ")}): kademeli tanıtma için bölüm başına en çok 1 yeni tür önerilir` });
     }
     const rows = campaignBalance(cfg);
     for (let i = 0; i < rows.length; i++) {

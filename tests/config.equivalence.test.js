@@ -44,7 +44,8 @@ const BALANCE = {
   7: { time: 120, start: { knight: 1, archer: 2, wolf: 1 }, spawn: [{ archer: 1, ghost: 2 }], every: 7, cap: 7 },
   8: { time: 180 },
 };
-const EXTRA = ["id", "map", "image", "nodeImage", "hint", "reward", "ability", "world", "hook", "objectiveText", "minKills", "crystalDelay", "crystalLure", "skills"];
+// Aşama C: levels.<id>.hazards (çevre tehlikesi) bilinçli EK alan; eski 9 bölümün diğer alanları değişmedi
+const EXTRA = ["id", "map", "image", "nodeImage", "hint", "reward", "ability", "world", "hook", "objectiveText", "minKills", "crystalDelay", "crystalLure", "skills", "hazards"];
 test("LEVELS: eski 9 bölüm yeni kimliklerle eşdeğer (sayılar BALANCE; EK: id, map, görsel, hint, reward/ability, world, hook, objectiveText)", () => {
   assert.equal(A.LEVELS.length, L.LEVELS.length + 2);
   assert.deepEqual(A.LEVEL_IDS, ["w1-01", "w1-02", "w1-03", "w1-04", "w1-05", "w1-06", "w1-07", "w1-08", "w1-09", "w2-02", "w3-09"]);
