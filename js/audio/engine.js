@@ -8,6 +8,9 @@ import { $ } from "../core/util.js";
 export const SOUND_KEY = "buyucu_ses";
 export const AUDIO = (() => {
   // Müzik tablosu artık data/game.config.json -> themes.<id>.music (core/data.js MUSIC / MUSIC_P3). root: MIDI kök; scale: yarım ton dizisi; chords: gam derecesi (üçlü: d, d+2, d+4); bpm; cut: pad filtresi (Hz)
+  // Karşılama/menü müziği: ÜSTTE keyifli (Dorian, müzik kutusu arpejli), ALTTA gergin (yarım ton çatışması, triton uğultusu, kalp atışı, yükselen gürültü).
+  const MENU_MUSIC = { root: 50, scale: [0, 2, 3, 5, 7, 9, 10], bpm: 72, chords: [0, 6, 3, 4], chordBars: 2, cut: 900, wind: 0.45, padAtt: 2.2, padVol: 0.08, detune: 9, pad4: true, bellP: 0 };
+  const ARP_MENU = [0, 2, 4, 7, 4, 2, 5, 4]; // akor kökünden gam derece kaymaları (sekizlik nota dizisi)
   const MOTIF0 = [0, 2, 7, 9, 7, 2];
   const MOTIF3 = [0, 2, 4, 7, 9, 7, 4, 2];
 
@@ -19,7 +22,7 @@ export const AUDIO = (() => {
   const st = { mode: "menu", theme: 0, target: 0, smooth: 0, step: 0, nextT: 0, phase: 1, burstUntil: 0, arpIdx: 5, lastArp: -1, motif: 0, crystal: 0, busT: 0 };
   const mtof = (n) => 440 * Math.pow(2, (n - 69) / 12);
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
-  const cfgOf = () => (st.mode === "menu" ? MUSIC[0] : (st.mode === "boss" && st.phase === 3 && MUSIC_P3[st.theme]) || MUSIC[st.theme] || MUSIC[0]);
+  const cfgOf = () => (st.mode === "menu" ? MENU_MUSIC : (st.mode === "boss" && st.phase === 3 && MUSIC_P3[st.theme]) || MUSIC[st.theme] || MUSIC[0]);
   const degNote = (c, d) => { const n = c.scale.length; return c.root + c.scale[((d % n) + n) % n] + 12 * Math.floor(d / n); };
 
   function init() {
@@ -44,6 +47,7 @@ export const AUDIO = (() => {
     const nd = noiseBuf.getChannelData(0);
     for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
     musicGain = ctx.createGain(); musicGain.connect(dry);
+    musicGain.gain.setValueAtTime(0.0001, ctx.currentTime); musicGain.gain.linearRampToValueAtTime(1, ctx.currentTime + 2.5); // ilk dokunuştan sonra yumuşak giriş
     const mkBus = (name, vol, rev, music = true) => {
       const g = ctx.createGain(); g.gain.value = vol; g.connect(music ? musicGain : dry);
       const r = ctx.createGain(); r.gain.value = rev; g.connect(r); r.connect(revIn);
@@ -140,6 +144,34 @@ export const AUDIO = (() => {
     return degNote(cfg, st.arpIdx) + 12 + (cfg.arpOct || 0);
   }
 
+  // menü: keyifli üst katman + gergin alt katman
+  function menuLayers(t, s, bar, sd, cfg) {
+    const cb = cfg.chordBars || 2, c = cfg.chords[Math.floor(bar / cb) % cfg.chords.length];
+    // keyifli: müzik kutusu arpejisi (sekizlik nota) + her ölçü başında çan
+    if (s % 2 === 0) {
+      const i = s / 2;
+      if (!(i === 7 && Math.random() < 0.35)) { // zaman zaman nefes payı
+        const f = mtof(degNote(cfg, c + ARP_MENU[i]) + 12);
+        voice("triangle", f, f, t, 0.5, i % 4 === 0 ? 0.1 : 0.07, buses.arp, { cap: 22 });
+      }
+    }
+    if (s === 0) bell(mtof(degNote(cfg, c + 7) + 12), t, 0.7, 3.2);
+    // gergin: yarım ton çatışması + triton uğultusu (4 ölçüde bir, yavaş şişer)
+    if (s === 0 && bar % 4 === 2) {
+      const dur = sd * 32;
+      voice("sine", mtof(cfg.root + 1), mtof(cfg.root + 1), t, dur, 0.035, buses.drone, { a: 2.4 });
+      voice("sine", mtof(cfg.root + 6 + 12), mtof(cfg.root + 6 + 12), t, dur, 0.02, buses.drone, { a: 2.8 });
+    }
+    // gergin: kalp atışı (lub-dub); 24 ölçülük döngüde yavaş yükselir
+    if (bar >= 2 && (s === 0 || s === 3)) {
+      const p = 0.35 + 0.65 * ((bar % 24) / 24);
+      voice("sine", s === 0 ? 64 : 58, 34, t, 0.3, (s === 0 ? 0.17 : 0.09) * p, buses.drum, { cap: 24 });
+    }
+    // gergin: 8 ölçüde bir yükselen gürültü, ardından derin vuruş
+    if (s === 0 && bar % 8 === 7) noise(t, sd * 16, 0.045, buses.wind, { type: "bandpass", f0: 500, f1: 2800, q: 3 });
+    if (s === 0 && bar % 8 === 0 && bar > 0) voice("sine", 55, 32, t, 1.4, 0.18, buses.bass, { cap: 24 });
+  }
+
   // 16'lık adım başına zamanlama
   function stepFn(t) {
     const cfg = cfgOf(), boss = st.mode === "boss", menu = st.mode === "menu";
@@ -159,6 +191,7 @@ export const AUDIO = (() => {
       voice("sine", mtof(r - 12), mtof(r - 12), t, dur, 0.1, buses.drone, { a: 1 });
       if (cfg.fifth) voice("sine", mtof(r + 7), mtof(r + 7), t, dur, 0.05, buses.drone, { a: 1 });
     }
+    if (menu) { menuLayers(t, s, bar, sd, cfg); return; }
     // çan / Pırıl motifi
     if (p3) {
       if (s === 0 || s === 8) bell(mtof(cfg.root + 12 + MOTIF3[st.motif++ % MOTIF3.length]), t, 0.9, 2.5);
