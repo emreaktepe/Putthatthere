@@ -31,7 +31,7 @@ test("çarpanlar ve düzey çözümü: Etkili 1.75, Normal 1, Dirençli 0.6, Ba�
   assert.deepEqual(weakElements(ELEMENTS, ["ghost"]), ["arcane", "light"]);
 });
 
-test("koddaki matris tasarım tablosuyla (§3.2) eşleşir: 10 mevcut tür x 7 element", () => {
+test("koddaki matris tasarım tablosuyla (§3.2) eşleşir: 20 mevcut tür x 7 element", () => {
   const want = {
     ghost: { arcane: "E", light: "E", lightning: "D", poison: "I" },
     bat: { frost: "E", lightning: "E", poison: "E", impact: "D" },
@@ -44,6 +44,98 @@ test("koddaki matris tasarım tablosuyla (§3.2) eşleşir: 10 mevcut tür x 7 e
     knight: { impact: "E", light: "E", arcane: "D", lightning: "D", poison: "D" },
     boss: { arcane: "E", poison: "D" },
   };
+  Object.assign(want, {
+  "mourner": {
+    "fire": "N",
+    "frost": "N",
+    "arcane": "E",
+    "lightning": "D",
+    "poison": "I",
+    "impact": "N",
+    "light": "E"
+  },
+  "frostwraith": {
+    "fire": "E",
+    "frost": "I",
+    "arcane": "N",
+    "lightning": "E",
+    "poison": "N",
+    "impact": "N",
+    "light": "N"
+  },
+  "alpha": {
+    "fire": "E",
+    "frost": "I",
+    "arcane": "E",
+    "lightning": "N",
+    "poison": "N",
+    "impact": "D",
+    "light": "N"
+  },
+  "sniper": {
+    "fire": "N",
+    "frost": "N",
+    "arcane": "E",
+    "lightning": "N",
+    "poison": "D",
+    "impact": "N",
+    "light": "N"
+  },
+  "blight": {
+    "fire": "E",
+    "frost": "N",
+    "arcane": "N",
+    "lightning": "N",
+    "poison": "D",
+    "impact": "N",
+    "light": "E"
+  },
+  "hexer": {
+    "fire": "N",
+    "frost": "N",
+    "arcane": "D",
+    "lightning": "E",
+    "poison": "E",
+    "impact": "N",
+    "light": "N"
+  },
+  "shard": {
+    "fire": "N",
+    "frost": "E",
+    "arcane": "I",
+    "lightning": "N",
+    "poison": "N",
+    "impact": "E",
+    "light": "N"
+  },
+  "warden": {
+    "fire": "N",
+    "frost": "N",
+    "arcane": "D",
+    "lightning": "N",
+    "poison": "D",
+    "impact": "E",
+    "light": "D"
+  },
+  "knight_ii": {
+    "fire": "N",
+    "frost": "N",
+    "arcane": "D",
+    "lightning": "D",
+    "poison": "D",
+    "impact": "E",
+    "light": "E"
+  },
+  "knight_iii": {
+    "fire": "N",
+    "frost": "N",
+    "arcane": "D",
+    "lightning": "D",
+    "poison": "D",
+    "impact": "E",
+    "light": "E"
+  }
+});
   assert.deepEqual(Object.keys(MX).sort(), Object.keys(want).sort());
   for (const [id, row] of Object.entries(want)) for (const el of ELEMENTS) assert.equal(MX[id][el], row[el] || "N", `${id} x ${el}`);
 });

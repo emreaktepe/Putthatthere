@@ -1,0 +1,1094 @@
+{
+  "levels": {
+    "w2-01": {
+      "name": "Yalancı Şafak Mezarlığı",
+      "objective": "crystal",
+      "goal": 33,
+      "time": 140,
+      "theme": 11,
+      "crystals": 3,
+      "minKills": 16,
+      "crystalDelay": 1.2,
+      "crystalLure": true,
+      "start": {
+        "ghost": 4,
+        "bat": 3,
+        "archer": 3,
+        "mourner": 1
+      },
+      "spawn": [
+        {
+          "ghost": 3,
+          "archer": 1
+        },
+        {
+          "bat": 2,
+          "mourner": 1
+        }
+      ],
+      "every": 8,
+      "cap": 11,
+      "skills": [
+        "veil",
+        "batDive",
+        "quake",
+        "volley",
+        "aura",
+        "emberChain",
+        "leap"
+      ],
+      "hint": [
+        "Ağıt Ruhu ölünce iki Ruh doğurur. Üçlü Büyü ona Etkili."
+      ],
+      "intro": [
+        {
+          "text": "Gökyüzü ağarıyor ama bu şafak değil; çatlak Kalp'in yansıması.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Olsun, güzel.",
+          "speaker": "Pırıl",
+          "color": "#ffe9a8"
+        }
+      ],
+      "outro": [
+        {
+          "text": "Yalancı şafak bile iyi geldi.",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        },
+        {
+          "text": "Bundan sonrası Kırık Yol: her adımda bir şey eksilir.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        }
+      ],
+      "id": "w2-01",
+      "hook": "Mezarlığın ardında, kırıkların ışığı kızıla çalıyordu.",
+      "world": "Perde II · Kırık Yol",
+      "image": "assets/art/bolum-w2-01.webp",
+      "nodeImage": "assets/art/dugum-w2-01.webp",
+      "map": {
+        "x": 462,
+        "y": 512,
+        "icon": "🌄",
+        "label": "above"
+      }
+    },
+    "w2-02": {
+      "name": "Kristal Yatağı",
+      "objective": "crystal",
+      "goal": 42,
+      "time": 170,
+      "theme": 6,
+      "crystals": 3,
+      "minKills": 20,
+      "crystalDelay": 1.2,
+      "crystalLure": true,
+      "start": {
+        "ghost": 2,
+        "bat": 2,
+        "archer": 2,
+        "priest": 1,
+        "golem": 1
+      },
+      "spawn": [
+        {
+          "priest": 1,
+          "bat": 1
+        },
+        {
+          "archer": 1,
+          "golem": 1
+        }
+      ],
+      "every": 8,
+      "cap": 11,
+      "skills": [
+        "veil",
+        "batDive",
+        "quake",
+        "volley",
+        "aura",
+        "emberChain",
+        "leap"
+      ],
+      "hint": [
+        "Rahibin kalkanı tek vuruş emer; Zehir Bulutu kalkanı geçer."
+      ],
+      "intro": [
+        {
+          "text": "Gece Kalbi'nin kırıkları burada parlıyor. Rahipler düşmanları iyileştirir; önce onları bul."
+        },
+        {
+          "text": "Rahip. Önce.",
+          "speaker": "Taşkın",
+          "color": "#ffe9a8"
+        }
+      ],
+      "outro": [
+        {
+          "text": "Kalbin son kırığı kalede. Dikkat et Aldemir, o kısım artık Veyis'in kendisi.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Veyis demek.",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        }
+      ],
+      "id": "w2-02",
+      "hook": "Kırığın içinde bir hatıra kıpırdadı; Zerrin ona bakmamayı seçti.",
+      "world": "Perde II · Kırık Yol",
+      "image": "assets/art/bolum-w2-02.webp",
+      "nodeImage": "assets/art/dugum-w2-02.webp",
+      "map": {
+        "x": 829,
+        "y": 342,
+        "icon": "💎",
+        "label": "below"
+      }
+    },
+    "w2-03": {
+      "name": "Fırtına Geçidi",
+      "objective": "survive",
+      "goal": 80,
+      "time": 80,
+      "theme": 12,
+      "crystals": 2,
+      "start": {
+        "wolf": 3,
+        "alpha": 1,
+        "frostwraith": 3,
+        "bat": 3
+      },
+      "spawn": [
+        {
+          "wolf": 2,
+          "bat": 2
+        },
+        {
+          "alpha": 1,
+          "frostwraith": 2,
+          "ghost": 2
+        }
+      ],
+      "every": 6,
+      "cap": 12,
+      "reward": "meteor",
+      "skills": [
+        "veil",
+        "batDive",
+        "quake",
+        "volley",
+        "aura",
+        "emberChain",
+        "leap",
+        "howl"
+      ],
+      "hazards": [
+        {
+          "kind": "ice"
+        }
+      ],
+      "hint": [
+        "Alfa Kurt'un ulumasını vurarak böl; sürü hızlanmasın.",
+        "Don Hortlağı patlayınca yerde yavaşlatan, kaydıran buz kalır."
+      ],
+      "intro": [
+        {
+          "text": "Kar fırtınası dört dalga getiriyor.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Geçidi tutacağız.",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        },
+        {
+          "text": "Tutarız.",
+          "speaker": "Taşkın",
+          "color": "#ffe9a8"
+        }
+      ],
+      "outro": [
+        {
+          "text": "Veyis, hasta kızı için Gece Kalbi'ni kendine bağladı.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Kurtarabildi mi?",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        },
+        {
+          "text": "Taş çatladı; kral da.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        }
+      ],
+      "id": "w2-03",
+      "hook": "Pırıl \"hasta kız\" lafında bir an sönüp yandı.",
+      "objectiveText": "Fırtınayı 80 saniye boyunca püskürt.",
+      "world": "Perde II · Kırık Yol",
+      "image": "assets/art/bolum-w2-03.webp",
+      "nodeImage": "assets/art/dugum-w2-03.webp",
+      "map": {
+        "x": 695,
+        "y": 548,
+        "icon": "🌨️",
+        "label": "right"
+      }
+    },
+    "w2-04": {
+      "name": "Alevli Köy",
+      "objective": "crystal",
+      "goal": 46,
+      "time": 190,
+      "theme": 13,
+      "crystals": 4,
+      "minKills": 22,
+      "crystalDelay": 1,
+      "crystalLure": true,
+      "start": {
+        "ember": 5,
+        "wolf": 4,
+        "golem": 2,
+        "archer": 2
+      },
+      "spawn": [
+        {
+          "ember": 2,
+          "wolf": 2
+        },
+        {
+          "archer": 1,
+          "alpha": 1,
+          "ember": 2
+        }
+      ],
+      "every": 5,
+      "cap": 12,
+      "skills": [
+        "veil",
+        "batDive",
+        "quake",
+        "volley",
+        "aura",
+        "emberChain",
+        "leap",
+        "howl"
+      ],
+      "hazards": [
+        {
+          "kind": "fire",
+          "every": 8,
+          "maxActive": 2
+        }
+      ],
+      "hint": [
+        "Kor patlar, kurt fırlar; ikisi birlikte gelince bir yerde durma."
+      ],
+      "intro": [
+        {
+          "text": "Evlerin çoğu boş. İnsanlar ya kaçtı ya da…",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        },
+        {
+          "text": "Kor patlar, kurt fırlar; ikisi birlikte gelince durma.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        }
+      ],
+      "outro": [
+        {
+          "text": "Artık \"benim suçum\" demeyeceğim. \"Benim işim\" diyeceğim.",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        },
+        {
+          "text": "Bu cümleyi uzun zamandır bekliyordum.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        }
+      ],
+      "id": "w2-04",
+      "hook": "Köy çanı bir kez çaldı; onu çalan kimse yoktu.",
+      "world": "Perde II · Kırık Yol",
+      "image": "assets/art/bolum-w2-04.webp",
+      "nodeImage": "assets/art/dugum-w2-04.webp",
+      "map": {
+        "x": 422,
+        "y": 621,
+        "icon": "🏚️",
+        "label": "left"
+      }
+    },
+    "w2-05": {
+      "name": "Ay Kulesi",
+      "objective": "miniboss",
+      "goal": 1,
+      "time": 145,
+      "theme": 14,
+      "start": {
+        "knight_ii": 1,
+        "archer": 2,
+        "sniper": 2,
+        "wolf": 1
+      },
+      "spawn": [
+        {
+          "archer": 1,
+          "wolf": 1
+        }
+      ],
+      "every": 7,
+      "cap": 9,
+      "skills": [
+        "veil",
+        "batDive",
+        "quake",
+        "volley",
+        "aura",
+        "emberChain",
+        "leap",
+        "howl"
+      ],
+      "hazards": [
+        {
+          "kind": "fall",
+          "every": 14,
+          "maxActive": 1
+        }
+      ],
+      "hint": [
+        "Bu şövalye ötekinden daha dayanıklı; sabırlı ol.",
+        "Gölge Nişancı uzaktan vurur; Üçlü Büyü ona Etkili."
+      ],
+      "intro": [
+        {
+          "text": "Ay Kulesi'nin nöbetçisi geceyi yerinden kıpırdamadan geçiriyor. Bu şövalye ötekinden daha dayanıklı."
+        },
+        {
+          "text": "Eski dost.",
+          "speaker": "Taşkın",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Ay doğdu, nöbet sürüyor. Geri dönün.",
+          "speaker": "Nöbetçi",
+          "color": "#cfd0dc"
+        }
+      ],
+      "outro": [
+        {
+          "text": "Yemin… Kalbe… Gidebilirsiniz.",
+          "speaker": "Nöbetçi",
+          "color": "#cfd0dc"
+        },
+        {
+          "text": "Yemin Kalbe'ydi, krala değil. Ama yine de nöbetteydim.",
+          "speaker": "Nöbetçi",
+          "color": "#cfd0dc"
+        },
+        {
+          "text": "Dinlen.",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        }
+      ],
+      "id": "w2-05",
+      "hook": "Ay, bir an için küçük bir kızın yüzü gibi göründü.",
+      "objectiveText": "Ay Nöbetçisi'ni yen!",
+      "world": "Perde II · Kırık Yol",
+      "image": "assets/art/bolum-w2-05.webp",
+      "nodeImage": "assets/art/dugum-w2-05.webp",
+      "map": {
+        "x": 239,
+        "y": 373,
+        "icon": "🌙",
+        "label": "left"
+      }
+    },
+    "w2-06": {
+      "name": "Solgun Bahçe",
+      "objective": "survive",
+      "goal": 90,
+      "time": 90,
+      "theme": 9,
+      "crystals": 2,
+      "start": {
+        "ghost": 4,
+        "bat": 3,
+        "blight": 4,
+        "golem": 2
+      },
+      "spawn": [
+        {
+          "ghost": 3,
+          "bat": 2,
+          "blight": 2
+        }
+      ],
+      "every": 5,
+      "cap": 12,
+      "reward": "nova",
+      "skills": [
+        "veil",
+        "batDive",
+        "quake",
+        "volley",
+        "aura",
+        "emberChain",
+        "leap",
+        "howl"
+      ],
+      "hazards": [
+        {
+          "kind": "poison"
+        }
+      ],
+      "hint": [
+        "Halka yakınındaki düşmanları iter; sıkıştığında kullan.",
+        "Çürük Hortlak patlayınca yerde zehir bulutu kalır."
+      ],
+      "intro": [
+        {
+          "text": "Burayı tanıyorum. Çiçekler benim içindi.",
+          "speaker": "Pırıl",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Doksan saniye ayakta kal; gerisi senin değil, onun.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        }
+      ],
+      "outro": [
+        {
+          "text": "Babam bana Pırıl derdi. Adım Mira.",
+          "speaker": "Pırıl",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Buradayım, Mira.",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        }
+      ],
+      "id": "w2-06",
+      "hook": "Işığı hiç bu kadar parlamamıştı; hiç bu kadar solabilir de görünmemişti.",
+      "world": "Perde II · Kırık Yol",
+      "image": "assets/art/bolum-w2-06.webp",
+      "nodeImage": "assets/art/dugum-w2-06.webp",
+      "map": {
+        "x": 148,
+        "y": 143,
+        "icon": "🌸",
+        "label": "above"
+      }
+    },
+    "w2-07": {
+      "name": "Kızıl Harabe",
+      "objective": "totem",
+      "goal": 3,
+      "time": 240,
+      "theme": 15,
+      "crystals": 3,
+      "start": {
+        "golem": 2,
+        "priest": 2,
+        "hexer": 3,
+        "ember": 3
+      },
+      "spawn": [
+        {
+          "ember": 2,
+          "archer": 1
+        },
+        {
+          "hexer": 1,
+          "ghost": 3
+        }
+      ],
+      "every": 6,
+      "cap": 12,
+      "skills": [
+        "veil",
+        "batDive",
+        "quake",
+        "volley",
+        "aura",
+        "emberChain",
+        "leap",
+        "howl",
+        "revive"
+      ],
+      "hazards": [
+        {
+          "kind": "fall",
+          "every": 10,
+          "maxActive": 2
+        }
+      ],
+      "totems": [
+        [
+          -9,
+          -8
+        ],
+        [
+          9,
+          -8
+        ],
+        [
+          0,
+          9
+        ]
+      ],
+      "hint": [
+        "Rahibin kalkanı totemi de örter; önce rahip, sonra totem.",
+        "Kara Cinci yere lanet halkası koyar; içinde yavaşlarsın."
+      ],
+      "intro": [
+        {
+          "text": "Burası. Evim.",
+          "speaker": "Taşkın",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Totemleri rahipler koruyor; önce rahipleri sustur.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        }
+      ],
+      "outro": [
+        {
+          "text": "Kardeşler huzurda.",
+          "speaker": "Taşkın",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Sen hâlâ nöbettesin, dostum.",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        }
+      ],
+      "id": "w2-07",
+      "hook": "Zerrin'in kanadından bir tüy düştü; bu kez eğilip almadı.",
+      "world": "Perde II · Kırık Yol",
+      "image": "assets/art/bolum-w2-07.webp",
+      "nodeImage": "assets/art/dugum-w2-07.webp",
+      "map": {
+        "x": 345,
+        "y": 85,
+        "icon": "🧱",
+        "label": "above"
+      }
+    },
+    "w2-08": {
+      "name": "Hatıra Yatağı",
+      "objective": "crystal",
+      "goal": 35,
+      "time": 118,
+      "theme": 16,
+      "crystals": 4,
+      "minKills": 20,
+      "crystalDelay": 1,
+      "crystalLure": true,
+      "start": {
+        "bat": 3,
+        "archer": 3,
+        "wolf": 3,
+        "priest": 2,
+        "shard": 2,
+        "sniper": 1
+      },
+      "spawn": [
+        {
+          "archer": 2,
+          "bat": 2
+        },
+        {
+          "shard": 1,
+          "wolf": 2,
+          "sniper": 1
+        }
+      ],
+      "every": 5,
+      "cap": 12,
+      "ability": "timeslow",
+      "skills": [
+        "veil",
+        "batDive",
+        "quake",
+        "volley",
+        "aura",
+        "emberChain",
+        "leap",
+        "howl",
+        "revive"
+      ],
+      "hazards": [
+        {
+          "kind": "fall",
+          "every": 9,
+          "maxActive": 2
+        }
+      ],
+      "hint": [
+        "Zaman Çatlağı düşmanları üç saniye yavaşlatır; sen normal hızda kalırsın.",
+        "Kristal Bekçi ölünce kıymık saçar; uzakta yık."
+      ],
+      "intro": [
+        {
+          "text": "Bu kristaller kızıl: Veyis'in yası.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Dokunuşları sıcak ama içleri acıyor.",
+          "speaker": "Pırıl",
+          "color": "#ffe9a8"
+        }
+      ],
+      "outro": [
+        {
+          "text": "Zaman Çatlağı bir anı uzatır ama durduramaz.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Bunu Veyis'e de anlatacağım.",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        }
+      ],
+      "id": "w2-08",
+      "hook": "Kristalin içinde genç Zerrin belirdi; elinde bir demlik vardı.",
+      "world": "Perde II · Kırık Yol",
+      "image": "assets/art/bolum-w2-08.webp",
+      "nodeImage": "assets/art/dugum-w2-08.webp",
+      "map": {
+        "x": 541,
+        "y": 171,
+        "icon": "💠",
+        "label": "below"
+      }
+    },
+    "w2-09": {
+      "name": "Harap Kale",
+      "objective": "miniboss",
+      "goal": 1,
+      "time": 195,
+      "theme": 17,
+      "start": {
+        "knight_iii": 1,
+        "priest": 2,
+        "warden": 1
+      },
+      "spawn": [
+        {
+          "archer": 1,
+          "ghost": 2
+        }
+      ],
+      "every": 11,
+      "cap": 7,
+      "skills": [
+        "veil",
+        "batDive",
+        "quake",
+        "volley",
+        "aura",
+        "emberChain",
+        "leap",
+        "howl",
+        "revive"
+      ],
+      "hint": [
+        "Rahip yaşarken şövalye yarı hasar alır; önce rahipleri sustur.",
+        "Kalkan Nöbetçisi önden gelen hasarı emer; arkasına geç."
+      ],
+      "intro": [
+        {
+          "text": "Harap Kale'nin kapısında üçüncü nöbetçi bekliyor; yanında iki Rahip var."
+        },
+        {
+          "text": "Kapıyı açmak için son kırıntımı vereceğim. Beni kolla.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Kral emretti: kimse geçmesin.",
+          "speaker": "Nöbetçi",
+          "color": "#cfd0dc"
+        }
+      ],
+      "outro": [
+        {
+          "text": "Kapı sizin. Yeter ki Kral'ı… affedin.",
+          "speaker": "Nöbetçi",
+          "color": "#cfd0dc"
+        },
+        {
+          "text": "O gece seni ben uyuttum, Aldemir; Veyis'in planını biliyordum ve seni korumak istedim.",
+          "speaker": "Zerrin",
+          "color": "#ffe9a8"
+        },
+        {
+          "text": "Suçlu kim, artık önemli değil. Düzeltecek kim, o önemli.",
+          "speaker": "Aldemir",
+          "color": "#d9b3ff"
+        }
+      ],
+      "id": "w2-09",
+      "hook": "Zerrin son kırıntıyı kapıya bıraktı ve baykuş gözlerini kapadı.",
+      "objectiveText": "Harap Nöbetçi'yi yen!",
+      "world": "Perde II · Kırık Yol",
+      "image": "assets/art/bolum-w2-09.webp",
+      "nodeImage": "assets/art/dugum-w2-09.webp",
+      "map": {
+        "x": 739,
+        "y": 105,
+        "icon": "🏯",
+        "label": "right"
+      }
+    }
+  },
+  "enemies": {
+    "mourner": {
+      "hp": 3,
+      "speed": 1.8,
+      "r": 0.9,
+      "y": 1.4,
+      "score": 55,
+      "drop": 0.25,
+      "color": 14674175,
+      "emissive": 5929160,
+      "dmg": 1,
+      "ai": "chase",
+      "name": "Ağıt Ruhu",
+      "scale": 1.45,
+      "model": "ghost",
+      "image": "assets/art/dusman-mourner.webp",
+      "deathSpawn": [
+        "ghost",
+        "ghost"
+      ],
+      "tags": [
+        "ghost"
+      ]
+    },
+    "frostwraith": {
+      "hp": 2,
+      "speed": 3,
+      "r": 0.7,
+      "y": 1,
+      "score": 55,
+      "drop": 0.1,
+      "color": 10217727,
+      "emissive": 2788032,
+      "dmg": 0,
+      "ai": "bomber",
+      "name": "Don Hortlağı",
+      "scale": 1,
+      "model": "ember",
+      "image": "assets/art/dusman-frostwraith.webp",
+      "blast": "frost",
+      "tags": [
+        "ice"
+      ],
+      "res": {
+        "lightning": "E"
+      }
+    },
+    "alpha": {
+      "hp": 5,
+      "speed": 2.6,
+      "r": 0.9,
+      "y": 1,
+      "score": 110,
+      "drop": 0.4,
+      "color": 13623551,
+      "emissive": 4876448,
+      "dmg": 1,
+      "ai": "charge",
+      "bob": 0.05,
+      "name": "Alfa Kurt",
+      "scale": 1.3,
+      "model": "wolf",
+      "image": "assets/art/dusman-alpha.webp",
+      "tags": [
+        "ice"
+      ],
+      "res": {
+        "arcane": "E",
+        "impact": "D"
+      }
+    },
+    "sniper": {
+      "hp": 3,
+      "speed": 1.4,
+      "r": 0.6,
+      "y": 1.1,
+      "score": 75,
+      "drop": 0.3,
+      "color": 9071359,
+      "emissive": 2759288,
+      "dmg": 1,
+      "ai": "ranged",
+      "bob": 0.05,
+      "name": "Gölge Nişancı",
+      "scale": 1.1,
+      "model": "archer",
+      "image": "assets/art/dusman-sniper.webp",
+      "tags": [
+        "bone"
+      ],
+      "res": {
+        "arcane": "E",
+        "lightning": "N",
+        "poison": "D"
+      }
+    },
+    "blight": {
+      "hp": 2,
+      "speed": 2.8,
+      "r": 0.7,
+      "y": 1,
+      "score": 55,
+      "drop": 0.1,
+      "color": 10157930,
+      "emissive": 3840538,
+      "dmg": 0,
+      "ai": "bomber",
+      "name": "Çürük Hortlak",
+      "scale": 1,
+      "model": "ember",
+      "image": "assets/art/dusman-blight.webp",
+      "blast": "poison",
+      "tags": [
+        "rot"
+      ]
+    },
+    "hexer": {
+      "hp": 3,
+      "speed": 1.4,
+      "r": 0.7,
+      "y": 1,
+      "score": 70,
+      "drop": 0.3,
+      "color": 8010282,
+      "emissive": 10500650,
+      "dmg": 0,
+      "ai": "caster",
+      "bob": 0.1,
+      "name": "Kara Cinci",
+      "scale": 0.8,
+      "model": "priest",
+      "image": "assets/art/dusman-hexer.webp",
+      "noSkill": true,
+      "tags": [
+        "living"
+      ],
+      "res": {
+        "arcane": "D",
+        "lightning": "E"
+      }
+    },
+    "shard": {
+      "hp": 6,
+      "speed": 1.1,
+      "r": 1.1,
+      "y": 1.15,
+      "score": 80,
+      "drop": 0.4,
+      "color": 13660415,
+      "emissive": 6957722,
+      "dmg": 1,
+      "ai": "chase",
+      "spin": true,
+      "name": "Kristal Bekçi",
+      "scale": 0.95,
+      "model": "golem",
+      "image": "assets/art/dusman-shard.webp",
+      "shards": 4,
+      "noSkill": true,
+      "tags": [
+        "crystal"
+      ]
+    },
+    "warden": {
+      "hp": 8,
+      "speed": 1.3,
+      "r": 1,
+      "y": 0.85,
+      "score": 90,
+      "drop": 0.35,
+      "color": 10467528,
+      "emissive": 2771546,
+      "dmg": 1,
+      "ai": "chase",
+      "bob": 0.05,
+      "name": "Kalkan Nöbetçisi",
+      "scale": 0.7,
+      "model": "knight",
+      "image": "assets/art/dusman-warden.webp",
+      "frontArmor": 0.25,
+      "noSkill": true,
+      "tags": [
+        "armored"
+      ],
+      "res": {
+        "lightning": "N",
+        "light": "D"
+      }
+    },
+    "knight_ii": {
+      "hp": 36,
+      "speed": 1.3,
+      "r": 1.5,
+      "y": 1.2,
+      "score": 400,
+      "drop": 0,
+      "color": 10467560,
+      "emissive": 2767464,
+      "dmg": 2,
+      "ai": "knight",
+      "spin": true,
+      "noCap": true,
+      "bob": 0.05,
+      "name": "Ay Nöbetçisi",
+      "shortName": "Ay Nöbetçisi",
+      "scale": 1,
+      "model": "knight",
+      "image": "assets/art/dusman-knight-ii.webp",
+      "tags": [
+        "bone",
+        "armored"
+      ],
+      "res": {
+        "light": "E"
+      }
+    },
+    "knight_iii": {
+      "hp": 48,
+      "speed": 1.4,
+      "r": 1.5,
+      "y": 1.2,
+      "score": 500,
+      "drop": 0,
+      "color": 14262432,
+      "emissive": 6828080,
+      "dmg": 2,
+      "ai": "knight",
+      "spin": true,
+      "noCap": true,
+      "bob": 0.05,
+      "name": "Harap Nöbetçi",
+      "shortName": "Harap Nöbetçi",
+      "scale": 1,
+      "model": "knight",
+      "image": "assets/art/dusman-knight-iii.webp",
+      "priestLink": true,
+      "tags": [
+        "bone",
+        "armored"
+      ],
+      "res": {
+        "light": "E"
+      }
+    }
+  },
+  "themes": [
+    {
+      "bg": 1313812,
+      "floor": 2759718,
+      "ring": 16757671,
+      "hemi": 12618394,
+      "moon": 16767424,
+      "fog": 0.04,
+      "floorKind": "dirt",
+      "scenery": "graveyard",
+      "seed": 11,
+      "id": "graveyard-dawn"
+    },
+    {
+      "bg": 792614,
+      "floor": 2242122,
+      "ring": 13625599,
+      "hemi": 10535152,
+      "moon": 15267071,
+      "fog": 0.05,
+      "floorKind": "snow",
+      "scenery": "ice",
+      "seed": 12,
+      "id": "pass-blizzard"
+    },
+    {
+      "bg": 1837060,
+      "floor": 3150344,
+      "ring": 16734746,
+      "hemi": 13654570,
+      "moon": 16752752,
+      "fog": 0.045,
+      "floorKind": "ash",
+      "scenery": "village",
+      "seed": 13,
+      "id": "village-ember"
+    },
+    {
+      "bg": 658972,
+      "floor": 1712178,
+      "ring": 13621503,
+      "hemi": 9085136,
+      "moon": 14674175,
+      "fog": 0.04,
+      "floorKind": "bone",
+      "scenery": "tower",
+      "seed": 14,
+      "id": "tower-moon"
+    },
+    {
+      "bg": 1706506,
+      "floor": 3151890,
+      "ring": 16743002,
+      "hemi": 13660250,
+      "moon": 16756880,
+      "fog": 0.04,
+      "floorKind": "flag",
+      "scenery": "ruins",
+      "seed": 15,
+      "id": "golems-dusk"
+    },
+    {
+      "bg": 1837598,
+      "floor": 3151152,
+      "ring": 16732026,
+      "hemi": 14700666,
+      "moon": 16756944,
+      "fog": 0.03,
+      "floorKind": "facet",
+      "scenery": "crystals",
+      "seed": 16,
+      "id": "crystals-red"
+    },
+    {
+      "bg": 1378320,
+      "floor": 2626592,
+      "ring": 11554922,
+      "hemi": 10504810,
+      "moon": 14721208,
+      "fog": 0.04,
+      "floorKind": "tile",
+      "scenery": "castle",
+      "seed": 17,
+      "id": "castle-ruin"
+    }
+  ]
+}

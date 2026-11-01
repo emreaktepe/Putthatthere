@@ -41,13 +41,13 @@ test("zincir mesafe kuralı: ilk hedef menzil içinde en yakın; sonrakiler önc
   assert.deepEqual(chainTargets(o, [out], 3, 9, 5), [], "menzil dışı");
 });
 
-test("Yıldırım tek vuruşta (zincirin 1. halkası) yalnız Yarasa ve Kurt'u öldürür (eski: Ruh, Yarasa, Okçu, Kurt, Kor); Ruh 2 vuruş", () => {
+test("Yıldırım tek vuruşta (zincirin 1. halkası) Yarasa, Don Hortlağı ve Kurt'u öldürür (eski: Ruh, Yarasa, Okçu, Kurt, Kor); Ruh 2 vuruş", () => {
   const w = A.WEAPONS.lightning, killed = [];
   for (const [id, e] of Object.entries(A.ENEMIES)) {
     if (e.static || ["knight", "boss"].includes(e.ai)) continue;
     if (w.dmg * MULT[matchupLevel(w.element, e.tags, e.res)] >= e.hp - 0.05) killed.push(id);
   }
-  assert.deepEqual(killed.sort(), ["bat", "wolf"]);
+  assert.deepEqual(killed.sort(), ["bat", "frostwraith", "wolf"]);
   assert.ok(1.5 * MULT[matchupLevel("lightning", ["ghost"])] < 1);
 });
 
