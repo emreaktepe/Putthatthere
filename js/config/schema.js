@@ -208,6 +208,13 @@ export const SCHEMA = obj({
     summons1: arr(ref("enemies"), 0, 4, { label: "Boss faz 1 çağrısı" }),
     summons2: arr(ref("enemies"), 0, 4, { label: "Boss faz 2 çağrısı" }),
     image: art({ label: "Düşman görseli (rozet, boss çubuğu)" }),
+    // Aşama D: yeni düşman davranışları (isteğe bağlı)
+    blast: enm("BLAST_KINDS", { label: "Patlama izi (bomba düşman: frost buz lekesi | poison zehir bulutu)" }),
+    deathSpawn: arr(ref("enemies"), 0, 3, { label: "Ölünce doğurduğu düşmanlar (doğma sınırına saygılı)" }),
+    shards: int(0, 8, { label: "Ölünce saçtığı kıymık sayısı (radyal mermi)" }),
+    frontArmor: num(0.05, 1, { label: "Ön kalkan çarpanı (önden gelen hasar; Zehir/Meteor hariç)" }),
+    priestLink: bool({ label: "Rahip bağı (rahip yaşarken hasar x0.5)" }),
+    noSkill: bool({ label: "Model becerisi yok (modelin varsayılan becerisini kapatır)" }),
     // karşıtlık sistemi (isteğe bağlı): etiketler genel kuralı verir, res tek tek ezer (E Etkili x1.75, N Normal, D Dirençli x0.6, I Bağışık x0.25)
     tags: arr(enm("TAGS"), 0, 4, { label: "Etiketler (karşıtlık)" }),
     res: obj(Object.fromEntries(ELEMENTS.map((el) => [el, enm("MATCH_LEVELS", { label: "Element: " + el })])), { label: "Element ezme tablosu (E/N/D/I)" }),

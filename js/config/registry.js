@@ -10,7 +10,7 @@ export const WEATHER_MAX = 240; // render/scene.js WMAX ile aynı
 export const ARENA = 14; // geometriye bağlı; konfigürasyondan değişmez
 
 // düşman yapay zekâ durum makineleri (js/game/ai.js)
-export const AI_KINDS = ["chase", "ranged", "charge", "bomber", "support", "static", "knight", "boss"];
+export const AI_KINDS = ["chase", "ranged", "charge", "bomber", "support", "static", "knight", "boss", "caster"];
 // düşman 3B modelleri (js/render/enemyvis.js ENEMY_VIS) ve ses etiketi (kill:<model>)
 export const MODEL_KINDS = ["ghost", "bat", "golem", "archer", "wolf", "ember", "priest", "totem", "knight", "boss"];
 // zemin doku türleri (js/render/themes.js drawFloor)
@@ -74,6 +74,8 @@ export const SKILL_IDS = ["veil", "batDive", "quake", "volley", "howl", "emberCh
 
 // ---- çevre tehlikeleri (js/game/hazards.js HAZARDS; Aşama C). levels.<id>.hazards[].kind bu kimliklerden biri ----
 export const HAZARD_IDS = ["poison", "fall", "fire", "ice"];
+// bomba düşmanın patlama izi (Aşama D): frost = buz lekesi (oyuncu yavaşlar), poison = zehir bulutu (js/game/skillrun.js addBlastPatch)
+export const BLAST_KINDS = ["frost", "poison"];
 
 // iç içe enum listelerine ad ile erişim (schema.js `enm("AI_KINDS")`)
-export const ENUMS = { AI_KINDS, MODEL_KINDS, FLOOR_KINDS, SCENERY_KINDS, OBJECTIVES, ROLES, WAVES, LABEL_POS, MAP_PRESETS, ELEMENTS, TAGS, MATCH_LEVELS, SKILL_IDS, HAZARD_IDS };
+export const ENUMS = { AI_KINDS, MODEL_KINDS, FLOOR_KINDS, SCENERY_KINDS, OBJECTIVES, ROLES, WAVES, LABEL_POS, MAP_PRESETS, ELEMENTS, TAGS, MATCH_LEVELS, SKILL_IDS, HAZARD_IDS, BLAST_KINDS };

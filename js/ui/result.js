@@ -27,7 +27,7 @@ export function dialogView(lines) {
 // düşman rozeti: enemies.<id>.image varsa küçük yuvarlak görsel, yoksa emoji simgesi
 export function foeBadge(k) {
   const fb = document.createTextNode(enemyIcon(k));
-  const e = ENEMIES[k], im = e && artOr(e.image, null, { cls: "chip-img", size: 22 });
+  const e = ENEMIES[k], im = e && artOr(e.image, fb, { cls: "chip-img", size: 22 });
   return h("span", { class: "chip-ic", "aria-hidden": "true" }, im || fb);
 }
 export function foeChips(L) {

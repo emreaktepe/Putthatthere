@@ -76,7 +76,7 @@ test("denge modeli: TP değerleri plan tablosuyla, p(Z) tersinir", () => {
 });
 
 test("Perde I dengesi: Z tırmanışı düzgün (nefes ve köprü bölümü hariç monoton, sıçrama <= x1.35, sınav hariç), final zirve, model p hedefe +-10 puan", () => {
-  const rows = campaignBalance(cfg); assert.equal(rows.length, 11);
+  const rows = campaignBalance(cfg); assert.equal(rows.length, 19);
   const NEFES = new Set(["w1-04", "w1-06", "w2-02"]); // plan §4.6: w1-06 nefes bölümü; w2-02 geçici köprü (Perde II başı gibi kolay; Perde II yapılınca yeniden sıralanır)
   for (let i = 1; i < rows.length; i++) {
     if (NEFES.has(rows[i].id) || BOT_CALIBRATED.has(rows[i].id) || BOT_CALIBRATED.has(rows[i - 1].id)) continue; // Aşama B: w1-08 bot-kalibre (balance.js BOT_CALIBRATED); sonraki bölüm (w1-09 sınav) ondan bağımsız
@@ -84,7 +84,7 @@ test("Perde I dengesi: Z tırmanışı düzgün (nefes ve köprü bölümü hari
     // bilinçli değişiklik: Aşama A — önceki bölüm çok kolaysa (Z < 1.2, JUMP_FLOOR_Z) oran yanıltıcı; w1-01 (Z~1.0) -> w1-02 sıçraması sayılmaz
     if (!["miniboss", "boss"].includes(rows[i].objective) && rows[i - 1].Z >= 1.2) assert.ok(rows[i].Z / rows[i - 1].Z <= 1.35, `${rows[i].id} sıçrama`);
   }
-  assert.equal(Math.max(...rows.filter((r) => !BOT_CALIBRATED.has(r.id)).map((r) => r.Z)), rows[10].Z, "final boss zirve (bot-kalibre bölüm hariç)");
+  assert.equal(Math.max(...rows.filter((r) => !BOT_CALIBRATED.has(r.id)).map((r) => r.Z)), rows.at(-1).Z, "final boss zirve (bot-kalibre bölüm hariç)");
   assert.ok(rows[1].Z / rows[0].Z < 1.6, "w1-01 hedefli kolay giriş; w1-02 sıçraması taban kuralıyla muaf");
   for (const r of rows) { assert.ok(BOT_CALIBRATED.has(r.id) || Math.abs(r.p - TARGET_P[r.id]) <= (r.id === 'w3-09' ? 0.13 : r.id === 'w2-02' ? 0.16 : 0.1), // Aşama B: w2-02 geçici köprü, 4 beceri açık; bot ~%70 için sayılar azaltıldı, statik model p ~0.94 (Perde II'de yeniden)
      // bilinçli değişiklik: Aşama A — boss çağrısı Ruh'unun TP'si q=0.5 ile düştü (w3-09 geçici köprü, Perde III'te yeniden tasarlanacak)

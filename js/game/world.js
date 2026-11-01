@@ -67,6 +67,8 @@ export function spawnEnemy(type, at) {
   if (d.ai === "ranged") e.cd = 1 + Math.random() * 1.5;
   if (d.ai === "support") e.cd = 2 + Math.random() * 2;
   if (d.ai === "static") e.cd = 12;
+  if (d.ai === "caster") { e.cd = 2 + Math.random() * 3; e.cst = 0; }
+  if (d.frontArmor) e.face = Math.atan2(wizard.position.x - obj.position.x, wizard.position.z - obj.position.z);
   if (d.ai === "knight") { e.cd = 4; e.wind = 0; e.enraged = false; }
   if (d.ai === "boss") { e.bp = 1; e.shielded = false; e.vuln = 0; e.waveT = 8; }
   initEnemySkills(e);

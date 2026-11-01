@@ -80,6 +80,9 @@ export function adapt(cfg) {
     if (e.summons2) o.summons2 = [...e.summons2];
     if (e.character) o.character = e.character;
     if (e.image) o.image = e.image;
+    for (const f of ["blast", "frontArmor", "shards"]) if (e[f]) o[f] = e[f];
+    for (const f of ["priestLink", "noSkill"]) if (e[f]) o[f] = true;
+    if (e.deathSpawn && e.deathSpawn.length) o.deathSpawn = [...e.deathSpawn];
     if (e.tags && e.tags.length) o.tags = [...e.tags];
     if (e.res && Object.keys(e.res).length) o.res = { ...e.res };
     ENEMIES[id] = o;

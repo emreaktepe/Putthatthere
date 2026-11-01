@@ -162,14 +162,14 @@ test("config: bölümlerde skills alanı geçerli; bilinmeyen kimlik reddedilir;
   for (const id of SKILL_IDS) assert.ok(raw.strings.skills[id], "tüm beceriler için metin");
 });
 
-test("öğretim sırası: bölüm başına en çok 1 yeni beceri; küme önceki bölümlerin üst kümesi; Perde II becerileri (howl, revive) hiçbir bölümde yok", () => {
+test("öğretim sırası: bölüm başına en çok 1 yeni beceri; küme önceki bölümlerin üst kümesi; Perde II becerileri howl ve revive sırasıyla açılır", () => {
   const steps = skillSteps(raw.levels, raw.campaign.order);
   assert.ok(steps.length >= 9);
   for (const st of steps) { assert.ok(st.added.length <= 1, st.id + " birden çok yeni beceri: " + st.added); assert.deepEqual(st.dropped, [], st.id + " beceri kaybı"); }
   const first = Object.fromEntries(steps.filter((s) => s.added.length).map((s) => [s.added[0], s.id]));
-  assert.deepEqual(first, { veil: "w1-01", batDive: "w1-02", quake: "w1-03", volley: "w1-05", aura: "w1-06", emberChain: "w1-08", leap: "w1-09" });
+  assert.deepEqual(first, { veil: "w1-01", batDive: "w1-02", quake: "w1-03", volley: "w1-05", aura: "w1-06", emberChain: "w1-08", leap: "w1-09", howl: "w2-03", revive: "w2-07" });
   const all = new Set(Object.values(raw.levels).flatMap((l) => l.skills || []));
-  assert.equal(all.has("howl"), false); assert.equal(all.has("revive"), false);
+  assert.equal(all.has("howl"), true); assert.equal(all.has("revive"), true);
   assert.deepEqual(newSkills(["a", "b"], ["a"]), ["b"]); assert.deepEqual(newSkills(undefined, ["a"]), []);
 });
 

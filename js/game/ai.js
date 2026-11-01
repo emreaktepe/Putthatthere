@@ -4,7 +4,8 @@ import { LEVELS, STRINGS } from "../core/data.js";
 import { RT, S, enemies, enemyShots, pickups } from "../core/state.js";
 import { ARENA, flatDist, rand } from "../core/util.js";
 import { damagePlayer, killEnemy } from "./combat.js";
-import { onSlamEnd, skillTick } from "./skillrun.js";
+import { curseFire, curseWindup, onSlamEnd, skillTick } from "./skillrun.js";
+import { CURSE, SHARD, WARDEN } from "./skills.js";
 import { liveCount, spawnEnemy, spawnLights } from "./world.js";
 import { setIce, setShieldVis } from "../render/enemies.js";
 import { addBolt, addHazard, burst, makeShot } from "../render/fx.js";
@@ -19,6 +20,17 @@ export function enemyShoot(e, ux, uz) {
   scene.add(m);
   enemyShots.push({ mesh: m, vx: ux * 7, vz: uz * 7, life: 4 });
   sfx("enemy_shot");
+}
+
+// Kristal Bekçi: ölünce n kıymık radyal saçılır (hız 6, ömür 1.1, 1 hasar)
+export function enemyShard(e, n) {
+  const p = e.mesh.position;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + e.phase, ux = Math.sin(a), uz = Math.cos(a), m = makeShot(0xd070ff, "");
+    m.scale.setScalar(0.6); m.position.set(p.x, 1, p.z);
+    scene.add(m);
+    enemyShots.push({ mesh: m, vx: ux * SHARD.speed, vz: uz * SHARD.speed, life: SHARD.life });
+  }
 }
 
 export function priestSupport(e) {
@@ -177,7 +189,7 @@ export function updateEnemies(dt, t, es) {
         break;
       }
       case "knight": { // Kemik Şövalye: yürür, 5 sn'de bir yere vurur (yarıçap 4 şok), %50 hp'de hızlanır
-        if (!e.enraged && e.hp <= e.maxHp * 0.5) { e.enraged = true; e.spd = 1.6; e.cd = 0; toast(STRINGS.toasts.knightEnrage, 2000); }
+        if (!e.enraged && e.hp <= e.maxHp * 0.5) { e.enraged = true; e.spd = d.speed + 0.5; e.cd = 0; toast(STRINGS.toasts.knightEnrage, 2000); }
         if (e.wind > 0) {
           e.wind -= edt; e.windT = 0.1; // yere vurma hazırlığı 1 sn ("windup"); biterken şok dalgası patlar ("attack")
           if (e.wind <= 0) { e.atkT = 0.4; onSlamEnd(e); }
@@ -185,6 +197,18 @@ export function updateEnemies(dt, t, es) {
           mx = ux * e.spd; mz = uz * e.spd;
           e.cd -= edt;
           if (e.cd <= 0) { e.cd = 5; e.wind = 1; addHazard(p.x, p.z, 4, 1, 2, 0xff5544); sfx("slam"); }
+        }
+        break;
+      }
+      case "caster": { // Kara Cinci: 9-12 birim mesafe tutar, 6 sn'de bir oyuncunun konumuna Lanet Halkası (1.2 sn uyarı; sonra 4 sn yavaşlatan leke)
+        if (e.cst > 0) {
+          e.cst -= edt; e.windT = 0.1;
+          if (e.cst <= 0) { curseFire(e); e.atkT = 0.5; }
+        } else {
+          const want = dist < CURSE.near[0] ? -1 : dist > CURSE.near[1] ? 1 : 0;
+          mx = ux * e.spd * want; mz = uz * e.spd * want;
+          e.cd -= edt;
+          if (e.cd <= 0 && dist < CURSE.maxDist) { e.cd = CURSE.cd; e.cst = CURSE.warn; curseWindup(e); }
         }
         break;
       }
@@ -203,7 +227,8 @@ export function updateEnemies(dt, t, es) {
     const kd = Math.exp(-dt * 10); // vuruş geri itmesi hızla söner
     e.kx *= kd; e.kz *= kd;
     p.y = d.y + Math.sin(t * 3 + e.phase) * (d.bob !== undefined ? d.bob : 0.3);
-    if (d.ai !== "static") e.mesh.rotation.y = turnTo(e.mesh.rotation.y, Math.atan2(ux, uz), dt * 8); // düşman oyuncuya dönük
+    if (d.frontArmor) { e.face = turnTo(e.face || 0, Math.atan2(ux, uz), dt * WARDEN.turn); e.mesh.rotation.y = e.face; } // Kalkan Nöbetçisi: yavaş döner, arkası açık
+    else if (d.ai !== "static") e.mesh.rotation.y = turnTo(e.mesh.rotation.y, Math.atan2(ux, uz), dt * 8); // düşman oyuncuya dönük
     applyLook(e);
     if (e.anim) e.anim(t, e);
     if (e.blob) e.blob.position.set(p.x, 0.04, p.z);

@@ -22,7 +22,7 @@ import { crystalGoalMet, effectiveCap, pickCrystalPoint, pickSpawnPointNear } fr
 import { MULT, matchupLevel } from "../../js/game/matchup.js";
 import { chainFalloff, chainTargets } from "../../js/game/chain.js";
 import { ddaDef, entryTick, hazardDefs, newEntry, pickHazardPoint } from "../../js/game/hazards.js";
-import { SKILLS, auraMul, canTrigger, emberChainVictims, initSkill, onWindupEnd, skillDamageMul, skillFor, tickCd, veilBlocks, veilStep, volleyPoints } from "../../js/game/skills.js";
+import { CURSE, PATCHES, SHARD, SKILLS, WARDEN, auraMul, canTrigger, emberChainVictims, frontArmorMul, initSkill, isReviveCandidate, onWindupEnd, pickReviveTarget, priestLinkMul, skillDamageMul, skillFor, tickCd, veilBlocks, veilStep, volleyPoints } from "../../js/game/skills.js";
 
 export const ARENA = 14;
 export const DT = 1 / 30;
@@ -95,7 +95,8 @@ export function simulate(A, idx, prof, seed, opts = {}) {
   let elapsed = 0, hits = 0, dmgTaken = 0, kills = 0, collected = 0, totemsDown = 0, spawnTimer = 0, bossSummon = 5;
   let result = null, lastKill = 0;
 
-  const patches = []; // ateş lekeleri
+  const patches = []; // lekeler (ateş / buz / zehir / lanet; js/game/skills.js PATCHES)
+  const deadList = []; // Rahip Diriltme adayları
   const hzEntries = opts.noHazards ? [] : hazardDefs(L.hazards).filter((d) => d.dmgP > 0).map((d) => newEntry(ddaDef(d, dda.tier)));
   const enemies = [], eshots = [], pickups = [], clouds = [], strikes = [], hazards = [], pend = [], crystalQ = [];
   const wdmg = {}, evo = { all: 0, eff: 0 }; // M5/M7 ölçümü: silah x düşman türü hasarı; Etkili hasar olayı oranı
@@ -113,6 +114,8 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     if (d.ai === "support") e.cd = 2 + rnd() * 2;
     if (d.ai === "static") e.cd = 12;
     if (d.ai === "knight") e.cd = 4;
+    if (d.ai === "caster") { e.cd = 2 + rnd() * 3; e.cst = 0; }
+    if (d.frontArmor) e.face = Math.atan2(P.x - sp.x, P.z - sp.z);
     const sid = skillFor(d, L.skills);
     if (sid) { e.sk = initSkill(sid, rnd); if (sid === "veil") { e.veiled = true; e.solidT = 0; } }
     enemies.push(e);
@@ -136,6 +139,11 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     if (i >= 0) enemies.splice(i, 1);
     if (e.d.ai === "bomber" && !e.exploded) explode(e);
     if (e.d.ai === "support") for (const o of enemies) if (d2(o.x, o.z, e.x, e.z) < 8) o.shield = 0;
+    if (L.skills && L.skills.includes("revive") && !e.suicide && e.d.ai !== "bomber" && isReviveCandidate(e.d, e.revived)) { deadList.push({ type: e.type, x: e.x, z: e.z, t: elapsed, used: false }); while (deadList.length > 12 || (deadList.length && elapsed - deadList[0].t > SKILLS.revive.window)) deadList.shift(); }
+    if (!e.suicide && !e.revived && !result) { // Ağıt: ölünce Ruh doğurur; Kristal Bekçi: radyal kıymık
+      if (e.d.deathSpawn) for (const id of e.d.deathSpawn) if (live() < cap) { const ne = spawn(id, { x: e.x + rr(0.8), z: e.z + rr(0.8) }); ne.revived = true; }
+      if (e.d.shards) for (let i = 0; i < e.d.shards; i++) { const a = (i / e.d.shards) * Math.PI * 2 + e.phase; eshots.push({ x: e.x, z: e.z, vx: Math.sin(a) * SHARD.speed, vz: Math.cos(a) * SHARD.speed, life: SHARD.life }); }
+    }
     if (!e.suicide) {
       if (!e.d.static) { kills++; if (S.vampire && kills % 12 === 0 && S.hp < S.maxHp) S.hp++; if (L.objective === "crystal" && !result && crystalGoalMet(L, collected, kills)) result = { win: true, cause: "win" }; }
       if (rnd() < e.d.drop * dda.heartMul) pickups.push({ type: "heart", x: e.x, z: e.z });
@@ -145,6 +153,7 @@ export function simulate(A, idx, prof, seed, opts = {}) {
   }
   function explode(e) {
     e.exploded = true;
+    if (e.d.blast) { const q = PATCHES[e.d.blast]; patches.push({ x: e.x, z: e.z, t: q.life, tick: q.grace || q.tick, seen: rnd() < prof.watch, r: q.r, dmg: q.dmg, every: q.tick, slow: q.slow }); return; }
     if (invuln <= 0 && d2(e.x, e.z, P.x, P.z) < 2.5) hitPlayer(1);
     for (const o of [...enemies]) if (o !== e && !o.dead && d2(o.x, o.z, e.x, e.z) < 2.5) hurt(o, 1, false, false, null);
     if (L.skills && L.skills.includes("emberChain")) {
@@ -160,6 +169,8 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     if (e.shield > 0 && !bypass) { e.shield = 0; return; }
     if (veilBlocks(e.veiled, el)) return; // Sis Perdesi
     const lvl = matchupLevel(el, e.d.tags, e.d.res);
+    if (e.d.frontArmor) dmg *= frontArmorMul(e.d.frontArmor, e.face || 0, Math.atan2(P.x - e.x, P.z - e.z), el);
+    if (e.d.priestLink) dmg *= priestLinkMul(true, enemies.some((o) => !o.dead && o.d.ai === "support"));
     dmg *= MULT[lvl] * skillDamageMul(e.sk, e.sk && e.sk.id === "aura" ? 1 : auraMul(enemies.filter((o) => o.sk && o.sk.id === "aura" && !o.dead).map((o) => ({ ref: o, x: o.x, z: o.z })), e.x, e.z, e));
     if (e.sk) e.sk.hit = true;
     if (wid) { const m = (wdmg[wid] = wdmg[wid] || {}); m[e.type] = (m[e.type] || 0) + Math.min(dmg, Math.max(e.hp, 0)); evo.all++; if (lvl === "E") evo.eff++; }
@@ -222,7 +233,7 @@ export function simulate(A, idx, prof, seed, opts = {}) {
       const d = d2(h.x, h.z, P.x, P.z);
       if ((h.dmg > 0 || h.avoid) && d < h.r + 1.2 && (prof.smart || h.seen) && (!h.skill || h.dur - h.t >= (prof.tgtDelay || 0)) && d > 1e-4) { rx += ((P.x - h.x) / d) * 2.5; rz += ((P.z - h.z) / d) * 2.5; }
     }
-    for (const q of patches) { const d = d2(q.x, q.z, P.x, P.z); if (d < SKILLS.emberChain.patchR + 1 && (prof.smart || q.seen) && d > 1e-4) { rx += ((P.x - q.x) / d) * 2.2; rz += ((P.z - q.z) / d) * 2.2; } }
+    for (const q of patches) { const d = d2(q.x, q.z, P.x, P.z); if (d < (q.r ?? SKILLS.emberChain.patchR) + 1 && (prof.smart || q.seen) && d > 1e-4) { rx += ((P.x - q.x) / d) * 2.2; rz += ((P.z - q.z) / d) * 2.2; } }
     if (Math.abs(P.x) > 10.5) rx -= Math.sign(P.x) * ((Math.abs(P.x) - 10.5) / 3) * 1.5;
     if (Math.abs(P.z) > 10.5) rz -= Math.sign(P.z) * ((Math.abs(P.z) - 10.5) / 3) * 1.5;
     let vx = ax + rx, vz = az + rz;
@@ -335,16 +346,20 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     const sk = e.sk, s = SKILLS[sk.id], wdt = dt * es;
     if (sk.vulnT > 0) sk.vulnT = Math.max(0, sk.vulnT - wdt);
     if (sk.id === "veil") { const r = veilStep(dist, e.solidT || 0, dt); e.solidT = r.solidT; e.veiled = r.veiled; return false; }
-    if (!["batDive", "quake", "volley", "leap"].includes(sk.id)) return false;
+    if (sk.id === "howl" && e.hasteT > 0) { e.hasteT = Math.max(0, e.hasteT - dt); e.spd = e.d.speed * s.speedMul; if (e.st === "tired") e.tm -= edt * (1 / (1 - s.cdCut) - 1); } else if (sk.id === "howl") e.spd = e.d.speed;
+    if (!["batDive", "quake", "volley", "leap", "howl", "revive"].includes(sk.id)) return false;
     if (sk.state === "idle") {
       tickCd(sk, edt);
       if (sk.cd > 0) return false;
-      const allies = sk.id === "batDive" ? enemies.filter((o) => o.sk && o.sk.id === "batDive" && d2(o.x, o.z, P.x, P.z) < s.near).length : 0;
-      const ctx = { dist, hpRatio: e.hp / e.maxHp, slowed: e.slow > 0, active: hazards.filter((h) => h.skill).length, allies, wind: e.wind, slamCd: e.cd };
+      if (sk.id === "howl" && e.st !== "approach") return false;
+      const allies = sk.id === "batDive" ? enemies.filter((o) => o.sk && o.sk.id === "batDive" && d2(o.x, o.z, P.x, P.z) < s.near).length : sk.id === "howl" ? enemies.filter((o) => o.sk && o.sk.id === "howl" && d2(o.x, o.z, e.x, e.z) < s.near).length : 0;
+      const ctx = { dist, hpRatio: e.hp / e.maxHp, slowed: e.slow > 0, active: hazards.filter((h) => h.skill).length, allies, wind: e.wind, slamCd: e.cd, dead: deadList, pos: { x: e.x, z: e.z }, now: elapsed, live: live(), cap };
       if (!canTrigger(sk.id, sk, ctx)) return false;
       sk.cd = s.cd; sk.state = "warn"; sk.t = s.warn; sk.hit = false;
       if (sk.id === "batDive") { sk.lock = { x: P.x, z: P.z }; mark(e, P.x, P.z, s.r, s.warn, 0, true); }
       else if (sk.id === "quake") mark(e, e.x, e.z, s.r, s.warn, s.dmg);
+      else if (sk.id === "howl") { /* uyarı: düşman durup ulur; işaret yok */ }
+      else if (sk.id === "revive") { sk.target = pickReviveTarget(deadList, { x: e.x, z: e.z }, elapsed, s); sk.target.used = true; }
       else if (sk.id === "volley") { const l = Math.hypot(dirX, dirZ); for (const q of volleyPoints(P.x, P.z, l > 0.1 ? dirX : 0, l > 0.1 ? dirZ : 1, ARENA)) mark(e, q.x, q.z, s.r, s.warn, s.dmg); }
       else { sk.lock = { x: P.x, z: P.z }; sk.from = { x: e.x, z: e.z }; mark(e, P.x, P.z, s.r, s.warn, s.dmg); }
       return true;
@@ -357,6 +372,8 @@ export function simulate(A, idx, prof, seed, opts = {}) {
         if (!r.fire) { for (let i = hazards.length - 1; i >= 0; i--) if (hazards[i].owner === e) hazards.splice(i, 1); sk.state = "idle"; }
         else if (sk.id === "batDive") { const dx = sk.lock.x - e.x, dz = sk.lock.z - e.z, l = Math.hypot(dx, dz) || 1; sk.dx = dx / l; sk.dz = dz / l; sk.state = "act"; sk.t = Math.min(s.maxTravel, l / s.speed); }
         else if (sk.id === "quake") { sk.state = "rest"; sk.t = s.rest; }
+        else if (sk.id === "howl") { for (const o of enemies) if (!o.dead && o.sk && o.sk.id === "howl" && d2(o.x, o.z, e.x, e.z) <= s.near) o.hasteT = s.haste; sk.state = "idle"; }
+        else if (sk.id === "revive") { const t = sk.target; if (t && live() < cap) { const ne = spawn(t.type, { x: t.x, z: t.z }); ne.revived = true; ne.hp = Math.min(ne.hp, s.hp); sk.count++; } sk.state = "idle"; }
         else if (sk.id === "leap") { sk.state = "rest"; sk.t = s.tired; sk.vulnT = s.tired; sk.vulnMul = s.tiredMul; }
         else sk.state = "idle";
         sk.hit = false;
@@ -425,15 +442,20 @@ export function simulate(A, idx, prof, seed, opts = {}) {
           if (e.cd <= 0) { e.cd = 12; if (d.summon && live() < cap + 3) spawn(d.summon, { x: e.x + rr(1.5), z: e.z + rr(1.5) }); }
           break;
         case "knight":
-          if (!e.enraged && e.hp <= e.maxHp * 0.5) { e.enraged = true; e.spd = 1.6; e.cd = 0; }
+          if (!e.enraged && e.hp <= e.maxHp * 0.5) { e.enraged = true; e.spd = d.speed + 0.5; e.cd = 0; }
           if (e.wind > 0) { e.wind -= edt; if (e.wind <= 0 && e.sk && e.sk.id === "leap") { e.sk.state = "rest"; e.sk.t = SKILLS.leap.open; e.sk.vulnT = SKILLS.leap.open; e.sk.vulnMul = SKILLS.leap.openMul; } }
           else {
             mx = ux * e.spd; mz = uz * e.spd; e.cd -= edt;
             if (e.cd <= 0) { e.cd = 5; e.wind = 1; hazards.push({ x: e.x, z: e.z, r: 4, t: 1, dmg: 2, seen: rnd() < 0.6 }); }
           }
           break;
+        case "caster":
+          if (e.cst > 0) { e.cst -= edt; if (e.cst <= 0) patches.push({ x: e.curseAt.x, z: e.curseAt.z, t: PATCHES.curse.life, tick: PATCHES.curse.tick, seen: rnd() < prof.watch, r: PATCHES.curse.r, dmg: 0, every: PATCHES.curse.tick, slow: PATCHES.curse.slow }); }
+          else { const want = dist < CURSE.near[0] ? -1 : dist > CURSE.near[1] ? 1 : 0; mx = ux * e.spd * want; mz = uz * e.spd * want; e.cd -= edt; if (e.cd <= 0 && dist < CURSE.maxDist) { e.cd = CURSE.cd; e.cst = CURSE.warn; e.curseAt = { x: P.x, z: P.z }; hazards.push({ x: P.x, z: P.z, r: PATCHES.curse.r, t: CURSE.warn, dur: CURSE.warn, dmg: 0, avoid: true, skill: true, owner: e, seen: rnd() < prof.watch }); } }
+          break;
         case "boss": bossLogic(e, dt, es); mx = ux * e.spd; mz = uz * e.spd; break;
       }
+      if (d.frontArmor) { let df = Math.atan2(ux, uz) - e.face; df = Math.atan2(Math.sin(df), Math.cos(df)); e.face += df * Math.min(1, dt * WARDEN.turn); }
       const ox = e.x, oz = e.z;
       e.x = clamp(e.x + mx * edt + e.kx * dt, -ARENA - 1, ARENA + 1);
       e.z = clamp(e.z + mz * edt + e.kz * dt, -ARENA - 1, ARENA + 1);
@@ -471,7 +493,8 @@ export function simulate(A, idx, prof, seed, opts = {}) {
 
     decideT -= dt;
     if (decideT <= 0) { decide(); decideT = prof.react; useAbilities(); }
-    const sp = 8 * (A.PLAYER.speedMul || 1) * S.speedMul * dt;
+    let slowMul = 1; for (const q of patches) if (q.slow && d2(q.x, q.z, P.x, P.z) < q.r) slowMul = Math.min(slowMul, q.slow);
+    const sp = 8 * (A.PLAYER.speedMul || 1) * S.speedMul * slowMul * dt;
     P.x = clamp(P.x + dirX * sp, -ARENA + 0.5, ARENA - 0.5); P.z = clamp(P.z + dirZ * sp, -ARENA + 0.5, ARENA - 0.5);
     shoot();
     for (let i = pend.length - 1; i >= 0; i--) { const h = pend[i]; h.t -= dt; if (h.t <= 0) { pend.splice(i, 1); if (!h.e.dead) hurt(h.e, h.dmg, h.slow, false, h.el, h.wid); } }
@@ -514,7 +537,7 @@ export function simulate(A, idx, prof, seed, opts = {}) {
     for (let i = patches.length - 1; i >= 0; i--) {
       const q = patches[i];
       q.t -= dt; q.tick -= dt;
-      if (q.tick <= 0) { q.tick = q.every || 1; if (invuln <= 0 && d2(q.x, q.z, P.x, P.z) < (q.r ?? SKILLS.emberChain.patchR)) hitPlayer(q.dmg ?? SKILLS.emberChain.patchDmg); }
+      if (q.tick <= 0) { q.tick = q.every || 1; if ((q.dmg ?? 1) > 0 && invuln <= 0 && d2(q.x, q.z, P.x, P.z) < (q.r ?? SKILLS.emberChain.patchR)) hitPlayer(q.dmg ?? SKILLS.emberChain.patchDmg); }
       if (q.t <= 0) patches.splice(i, 1);
     }
     if (result) break;

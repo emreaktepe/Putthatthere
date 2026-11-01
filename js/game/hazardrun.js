@@ -9,6 +9,7 @@ import { emit } from "../render/fx.js";
 import { scene } from "../render/scene.js";
 import { wizard } from "../render/wizard.js";
 import { damagePlayer, hurt } from "./combat.js";
+import { patchEffect } from "./skillrun.js";
 import { FX } from "./fxsettings.js";
 import { EV_END, EV_START, EV_STRIKE, EV_TICK, GLOBAL_MAX, HAZARDS, ddaDef, entryTick, globalMax, hazardDefs, inZone, newActive, newEntry, pickHazardPoint, slideVel, stepActive } from "./hazards.js";
 
@@ -110,5 +111,6 @@ export function updateHazards(dt, t) {
 
 // oyuncu hareketi: buz yamasında yön değiştirme gecikmeli (kayma). dir birim/sıfır yön, speed birim/sn; { x, z } birim/sn döner (ortak nesne)
 export function playerVel(dirx, dirz, speed, dt) {
-  return slideVel(vel, dirx * speed, dirz * speed, dt, onIce, ICE.slide);
+  const fx = patchEffect(wizard.position.x, wizard.position.z); // Aşama D: buz/lanet lekesi yavaşlatır (buz ayrıca kaydırır)
+  return slideVel(vel, dirx * speed * fx.slow, dirz * speed * fx.slow, dt, onIce || fx.ice, ICE.slide);
 }

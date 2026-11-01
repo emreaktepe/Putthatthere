@@ -12,6 +12,7 @@ const cfg = JSON.parse(fs.readFileSync(new URL("../data/game.config.json", impor
 const res = validate(cfg);
 const A = adapt(res.sanitized);
 
+const P2 = JSON.parse(fs.readFileSync(new URL('./fixtures/perde2.json', import.meta.url), 'utf8'));
 const strip = (o, keys) => { const c = { ...o }; for (const k of keys) delete c[k]; return c; };
 const mapVals = (o, f) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, f(v, k)]));
 
@@ -42,17 +43,18 @@ const BALANCE = {
   // Aşama B: w2-02 geçici köprü: Ruh3 Yar3 Taş2 Okç2 Rahip2 / (Rahip1 Yar1 | Okç1 Yar1) / 6 / 11 -> Ruh2 Yar2 Taş1 Okç1 Rahip1 / (Rahip1 Yar1 | Okç1 Ruh1) / 8 / 10 (4 beceri açık; orta bot %38 -> ~%70)
   6: { goal: 42, time: 170, crystals: 4, start: { ghost: 2, bat: 2, golem: 1, archer: 1, priest: 1 }, spawn: [{ priest: 1, bat: 1 }, { archer: 1, ghost: 1 }], every: 8, cap: 10 },
   7: { time: 120, start: { knight: 1, archer: 2, wolf: 1 }, spawn: [{ archer: 1, ghost: 2 }], every: 7, cap: 7 },
-  8: { time: 180 },
+  8: { time: 180, start: { boss: 1, archer: 3 } },
 };
 // Aşama C: levels.<id>.hazards (çevre tehlikesi) bilinçli EK alan; eski 9 bölümün diğer alanları değişmedi
 const EXTRA = ["id", "map", "image", "nodeImage", "hint", "reward", "ability", "world", "hook", "objectiveText", "minKills", "crystalDelay", "crystalLure", "skills", "hazards"];
 test("LEVELS: eski 9 bölüm yeni kimliklerle eşdeğer (sayılar BALANCE; EK: id, map, görsel, hint, reward/ability, world, hook, objectiveText)", () => {
-  assert.equal(A.LEVELS.length, L.LEVELS.length + 2);
-  assert.deepEqual(A.LEVEL_IDS, ["w1-01", "w1-02", "w1-03", "w1-04", "w1-05", "w1-06", "w1-07", "w1-08", "w1-09", "w2-02", "w3-09"]);
+  assert.equal(A.LEVELS.length, 19);
+  assert.deepEqual(A.LEVEL_IDS, ["w1-01", "w1-02", "w1-03", "w1-04", "w1-05", "w1-06", "w1-07", "w1-08", "w1-09", ...Object.keys(P2.levels), "w3-09"]);
   const oldIds = ["forest", "cave", "golems", "graveyard", "pass", "village", "crystals", "tower", "castle"];
   oldIds.forEach((oid, i) => {
     const lv = A.LEVELS[A.LEVEL_IDS.indexOf(LEGACY_LEVEL_IDS[oid])];
     assert.ok(lv, oid);
+    if (i === 6) { assert.deepEqual(lv, P2.levels[lv.id]); return; }
     const got = strip(lv, EXTRA);
     got.intro = got.intro.map((l) => strip(l, ["color"]));
     got.outro = got.outro.map((l) => strip(l, ["color"]));
@@ -66,11 +68,12 @@ test("LEVELS: eski 9 bölüm yeni kimliklerle eşdeğer (sayılar BALANCE; EK: i
 });
 
 test("Perde I ödül takvimi (plan §4.4) ve yeni bölümler", () => {
+  for (const [id, expected] of Object.entries(P2.levels)) assert.deepEqual(A.LEVELS[A.LEVEL_IDS.indexOf(id)], expected, id);
   const rw = (id) => { const lv = A.LEVELS[A.LEVEL_IDS.indexOf(id)]; return [lv.reward || null, lv.ability || null]; };
   assert.deepEqual(rw("w1-01"), ["frost", null]); assert.deepEqual(rw("w1-02"), [null, null]); assert.deepEqual(rw("w1-03"), ["arcane", null]);
   assert.deepEqual(rw("w1-04"), [null, "shield"]); assert.deepEqual(rw("w1-05"), ["lightning", null]); assert.deepEqual(rw("w1-06"), [null, "blink"]);
   assert.deepEqual(rw("w1-07"), [null, null]); assert.deepEqual(rw("w1-08"), ["poison", null]);
-  assert.deepEqual(rw("w1-09"), ["nova", "timeslow"], "geçici: Perde II'ye kadar nova/timeslow burada"); assert.deepEqual(rw("w2-02"), ["meteor", null]);
+  assert.deepEqual(rw("w1-09"), [null, null], "ödüller Perde II’ye taşındı"); assert.deepEqual(rw("w2-03"), ["meteor", null]);
   const w4 = A.LEVELS[3], w6 = A.LEVELS[5];
   assert.deepEqual([w4.objective, w4.goal, w4.time], ["survive", 60, 60]); assert.equal(A.THEMES[w4.theme].id, "forest-dusk");
   assert.deepEqual([w6.objective, w6.goal, w6.totems.length], ["totem", 1, 1]); assert.equal(A.THEMES[w6.theme].id, "cave-ice");
@@ -103,10 +106,11 @@ test("ABILITIES / ABILITY_ORDER eşdeğer (EK: params)", () => {
 
 test("ENEMIES / ENEMY_NAMES eşdeğer (EK: name, shortName, scale, model, summon*)", () => {
   const got = mapVals(A.ENEMIES, (e) => strip(e, ["name", "shortName", "scale", "model", "summon", "summons1", "summons2", "character", "image", "tags", "res"]));
-  assert.deepEqual(got, L.ENEMIES);
-  assert.deepEqual(Object.keys(A.ENEMIES), Object.keys(L.ENEMIES));
-  assert.deepEqual(A.ENEMY_NAMES, L.ENEMY_NAMES);
-  for (const [id, e] of Object.entries(A.ENEMIES)) { assert.equal(e.model, id); assert.equal(e.scale, 1); }
+  assert.deepEqual(Object.fromEntries(Object.keys(L.ENEMIES).map(k => [k, got[k]])), L.ENEMIES);
+  assert.deepEqual(Object.fromEntries(Object.keys(P2.enemies).map(k => [k, A.ENEMIES[k]])), P2.enemies);
+  assert.deepEqual(Object.keys(A.ENEMIES).sort(), [...Object.keys(L.ENEMIES), ...Object.keys(P2.enemies)].sort());
+  assert.deepEqual(Object.fromEntries(Object.keys(L.ENEMY_NAMES).map(k => [k, A.ENEMY_NAMES[k]])), L.ENEMY_NAMES);
+  for (const [id, e] of Object.entries(A.ENEMIES).filter(([k]) => k in L.ENEMIES)) { assert.equal(e.model, id); assert.equal(e.scale, 1); }
   // koda gömülü kimlikler artık veride
   assert.equal(A.ENEMIES.totem.summon, "ghost");
   assert.deepEqual(A.ENEMIES.boss.summons1, ["ghost", "ghost"]);
@@ -118,12 +122,13 @@ test("ENEMIES / ENEMY_NAMES eşdeğer (EK: name, shortName, scale, model, summon
 
 test("THEMES / VIS / FLOOR_KIND eşdeğer (EK: floorKind, scenery, seed, id)", () => {
   // ilk 9 tema legacy ile aynı; forest-dusk (9) ve cave-ice (10) Perde I ile eklendi (sıra değişmez: boss faz 3 müziği 8. dizinde kalır)
-  assert.equal(A.THEMES.length, L.THEMES.length + 2);
+  assert.equal(A.THEMES.length, 18);
   assert.deepEqual(A.THEMES.slice(0, 9).map((t) => strip(t, ["floorKind", "scenery", "seed", "id"])), L.THEMES);
   assert.deepEqual(A.THEMES.slice(0, 9).map((t) => t.floorKind), L.FLOOR_KIND);
   assert.deepEqual(A.THEMES.map((t) => t.seed), A.THEMES.map((_, i) => i)); // drawFloor tohumu tema dizinine eşit
-  assert.deepEqual(A.THEMES.slice(9).map((t) => t.id), ["forest-dusk", "cave-ice"]);
+  assert.deepEqual(A.THEMES.slice(9, 11).map((t) => t.id), ["forest-dusk", "cave-ice"]);
   assert.deepEqual(A.VIS.slice(0, 9), L.VIS);
+  assert.deepEqual(A.THEMES.slice(11), P2.themes);
 });
 
 test("MUSIC eşdeğer (EK: fifth yalnız tema 2'de); boss faz 3 = eski P3", () => {

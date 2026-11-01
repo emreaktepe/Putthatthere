@@ -42,7 +42,7 @@ for (const id of Object.keys(cfg.weapons || {})) add("Büyü ikonları", "hazır
 for (const id of Object.keys(cfg.weapons || {})) add("Büyü ikonları (128 px)", "P2", `ikon-buyu-${id}-128`, "kare 128, şeffaf", `weapons/${id}/imageSmall`);
 for (const id of ids("abilities")) { add("Yetenek ikonları", "hazır", `ikon-yetenek-${id}`, "kare 512, şeffaf", `abilities/${id}/image`); add("Yetenek ikonları", "hazır", `ikon-yetenek-${id}-128`, "kare 128, şeffaf", `abilities/${id}/imageSmall`); }
 for (const id of ids("perks")) add("Perk ikonları", "P1", `ikon-perk-${id}`, "kare 512, şeffaf", `perks/${id}/image`);
-for (const id of ids("enemies")) add("Düşman ikonları", "P1", `dusman-${id}`, "kare 512, şeffaf", `enemies/${id}/image`);
+for (const id of ids("enemies")) add("Düşman ikonları", "P1", `dusman-${id.replaceAll("_", "-")}`, "kare 512, şeffaf", `enemies/${id}/image`);
 for (const id of ids("levels")) add("Bölüm kapakları", "P1", `bolum-${id}`, "yatay 3:2 (1536x1024), opak", `levels/${id}/image`);
 for (const id of ids("levels")) add("Harita düğüm madalyonları", "P2", `dugum-${id}`, "kare 256-512", `levels/${id}/nodeImage`);
 for (const [key, ad] of Object.entries(UI_ICON_FILES)) add("Arayüz ikonları", "P2", `ui-${ad}`, "kare 128-256, şeffaf", `ui/icons/${key}`);

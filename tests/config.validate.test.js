@@ -259,15 +259,18 @@ test("ui.icons: bilinmeyen ikon adı uyarı verir, kalp görseli tek başına uy
   assert.ok(has(run((c) => { c.ui = { icons: { heartFull: "assets/art/ui-kalp-dolu.webp" } }; }), "W_ART_PAIR", "/ui/icons/heartEmpty"));
   assert.ok(!has(run((c) => { c.ui = { icons: { heartFull: "assets/art/a.webp", heartEmpty: "assets/art/b.webp" } }; }), "W_ART_PAIR"));
 });
-test("varsayılan konfigürasyon: tüm görseller (84 yol) bağlı ve dosyaları var", () => {
+test("varsayılan konfigürasyon: tüm etkin içerik görselleri bağlı ve dosyaları var", () => {
   for (const id of Object.keys(base.weapons)) { assert.equal(base.weapons[id].image, `assets/art/ikon-buyu-${id}.webp`); assert.equal(base.weapons[id].imageSmall, `assets/art/ikon-buyu-${id}-128.webp`); }
   for (const id of Object.keys(base.abilities)) { assert.equal(base.abilities[id].image, `assets/art/ikon-yetenek-${id}.webp`); assert.equal(base.abilities[id].imageSmall, `assets/art/ikon-yetenek-${id}-128.webp`); }
   const paths = [];
   const walk = (v) => { if (typeof v === "string" && /^assets\/art\//.test(v)) paths.push(v); else if (v && typeof v === "object") Object.values(v).forEach(walk); };
   walk(base);
-  assert.equal(paths.length, 84);
+  const expected = Object.keys(base.characters).length + 2
+    + 2 * (Object.keys(base.weapons).length + Object.keys(base.abilities).length + Object.keys(base.levels).length)
+    + Object.keys(base.perks).length + Object.keys(base.enemies).length + Object.keys(base.ui.icons).length;
+  assert.equal(paths.length, expected);
   for (const p of paths) assert.ok(fs.existsSync(new URL("../" + p, import.meta.url)), p + " dosyası var");
-  assert.ok(Object.entries(base.perks).every(([id, x]) => x.image === `assets/art/ikon-perk-${id}.webp`) && Object.entries(base.enemies).every(([id, x]) => x.image === `assets/art/dusman-${id}.webp`));
+  assert.ok(Object.entries(base.perks).every(([id, x]) => x.image === `assets/art/ikon-perk-${id}.webp`) && Object.entries(base.enemies).every(([id, x]) => x.image === `assets/art/dusman-${id.replaceAll("_", "-")}.webp`));
   // bölüm görselleri artık kimlikle aynı adlı (bolum-w1-01.webp, dugum-w1-01.webp): her bölümün kendi görseli var
   assert.ok(Object.entries(base.levels).every(([id, x]) => x.image === `assets/art/bolum-${id}.webp` && x.nodeImage === `assets/art/dugum-${id}.webp`));
   assert.equal(Object.keys(base.ui.icons).length, 14);
