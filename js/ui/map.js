@@ -1,15 +1,14 @@
-// Harita ekranı: satır içi SVG, noktalı yollarla bağlı düğümler (kilitli / açık / tamamlandı), düğüme dokununca bölüm kartı.
-// Durum türetmesi ve çizim modeli js/game/progress.js'te (saf, testli); burada yalnızca çizim ve etkileşim vardır.
+// Harita ekranı: perde bazlı, en fazla beş duraklı yolculuk; seçim bölüm kartını açar.
+// Kilitler kampanyadan, etaplar journey.js'ten gelir; burada çizim ve etkileşim vardır.
 // Bölüm kartı varsayılan kompakttır (küçük kapak, süre/puan çipleri, tek düğme); "Detay" hedef, düşmanlar ve büyük kapağı açar.
 import { ENEMY_NAMES, LEVELS, LEVEL_IDS, MAP, TOTEM_ID, WEAPONS } from "../core/data.js";
 import { h, svg } from "../core/dom.js";
-import { edges } from "../game/campaign.js";
-import { buildMapGraph, mapPoints } from "../game/progress.js";
+import { journeyPages, journeyPageFor } from "./journey.js";
 import { displayStars, starText } from "../game/stars.js";
 import { artBg, artOr, artPath, pickArt } from "./art.js";
-import { icon, ICON_PATHS } from "./icons.js";
+import { icon } from "./icons.js";
 import { ambient } from "./menu.js";
-import { foeIdsOf, mapLayout, mapView, scrollForNode, sheetLayout, sheetModel } from "./models.js";
+import { foeIdsOf, mapLayout, scrollForNode, sheetLayout, sheetModel } from "./models.js";
 import { coverImg, foeBadge } from "./result.js";
 import { button, mount, scope } from "./screens.js";
 import { UI, objectiveText } from "./text.js";
@@ -18,48 +17,16 @@ import { BRAND } from "./brandmodel.js";
 const fmtStars = (n) => UI.stars.count.replace("{n}", String(n));
 const STATE_LABEL = { completed: UI.map.done, available: UI.map.open, locked: UI.map.locked };
 
-// arka plan: parşömen yerine gece manzarası; uzak dağ silüetleri (yalnız yatay yerleşimde)
-function backdrop(W, H) {
-  const mountains = `M0 ${H} L0 ${H * 0.82} L${W * 0.08} ${H * 0.7} L${W * 0.16} ${H * 0.8} L${W * 0.27} ${H * 0.64} L${W * 0.38} ${H * 0.8} L${W * 0.5} ${H * 0.72} L${W * 0.62} ${H * 0.84} L${W * 0.74} ${H * 0.68} L${W * 0.86} ${H * 0.8} L${W * 0.94} ${H * 0.72} L${W} ${H * 0.8} L${W} ${H} Z`;
-  return svg("g", { class: "map-bg", "aria-hidden": "true" }, svg("path", { d: mountains, class: "mtn" }));
-}
-
-function starPath(cx, cy, r) {
-  const pts = [];
-  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r; pts.push(`${(cx + Math.cos(a) * rr).toFixed(1)},${(cy + Math.sin(a) * rr).toFixed(1)}`); }
-  return pts.join(" ");
-}
-
-// düğüm madalyonu: levels.<id>.nodeImage varsa daire içinde görsel (yüklenince düğüm "has-img" olur ve emoji gizlenir);
-// yüklenemezse görsel kaldırılır, mevcut simge kalır
-function nodeMedal(id, L, r) {
-  const src = artPath(L.nodeImage);
-  if (!src) return null;
-  const cid = "nclip-" + id;
-  const im = svg("image", { class: "node-img", href: src, x: -r, y: -r, width: r * 2, height: r * 2, preserveAspectRatio: "xMidYMid slice", "clip-path": `url(#${cid})`, "aria-hidden": "true" });
-  im.addEventListener("load", () => { const g = im.closest(".node"); if (g) g.classList.add("has-img"); });
-  im.addEventListener("error", () => im.remove());
-  return svg("g", null, svg("clipPath", { id: cid }, svg("circle", { r })), im);
-}
-
-// düğüm üstü yıldız şeridi: kazanılan dolu, kalanlar sönük (SVG metin; erişilebilir ad düğümün aria-label'ında)
-function nodeStars(n, r) {
-  const t = svg("text", { class: "node-stars", x: -r * 0.12, y: r * 0.68, "text-anchor": "middle", "dominant-baseline": "central", "font-size": r * 0.36, "aria-hidden": "true" });
-  for (let i = 0; i < 3; i++) t.append(svg("tspan", { class: i < n ? "on" : "off" }, "★"));
-  return t;
-}
-
 // opts: { completed:Set, statuses, best, score, focusId, freshId, onPlay(id, practice), onBack }
 export function showMap(opts) {
   const sc = scope();
   let selected = opts.focusId || null;
-  const root = h("section", { class: "map-screen", "aria-label": UI.map.title });
+  const root = h("section", { class: "map-screen journey-screen", "aria-label": UI.map.title });
   const done = LEVEL_IDS.filter((id) => opts.statuses[id] === "completed").length;
   const header = h("header", { class: "map-head" },
     button(UI.map.back, opts.onBack, { kind: "ghost", ic: "back", aria: "Ana menüye dön" }),
     h("h2", null, h("img", { class: "map-emb", src: BRAND.emblem256, alt: "", width: 28, height: 28, draggable: "false", "aria-hidden": "true" }), UI.map.title),
     h("div", { class: "map-stats" }, h("span", { class: "chip", title: UI.map.completed }, icon("check"), `${done}/${LEVEL_IDS.length}`), opts.best.score > 0 ? h("span", { class: "chip", title: UI.map.best }, icon("star"), String(opts.best.score)) : null));
-  const artSrc = artPath(MAP && MAP.background && MAP.background.image);
   const fill = artBg(MAP && MAP.background && MAP.background.image, "map-fill"); // her yerleşimde arkada koyu/bulanık zemin
   const scroller = h("div", { class: "map-scroll" });
   const sheet = h("aside", { class: "level-sheet panel gold-frame", hidden: true, "aria-live": "polite" });
@@ -70,7 +37,11 @@ export function showMap(opts) {
   const isPortrait = () => innerHeight > innerWidth * 1.1;
   let expanded = false;
   let lay0 = mapLayout(innerWidth, innerHeight); // iki sütunda (tablet/geniş) panel sürekli açık ve kapatılamaz; seçim yoksa sıradaki açık bölüm seçilir
-  const defaultId = () => opts.focusId || LEVEL_IDS.find((id) => opts.statuses[id] === "available") || LEVEL_IDS[0];
+  const defaultId = () => opts.freshId || opts.focusId || LEVEL_IDS.find((id) => opts.statuses[id] === "available") || LEVEL_IDS[0];
+  const currentId = LEVEL_IDS.find((id) => opts.statuses[id] === "available") || LEVEL_IDS.at(-1);
+  const pages = journeyPages(LEVEL_IDS, LEVELS);
+  let pageIndex = journeyPageFor(pages, defaultId());
+  selected = defaultId();
   // ilk cümle: bölümün giriş metninden (yalnız gerçek veri)
   const teaser = (L) => { const t = L.intro && L.intro[0] && L.intro[0].text; if (!t) return ""; const m = String(t).match(/^.*?[.!?…](?=\s|$)/); return (m ? m[0] : String(t)).trim(); };
 
@@ -155,9 +126,11 @@ export function showMap(opts) {
   function layoutSheet() {
     if (!isPortrait()) return;
     scroller.style.setProperty("--sheet-h", (selected ? sheet.offsetHeight : 0) + "px");
-    const n = scroller.querySelector(".node.sel .disc");
+    const n = scroller.querySelector(".journey-stop.sel");
     if (!selected || !n) return;
     const nr = n.getBoundingClientRect(), sr = scroller.getBoundingClientRect();
+    const visibleBottom = Math.min(sr.bottom, sheet.getBoundingClientRect().top);
+    if (nr.top >= sr.top + 8 && nr.bottom <= visibleBottom - 8) return;
     const nodeY = scroller.scrollTop + (nr.top - sr.top) + nr.height / 2;
     scroller.scrollTop = scrollForNode({ nodeY, viewH: scroller.clientHeight, sheetH: sheet.offsetHeight });
   }
@@ -166,107 +139,78 @@ export function showMap(opts) {
     if (!id && lay0.twoCol) return;
     if (id !== selected) expanded = false;
     selected = id;
-    scroller.querySelectorAll(".node").forEach((n) => n.classList.toggle("sel", n.dataset.id === id));
+    scroller.querySelectorAll(".journey-stop").forEach((n) => {
+      n.classList.toggle("sel", n.dataset.id === id);
+      n.setAttribute("aria-pressed", String(n.dataset.id === id));
+    });
     renderSheet(focus);
     layoutSheet();
   }
 
-  // etiket: cam hap (metin ölçülünce çizilir); düğümün yanında
-  function pill(text, x, y, anchor, fs) {
-    const t = svg("text", { class: "node-label", x, y, "text-anchor": anchor, "font-size": fs, "dominant-baseline": "central" }, text);
-    const rect = svg("rect", { class: "label-pill", rx: fs * 0.8, ry: fs * 0.8 });
-    return { g: svg("g", { class: "label" }, rect, t), t, rect, fs };
-  }
-  function fitPills(pills) {
-    for (const p of pills) {
-      let bb = null;
-      try { bb = p.t.getBBox(); } catch (e) { bb = null; }
-      if (!bb || !bb.width) bb = { x: +p.t.getAttribute("x") - p.t.textContent.length * p.fs * 0.28, y: +p.t.getAttribute("y") - p.fs * 0.6, width: p.t.textContent.length * p.fs * 0.56, height: p.fs * 1.2 };
-      const px = p.fs * 0.65, py = p.fs * 0.28;
-      p.rect.setAttribute("x", bb.x - px); p.rect.setAttribute("y", bb.y - py); p.rect.setAttribute("width", bb.width + px * 2); p.rect.setAttribute("height", bb.height + py * 2);
-    }
+  function goPage(index, focusId) {
+    pageIndex = Math.max(0, Math.min(pages.length - 1, index));
+    selected = focusId || pages[pageIndex].ids.find((id) => opts.statuses[id] === "available") || pages[pageIndex].ids[0];
+    expanded = false;
+    draw();
+    scroller.querySelector(".journey-stop.sel")?.focus({ preventScroll: true });
   }
 
   function draw() {
-    const prev = lay0;
     lay0 = mapLayout(innerWidth, innerHeight);
     const portrait = lay0.mode === "portrait";
     root.classList.toggle("two-col", lay0.twoCol);
     root.classList.toggle("lp", lay0.mode === "landscape-phone");
-    root.style.setProperty("--panel-w", lay0.panelW + "px");
-    if (lay0.twoCol && !selected) selected = defaultId();
-    if (prev.twoCol !== lay0.twoCol || lay0.twoCol !== sheet.classList.contains("rich")) { expanded = false; renderSheet(); }
-    const lay = mapPoints(LEVELS, { portrait, viewBox: MAP ? MAP.viewBox : [1000, 700] });
-    // ekrandaki ölçek (görünüm birimi -> piksel): yatayda detay paneli için ayrılan alan düşülür; düğüm ve etiketler küçük ekranda okunur/dokunulur kalsın diye büyütülür
-    const panelW = portrait || lay0.twoCol ? 0 : lay0.panelW + 16;
-    const aw = Math.max(scroller.clientWidth - panelW, 200), ah = Math.max(scroller.clientHeight, 160);
-    const sideOf = (L) => (portrait ? null : (L.map && L.map.label) || "below");
-    const labelPad = (L) => Math.round(L.name.length * 15 + 50);
-    // iki sütun: sütunu dolduran ama düğüm ve etiketleri kırpmayan yakınlaştırma (viewBox kayar; düğümler görselle hizalı kalır)
-    let view = null, scale = portrait ? Math.min(aw / lay.W, 1.2) : Math.min(aw / lay.W, ah / lay.H);
-    if (lay0.twoCol) {
-      const R0 = MAP && MAP.nodeRadius ? MAP.nodeRadius : 38;
-      const items = lay.pts.map((p, k) => { const sd = sideOf(LEVELS[k]), lp = labelPad(LEVELS[k]), vert = sd === "above" || sd === "below", hw = vert ? lp / 2 : 0; return { x: p.x, y: p.y, l: Math.max(R0 + 10, hw) + (sd === "left" ? lp : 0), r: Math.max(R0 + 10, hw) + (sd === "right" ? lp : 0), t: R0 + 10 + (sd === "above" ? 50 : 0), b: R0 + 10 + (sd === "below" ? 50 : 0) }; });
-      view = mapView(Math.max(scroller.clientWidth, 200), ah, lay.W, lay.H, items);
-      scale = view.scale;
-    }
-    let dmin = Infinity;
-    lay.pts.forEach((p, a) => lay.pts.forEach((q, b) => { if (a < b) dmin = Math.min(dmin, Math.hypot(p.x - q.x, p.y - q.y)); }));
-    const R = MAP && MAP.nodeRadius ? MAP.nodeRadius : 38, g = buildMapGraph(LEVEL_IDS, edges(), opts.statuses, lay.pts, lay.useVia);
-    const r = portrait ? 30 : Math.min(Math.max(R, 21 / scale), R * 1.5, dmin * 0.42);
-    const hitR = Math.min(Math.max(r + 14, 22 / scale), Math.max(dmin / 2, r + 4));
-    const fsz = portrait ? 17 : Math.max(22, 12 / scale);
-    const root3 = svg("svg", { class: "map-svg" + (portrait ? " tall" : ""), viewBox: view ? `${view.x.toFixed(1)} ${view.y.toFixed(1)} ${view.w.toFixed(1)} ${view.h.toFixed(1)}` : `0 0 ${lay.W} ${lay.H}`, preserveAspectRatio: "xMidYMid meet", role: "group", "aria-label": UI.map.title });
     root.classList.toggle("portrait", portrait);
-    if (!portrait) {
-      if (artSrc) { // görsel viewBox içinde: düğümler her ekran oranında görsele göre aynı yerde kalır; yüklenemezse dağ siluetine dönülür
-        const im = svg("image", { class: "map-art", href: artSrc, x: 0, y: 0, width: lay.W, height: lay.H, preserveAspectRatio: "xMidYMid slice", "aria-hidden": "true" });
-        const bd = backdrop(lay.W, lay.H);
-        im.addEventListener("error", () => { im.replaceWith(bd); });
-        root3.append(im);
-      } else root3.append(backdrop(lay.W, lay.H));
-    }
-    for (const l of g.links) root3.append(svg("path", { d: l.d, class: "link " + l.state }));
-    const pills = [];
-    for (const n of g.nodes) {
-      const L = LEVELS[n.index], st = n.status;
-      const side = portrait ? (n.x < lay.W / 2 ? "right" : "left") : sideOf(L);
-      const gap = fsz * 0.5;
-      const lx = side === "right" ? r + gap + 6 : side === "left" ? -r - gap - 6 : 0, ly = side === "above" ? -r - fsz * 0.9 : side === "below" ? r + fsz * 1.1 : 0;
-      const anchor = side === "right" ? "start" : side === "left" ? "end" : "middle";
-      const pl = pill(L.name, lx, ly, anchor, fsz);
-      pills.push(pl);
-      const gEl = svg("g", {
-        class: "node " + st + (opts.freshId === n.id ? " fresh" : "") + (selected === n.id ? " sel" : ""), "data-id": n.id, transform: `translate(${n.x} ${n.y})`,
-        role: "button", tabindex: "0", "aria-label": `Bölüm ${n.index + 1}: ${L.name}, ${STATE_LABEL[st].toLowerCase()}${starsOf(n.id, st) ? ", " + fmtStars(starsOf(n.id, st)) : ""}`,
-      },
-        svg("circle", { class: "halo", r: r + 8 }),
-        svg("circle", { class: "ring", r: r + 4 }),
-        svg("circle", { class: "disc", r }),
-        nodeMedal(n.id, L, r),
-        svg("text", { class: "node-ic", "text-anchor": "middle", "dominant-baseline": "central", "font-size": r * 0.95 }, st === "locked" ? "" : (L.map && L.map.icon) || "✦"),
-        svg("circle", { class: "rim", r: r - 1 }),
-        st === "locked" ? svg("path", { class: "node-lock", d: ICON_PATHS.lock[1], transform: `translate(${-r * 0.5} ${-r * 0.5}) scale(${(r * 1.0) / 24})` }) : null,
-        svg("circle", { class: "num-bg", cx: -r * 0.72, cy: -r * 0.72, r: r * 0.38 }),
-        svg("text", { class: "num", x: -r * 0.72, y: -r * 0.72, "text-anchor": "middle", "dominant-baseline": "central", "font-size": r * 0.42 }, String(n.index + 1)),
-        st === "completed" ? svg("polygon", { class: "node-star", points: starPath(r * 0.72, r * 0.72, r * 0.44) }) : null,
-        st === "completed" ? nodeStars(starsOf(n.id, st), r) : null,
-        pl.g,
-        svg("circle", { class: "hit", r: hitR }));
-      gEl.addEventListener("click", () => select(n.id));
-      gEl.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(n.id, true); } });
-      root3.append(gEl);
-    }
+    root.style.setProperty("--panel-w", lay0.panelW + "px");
+    if (lay0.twoCol && !selected) selected = pages[pageIndex].ids[0];
+    const page = pages[pageIndex];
+    const pageDone = page.ids.filter((id) => opts.statuses[id] === "completed").length;
+    const nav = h("nav", { class: "journey-nav", "aria-label": "Yolculuk etapları" },
+      h("button", { type: "button", disabled: pageIndex === 0, onclick: () => goPage(pageIndex - 1) }, "← Önceki"),
+      h("span", { class: "journey-page-count", "aria-live": "polite" }, `Etap ${pageIndex + 1} / ${pages.length}`),
+      h("button", { type: "button", disabled: pageIndex === pages.length - 1, onclick: () => goPage(pageIndex + 1) }, "Sonraki →"));
+    const hero = h("header", { class: "journey-heading" },
+      h("small", { class: "eyebrow" }, page.world),
+      h("h3", null, "Şafağa giden yol"),
+      h("p", null, `Bölüm ${page.start + 1}-${page.start + page.ids.length} · ${pageDone}/${page.ids.length} tamamlandı`),
+      h("button", { class: "journey-current", type: "button", onclick: () => goPage(journeyPageFor(pages, currentId), currentId) }, "Kaldığım yere git ↗"));
+    const route = h("ol", { class: "journey-route", "aria-label": "Bölüm rotası" });
+    page.ids.forEach((id, index) => {
+      const i = LEVEL_IDS.indexOf(id), L = LEVELS[i], st = opts.statuses[id];
+      const n = starsOf(id, st), src = artPath(L.nodeImage || L.image);
+      const status = id === currentId && st === "available" ? "Sıradaki bölüm" : STATE_LABEL[st];
+      const fallback = () => h("span", { class: "journey-thumb journey-fallback", "aria-hidden": "true" }, "✦");
+      const thumb = src ? h("img", { src, alt: "", class: "journey-thumb", draggable: "false", onerror: (e) => { e.currentTarget.replaceWith(fallback()); } }) : fallback();
+      const stop = h("button", {
+        type: "button", class: `journey-stop ${st}${selected === id ? " sel" : ""}${id === opts.freshId ? " fresh" : ""}`,
+        "data-id": id, "aria-pressed": String(selected === id),
+        "aria-label": `Bölüm ${i + 1}: ${L.name}, ${status}${n ? ", " + fmtStars(n) : ""}`,
+        onclick: () => select(id),
+      }, h("span", { class: "journey-number", "aria-hidden": "true" }, String(i + 1).padStart(2, "0")),
+        thumb,
+        h("span", { class: "journey-copy" }, h("small", null, status), h("strong", null, L.name)),
+        h("span", { class: "journey-mark", "aria-hidden": "true" }, st === "locked" ? icon("lock") : n ? starText(n) : "→"));
+      route.append(h("li", { class: st, style: { "--step": index } }, stop));
+    });
+    const end = h("p", { class: "journey-end" }, pageIndex === pages.length - 1 ? "Yolun sonunda: şafak." : "Yolculuk bir sonraki etapta devam ediyor.");
     scroller.classList.toggle("tall", portrait);
-    scroller.replaceChildren(root3);
-    fitPills(pills);
-    if (portrait) { // seçili/odak düğüm ekranın ortasına gelsin (bölüm 1 altta olduğundan başlangıçta kaydırma gerekir)
-      const idx = LEVEL_IDS.indexOf(selected || opts.focusId || LEVEL_IDS.find((id) => opts.statuses[id] === "available") || LEVEL_IDS[0]);
-      const y = ((lay.pts[Math.max(idx, 0)].y) / lay.H) * root3.getBoundingClientRect().height;
-      const sheetH = selected ? sheet.offsetHeight : 0;
-      scroller.style.setProperty("--sheet-h", sheetH + "px");
-      scroller.scrollTop = scrollForNode({ nodeY: y, viewH: scroller.clientHeight, sheetH, at: selected ? 0.42 : 0.35 });
+    const scene = h("div", { class: "journey-scene" },
+      artBg(MAP?.background?.image, "journey-art"),
+      h("div", { class: "journey-shade", "aria-hidden": "true" }), route);
+    scroller.replaceChildren(h("div", { class: "journey-wrap" }, hero, nav, scene, end));
+    // Yol, ekranda kullanılan düğüm merkezlerinden hesaplanır; hiçbir etiketin içinden geçmez.
+    const width = route.clientWidth;
+    const pathLayer = svg("svg", { class: "journey-path", viewBox: `0 0 ${width} ${page.ids.length * 112}`, "aria-hidden": "true" });
+    for (let j = 0; j < page.ids.length - 1; j++) {
+      const x1 = width * (j % 2 ? .26 : .08) + 30;
+      const x2 = width * (j % 2 ? .08 : .26) + 30;
+      const y1 = j * 112 + 78, y2 = (j + 1) * 112 + 18;
+      pathLayer.append(svg("path", { d: `M${x1} ${y1} C${x1} ${y1 + 28} ${x2} ${y2 - 28} ${x2} ${y2}`, class: opts.statuses[page.ids[j]] === "completed" ? "done" : "" }));
     }
+    scene.insertBefore(pathLayer, route);
+    renderSheet();
+    scroller.scrollTop = 0;
+    layoutSheet();
   }
 
   let rt = 0;

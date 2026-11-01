@@ -447,6 +447,91 @@
 .map-screen.lp .node .label { opacity: 0; pointer-events: none; transition: opacity .15s; }
 .map-screen.lp .node.sel .label, .map-screen.lp .node:hover .label, .map-screen.lp .node:focus-visible .label { opacity: 1; }
 
+/* Yolculuk: üst üste binen coğrafi düğümler yerine küçük, sıralı etaplar. */
+.journey-screen .map-scroll { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; }
+.journey-screen .map-fill { opacity: .55; }
+.journey-wrap { width: min(640px, 100%); margin: 0 auto; padding: 24px 30px; box-sizing: border-box; font-family: var(--ui); text-align: left; }
+.journey-heading { position: relative; padding: 0 0 18px; }
+.journey-heading .eyebrow { color: #c8b7ef; font-size: 11px; letter-spacing: .13em; }
+.journey-heading h3 { color: #fff4d6; font: 30px Georgia, serif; margin: 8px 0; }
+.journey-heading p { margin: 0; font-size: 13px; color: #beb6d2; }
+.journey-current { margin-top: 12px; padding: 8px 12px; min-height: 44px; font: 13px var(--ui); color: #ffdf99; border: 1px solid #655476; background: #1b1630; border-radius: 9px; cursor: pointer; }
+.journey-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0 16px; border-top: 1px solid #ffffff20; }
+.journey-nav button { min-height: 44px; padding: 8px 12px; border: 1px solid #ffffff26; border-radius: 10px; background: #171329; color: #eee7ff; font: 13px var(--ui); cursor: pointer; }
+.journey-nav button:disabled { opacity: .35; cursor: default; }
+.journey-page-count { font-size: 12px; color: #beb6d2; white-space: nowrap; }
+.journey-route { list-style: none; margin: 0; padding: 0; }
+.journey-route li { position: relative; padding: 0 0 18px; }
+.journey-route li:not(:last-child)::after { content: ""; position: absolute; top: 78px; bottom: 0; left: 26px; width: 2px; background: #776592; }
+.journey-route li.completed::after { background: #dbb773; }
+.journey-stop { display: flex; align-items: center; gap: 14px; position: relative; width: 100%; min-height: 82px; padding: 10px 14px; box-sizing: border-box; text-align: left; color: #f4f0ff; border: 1px solid #67577f; border-radius: 15px; background: linear-gradient(110deg, #201a34f5, #131226f5); cursor: pointer; font-family: var(--ui); transition: border-color .18s, background .18s; }
+.journey-stop:hover { border-color: #d8b97e; background: #2d2146; }
+.journey-stop.sel { border-color: #ffdb8e; box-shadow: 0 0 0 1px #ffdb8e40, 0 8px 26px #0004; background: linear-gradient(110deg, #39255b, #211d35); }
+.journey-stop.locked { border-color: #484052; }
+.journey-number { flex: 0 0 26px; color: #c6b8dd; font-size: 14px; font-variant-numeric: tabular-nums; }
+.journey-stop.sel .journey-number { color: #ffe3a6; }
+.journey-thumb { width: 54px; height: 54px; object-fit: cover; border-radius: 12px; flex-shrink: 0; }
+.journey-stop.locked .journey-thumb { filter: grayscale(.8) brightness(.6); }
+.journey-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.journey-copy small { color: #c0b3d5; font-size: 10px; letter-spacing: .05em; }
+.journey-stop.available .journey-copy small { color: #ffdf99; }
+.journey-copy strong { font-size: 16px; line-height: 1.3; font-weight: 600; overflow-wrap: anywhere; }
+.journey-mark { flex-shrink: 0; color: #ffdb8e; font-size: 12px; white-space: nowrap; }
+.journey-end { margin: 0; text-align: center; font-size: 12px; color: #b7abc9; padding: 4px 0 12px; }
+.journey-screen .sheet-body { overflow-x: hidden; min-width: 0; }
+.journey-screen .sheet-body > * { box-sizing: border-box; max-width: 100%; }
+.journey-screen .sheet-title h3 { overflow-wrap: anywhere; }
+.journey-screen button:focus-visible { outline: 2px solid #f9df9b; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .journey-wrap { padding: 16px 14px; }
+  .journey-heading h3 { font-size: 25px; }
+  .journey-stop { gap: 9px; padding: 10px; }
+  .journey-thumb { width: 42px; height: 48px; }
+  .journey-number { flex-basis: 22px; }
+  .journey-copy strong { font-size: 14px; }
+  .journey-mark { font-size: 10px; }
+}
+.journey-screen.lp .journey-wrap { padding: 14px; }
+.journey-screen.lp .journey-heading h3 { font-size: 24px; }
+
+/* Her etap kendi manzarası üzerinde, birbirine karışmayan beş durak taşır. */
+.journey-wrap { width: min(820px, 100%); padding-top: 18px; }
+.journey-heading { padding-bottom: 12px; }
+.journey-heading h3 { margin: 6px 0; }
+.journey-current { position: absolute; right: 0; bottom: 14px; }
+.journey-scene { position: relative; isolation: isolate; overflow: hidden; border: 1px solid #cbb27b55; border-radius: 22px; background: #10142c; }
+.journey-art { z-index: -3; filter: brightness(.8) saturate(.9); object-position: center; }
+.journey-shade { position: absolute; inset: 0; z-index: -2; background: linear-gradient(90deg,#0a102848,#0a102810), linear-gradient(0deg,#090b24b0,transparent 45%,#090b2440); }
+.journey-route { position: relative; padding: 0; }
+.journey-route li { height: 112px; padding: 0; margin-left: 8%; width: calc(92% - 12px); box-sizing: border-box; display: flex; align-items: flex-start; padding-top: 18px; }
+.journey-route li:nth-child(even) { margin-left: 26%; width: calc(74% - 12px); }
+.journey-route li::after { display: none; }
+.journey-stop { min-height: 60px; width: auto; max-width: 100%; padding: 0; gap: 12px; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.journey-stop:hover, .journey-stop.sel { background: none; border: 0; box-shadow: none; }
+.journey-thumb { box-sizing: border-box; width: 60px; height: 60px; border-radius: 50%; border: 3px solid #a89abb; box-shadow: 0 3px 12px #000a; background: #211630; }
+.journey-stop.sel .journey-thumb { border-color: #ffe2a0; box-shadow: 0 0 0 5px #ffe2a02a,0 0 24px #ffcb6377; }
+.journey-stop.completed .journey-thumb { border-color: #d8ba79; }
+.journey-stop.available .journey-thumb { border-color: #ffe2a0; }
+.journey-fallback { display: grid; place-items: center; color: #ffdf99; font-size: 24px; }
+.journey-number { position: absolute; top: -7px; left: -7px; width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; background: #121329; border: 1px solid #d8c28c; color: #ffedc6; font-size: 11px; z-index: 1; }
+.journey-copy { flex: initial; padding: 9px 12px; border: 1px solid #b5a4ca55; border-radius: 12px; background: #101126e8; box-shadow: 0 3px 12px #0004; }
+.journey-stop.sel .journey-copy { border-color: #ffdf99; background: #271d3cf2; }
+.journey-stop.locked .journey-copy { background: #121426eb; }
+.journey-copy strong { font-size: 15px; }
+.journey-mark { margin-left: -4px; padding: 5px; border-radius: 6px; background: #111329e8; }
+.journey-path { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; overflow: visible; }
+.journey-path path { fill: none; stroke: #c9c3e1; stroke-width: 3; stroke-dasharray: 2 8; stroke-linecap: round; filter: drop-shadow(0 1px 2px #000); }
+.journey-path path.done { stroke: #ffdc8b; stroke-dasharray: none; }
+.journey-end { padding-top: 14px; }
+@media (max-width: 600px) {
+  .journey-current { position: static; }
+  .journey-stop { gap: 8px; }
+  .journey-copy { padding: 7px 9px; }
+  .journey-copy strong { font-size: 13px; }
+  .journey-copy small { font-size: 9px; }
+  .journey-mark { font-size: 9px; padding: 3px; }
+}
+
 /* Yıldız (★) rozetleri: bölüm sonu satırı, harita düğümü ve panel çipi (js/game/stars.js) */
 .stars-row .stars-name { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .stars-row .stars-name b { color: var(--gold-light); }
