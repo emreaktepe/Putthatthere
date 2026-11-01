@@ -11,15 +11,15 @@ import { addBolt, addFx, addHazard, burst, discUnit, dropHazard, ringUnit } from
 import { scene } from "../render/scene.js";
 import { wizard } from "../render/wizard.js";
 import { damagePlayer } from "./combat.js";
-import { SKILLS, auraMul, canTrigger, emberChainVictims, initSkill, isOpen, isReviveCandidate, newSkills, onWindupEnd, pickReviveTarget, skillDamageMul, skillFor, tickCd, veilStep, volleyPoints } from "./skills.js";
+import { CURSE, PATCHES, SKILLS, auraMul, canTrigger, emberChainVictims, initSkill, isOpen, isReviveCandidate, newSkills, onWindupEnd, pickReviveTarget, priestLinkMul, skillDamageMul, skillFor, tickCd, veilStep, volleyPoints } from "./skills.js";
 import { liveCount, spawnEnemy } from "./world.js";
 
 const COL = { danger: 0xff5544, bat: 0xb98bff, howl: 0xbfe9ff, revive: 0x6bff9a, ember: 0xff7a2a };
-const PATCH_MAX = 2; // ateş lekesi havuzu (mobil: ek çizim çağrısı sınırı)
+const PATCH_MAX = 3; // leke havuzu (ateş/buz/zehir/lanet; mobil: ek çizim çağrısı sınırı)
 const marks = []; // canlı uyarı işaretleri (addHazard kayıtları); eşzamanlı sınır için sayılır
 const dead = []; // diriltme adayları { type, x, z, t, used }
 const rings = new Set(); // Lanet Alanı halkaları
-const patches = []; // ateş lekesi havuzu { m, on, t, tick, x, z }
+const patches = []; // leke havuzu { m, on, t, tick, x, z, def }
 const seenHints = new Set(); // oturum başına ilk karşılaşma ipuçları
 
 const lvSkills = () => (LEVELS[S.level] && LEVELS[S.level].skills) || [];
@@ -185,6 +185,7 @@ export function onSlamEnd(e) {
 export function onEnemyHurt(e) { if (e.sk) e.sk.hit = true; }
 export function onEnemyKilled(e) {
   if (e.sk) { dropMarks(e.sk); e.sk.state = "idle"; } // uyarı sırasında ölen düşmanın becerisi iptal
+  if (e.curseMark) { const i = hazards.indexOf(e.curseMark); if (i >= 0) { hazards.splice(i, 1); dropHazard(e.curseMark); } e.curseMark = null; } // Lanet Halkası uyarısı sırasında ölürse iptal
   if (e.auraRing) { scene.remove(e.auraRing); e.auraRing.material.dispose(); rings.delete(e.auraRing); e.auraRing = null; }
   if (levelOpen("revive") && !e.suicide && e.d.ai !== "bomber" && isReviveCandidate(e.d, e.revived)) {
     const p = e.mesh.position;
@@ -192,8 +193,9 @@ export function onEnemyKilled(e) {
     while (dead.length > 12 || (dead.length && RT.elapsed - dead[0].t > SKILLS.revive.window)) dead.shift();
   }
 }
-export function damageMul(e) { // Lanet Alanı x0.6 ve Şövalye yorgun/açık an çarpanları
+export function damageMul(e) { // Lanet Alanı x0.6, Şövalye yorgun/açık an ve Harap Nöbetçi rahip bağı çarpanları
   let aura = 1;
+  if (e.d.priestLink) return skillDamageMul(e.sk, aura) * priestLinkMul(true, enemies.some((o) => !o.dead && o.d.ai === "support"));
   if (levelOpen("aura")) {
     const ts = [];
     for (const o of enemies) if (!o.dead && o.sk && o.sk.id === "aura") ts.push({ ref: o, x: o.mesh.position.x, z: o.mesh.position.z });
@@ -206,23 +208,44 @@ export function damageMul(e) { // Lanet Alanı x0.6 ve Şövalye yorgun/açık a
 export function onEmberBlast(e) {
   if (!levelOpen("emberChain")) return;
   const s = SKILLS.emberChain, p = e.mesh.position;
-  addPatch(p.x, p.z, s);
+  addPatch(p.x, p.z, PATCHES.fire);
   const list = [];
   for (const o of enemies) if (!o.dead && o.sk && o.sk.id === "emberChain") list.push({ o, x: o.mesh.position.x, z: o.mesh.position.z, fuse: o.fuse });
   for (const v of emberChainVictims(list, p.x, p.z, null)) { v.o.fuse = s.delay; addBolt(new THREE.Vector3(p.x, 1, p.z), v.o.mesh.position, COL.ember); }
 }
-function addPatch(x, z, s) {
+function addPatch(x, z, def) {
   let q = patches.find((o) => !o.on);
   if (!q && patches.length < PATCH_MAX) {
-    const m = new THREE.Mesh(discUnit, new THREE.MeshBasicMaterial({ color: 0xff6a1a, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false }));
+    const m = new THREE.Mesh(discUnit, new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false }));
     m.rotation.x = -Math.PI / 2;
-    q = { m, on: false, t: 0, tick: 0, x: 0, z: 0 };
+    q = { m, on: false, t: 0, tick: 0, x: 0, z: 0, def };
     patches.push(q);
   }
   if (!q) q = patches.reduce((a, b) => (a.t < b.t ? a : b)); // dolu: en eskiyi yeniden kullan
-  q.on = true; q.t = s.patchLife; q.tick = s.patchGrace; q.x = x; q.z = z;
-  q.m.position.set(x, 0.07, z); q.m.scale.setScalar(s.patchR);
+  q.def = def; q.on = true; q.t = def.life; q.tick = def.grace || def.tick; q.x = x; q.z = z;
+  q.m.material.color.setHex(def.color);
+  q.m.position.set(x, 0.07, z); q.m.scale.setScalar(def.r);
   if (!q.m.parent) scene.add(q.m);
+}
+// Aşama D: bomba düşmanın (Don Hortlağı / Çürük Hortlak) patlama izi; becerisiz, her bölümde çalışır
+export const addBlastPatch = (kind, x, z) => { if (PATCHES[kind]) addPatch(x, z, PATCHES[kind]); };
+// Kara Cinci Lanet Halkası: uyarı (kilitli işaret) -> bitince lanet lekesi
+export function curseWindup(e) {
+  const w = wizard.position, h = addHazard(w.x, w.z, PATCHES.curse.r, CURSE.warn, 0, PATCHES.curse.color);
+  marks.push(h); e.curseMark = h; e.curseAt = { x: w.x, z: w.z };
+  sfx("telegraph");
+}
+export function curseFire(e) {
+  const h = e.curseMark; e.curseMark = null;
+  if (h) { const i = hazards.indexOf(h); if (i >= 0) { hazards.splice(i, 1); dropHazard(h); } }
+  if (e.curseAt) addPatch(e.curseAt.x, e.curseAt.z, PATCHES.curse);
+}
+// oyuncunun bulunduğu lekelerin etkisi: { slow (hız çarpanı), ice (kaygan) }; ortak nesne döner
+const _fx = { slow: 1, ice: false };
+export function patchEffect(x, z) {
+  _fx.slow = 1; _fx.ice = false;
+  for (const q of patches) if (q.on && q.def.slow && flatDist({ x, z }, q) < q.def.r) { _fx.slow = Math.min(_fx.slow, q.def.slow); if (q.def.ice) _fx.ice = true; }
+  return _fx;
 }
 
 // gerçek dt ile her karede (loop.js): ateş lekeleri ve Lanet Alanı halkası titreşimi
@@ -232,7 +255,7 @@ export function updateSkills(dt, t) {
     q.t -= dt; q.tick -= dt;
     q.m.material.opacity = 0.3 + 0.12 * Math.sin(t * 8) - (q.t < 0.6 ? (0.6 - q.t) * 0.4 : 0);
     if (q.t <= 0) { q.on = false; scene.remove(q.m); continue; }
-    if (q.tick <= 0) { q.tick = 1; if (RT.invuln <= 0 && flatDist(wizard.position, q) < SKILLS.emberChain.patchR) damagePlayer(SKILLS.emberChain.patchDmg); if (!RT.running) return; }
+    if (q.tick <= 0) { q.tick = q.def.tick; if (q.def.dmg > 0 && RT.invuln <= 0 && flatDist(wizard.position, q) < q.def.r) damagePlayer(q.def.dmg); if (!RT.running) return; }
   }
   for (const m of rings) m.material.opacity = 0.3 + 0.08 * Math.sin(t * 2);
 }

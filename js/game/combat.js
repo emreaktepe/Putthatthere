@@ -5,10 +5,11 @@ import { flatDist } from "../core/util.js";
 import { gameOver, levelClear } from "./flow.js";
 import { MULT, matchupLevel } from "./matchup.js";
 import { crystalGoalMet } from "./spawnmath.js";
-import { damageMul, onEmberBlast, onEnemyHurt, onEnemyKilled } from "./skillrun.js";
-import { veilBlocks } from "./skills.js";
+import { addBlastPatch, damageMul, onEmberBlast, onEnemyHurt, onEnemyKilled } from "./skillrun.js";
+import { frontArmorMul, veilBlocks } from "./skills.js";
+import { enemyShard } from "./ai.js";
 import { popTag } from "../ui/dmgtags.js";
-import { placePickup } from "./world.js";
+import { liveCount, placePickup, spawnEnemy } from "./world.js";
 import { retireEnemy } from "../render/enemies.js";
 import { addFx, burst, emit } from "../render/fx.js";
 import { deathRing } from "../render/combatfx.js";
@@ -33,6 +34,7 @@ export function hurt(e, dmg, slow, bypassShield = false, element = null) {
   if (veilBlocks(e.veiled, element)) { burst(e.mesh.position, 0xbfd8ff, 3); return; } // Sis Perdesi: Arcane/Ay Işığı dışında vurulamaz
   const lvl = matchupLevel(element, e.d.tags, e.d.res);
   dmg *= MULT[lvl] * damageMul(e);
+  if (e.d.frontArmor) { const w = wizard.position, p = e.mesh.position; dmg *= frontArmorMul(e.d.frontArmor, e.face || 0, Math.atan2(w.x - p.x, w.z - p.z), element); } // Kalkan Nöbetçisi ön kalkanı
   e.lastLvl = lvl;
   if (lvl !== "N") popTag(e, lvl, colorOf(element));
   e.hp -= dmg;
@@ -53,6 +55,11 @@ export function hurt(e, dmg, slow, bypassShield = false, element = null) {
 export function explodeEmber(e) {
   e.exploded = true;
   const p = e.mesh.position;
+  if (e.d.blast) { // Don Hortlağı / Çürük Hortlak: hasar yerine kalıcı leke (buz: yavaşlatır, zehir: tick hasarı)
+    addFx(p.x, p.z, e.d.color, 0.4, 2.5, 0.35); burst(p, e.d.color, 20); sfx("explode");
+    addBlastPatch(e.d.blast, p.x, p.z);
+    return;
+  }
   addFx(p.x, p.z, 0xff7a2a, 0.4, 2.5, 0.35);
   burst(p, 0xff9a3a, 24);
   sfx("explode");
@@ -80,6 +87,11 @@ export function killEnemy(e) {
   if (e.d.ai === "boss" || e.d.ai === "knight") { RT.shake = Math.max(RT.shake, 0.6); burst(e.mesh.position, 0xffffff, 30); }
   sfx("kill:" + e.d.model);
   if (e.d.ai === "bomber" && !e.exploded) explodeEmber(e);
+  if (!e.suicide && !e.revived && RT.running) { // Aşama D: Ağıt Ruhu ölünce Ruh doğurur (cap'e saygılı); Kristal Bekçi kıymık saçar
+    const q = e.mesh.position;
+    if (e.d.deathSpawn) for (const id of e.d.deathSpawn) if (liveCount() < LEVELS[S.level].cap) { const ne = spawnEnemy(id, { x: q.x + (Math.random() - 0.5) * 1.6, z: q.z + (Math.random() - 0.5) * 1.6 }); ne.revived = true; } // doğan ruh puan/öldürme vermez (sömürü yok)
+    if (e.d.shards) enemyShard(e, e.d.shards);
+  }
   if (e.d.ai === "support") for (const o of enemies) if (flatDist(o.mesh.position, e.mesh.position) < 8) o.shield = 0;
   if (!e.suicide && !e.revived) { // diriltilen düşman puan/öldürme/düşme vermez (Diriltme sömürüsü yok)
     S.score += e.d.score;

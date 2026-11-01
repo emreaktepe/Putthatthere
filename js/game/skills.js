@@ -20,6 +20,17 @@ export const SKILLS = {
   aura: { model: "totem", r: 6, mul: 0.6, tp: 0.10 },
   leap: { model: "knight", hpBelow: 0.75, cd: 9, cdInit: [2, 4], warn: 0.9, flight: 0.3, r: 2.2, dmg: 2, tired: 1.2, tiredMul: 1.5, open: 1.0, openMul: 1.3, minDist: 3, tp: 0.20 },
 };
+// Aşama D: yerde kalan lekeler (ateş = Zincir Patlama; frost/poison = bomba düşmanların patlama izi; curse = Kara Cinci Lanet Halkası).
+// dmg: oyuncuya tick başına hasar; slow: içerideki oyuncunun hız çarpanı; ice: kaygan zemin (yön değiştirme gecikmeli). Hepsi VARSAYIMDIR.
+export const PATCHES = {
+  fire: { r: 1.6, life: 3, grace: 0.5, tick: 1, dmg: 1, color: 0xff6a1a },
+  poison: { r: 2.4, life: 4, grace: 0.5, tick: 1.2, dmg: 1, color: 0x9aff6a },
+  frost: { r: 2.8, life: 3.5, grace: 0, tick: 1, dmg: 0, slow: 0.5, ice: true, color: 0x9be8ff },
+  curse: { r: 2.4, life: 4, grace: 0, tick: 1, dmg: 0, slow: 0.6, color: 0xb04a7a },
+};
+export const CURSE = { cd: 6, cdInit: [2, 5], warn: 1.2, near: [9, 12], maxDist: 16 }; // Kara Cinci
+export const SHARD = { speed: 6, life: 1.1 }; // Kristal Bekçi kıymıkları (hasar 1)
+export const WARDEN = { turn: 2.2, cone: Math.PI / 3, bypass: ["poison", "impact"] }; // Kalkan Nöbetçisi: yarım koni 60 derece
 export const SKILL_IDS = Object.keys(SKILLS);
 export const SKILL_BY_MODEL = Object.fromEntries(SKILL_IDS.map((id) => [SKILLS[id].model, id]));
 // uyarı süresi olan (yer işareti/windup üreten) beceriler
@@ -28,6 +39,7 @@ export const WARN_SKILLS = SKILL_IDS.filter((id) => SKILLS[id].warn > 0);
 export const isOpen = (levelSkills, id) => Array.isArray(levelSkills) && levelSkills.includes(id);
 // düşman tanımı (adapt edilmiş ENEMIES girdisi) + bölüm becerileri -> bu düşmanın becerisi (yoksa null)
 export function skillFor(def, levelSkills) {
+  if (def && (def.blast || def.noSkill)) return null; // Aşama D: kendi davranışı olan varyantlar modelin becerisini almaz
   const id = def && SKILL_BY_MODEL[def.model];
   return id && isOpen(levelSkills, id) ? id : null;
 }
@@ -112,6 +124,11 @@ export function auraMul(totems, x, z, self) {
 }
 // toplam beceri hasar çarpanı: vulnT > 0 ise (Şövalye yorgun/açık an) vulnMul, ayrıca aura
 export const skillDamageMul = (sk, aura = 1) => (sk && sk.vulnT > 0 ? sk.vulnMul : 1) * aura;
+// Kalkan Nöbetçisi: ön koni (bakış açısı face, oyuncuya yön ang; radyan). Zehir/Meteor yönden bağımsız.
+const angDiff = (a, b) => Math.abs((((a - b + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) - Math.PI);
+export const frontArmorMul = (armor, face, ang, element) => (armor && !WARDEN.bypass.includes(element) && angDiff(face, ang) < WARDEN.cone ? armor : 1);
+// Harap Nöbetçi: yaşayan rahip varken hasar x0.5
+export const priestLinkMul = (linked, priestAlive) => (linked && priestAlive ? 0.5 : 1);
 
 // ---- Okçu: Ok Yağmuru işaret noktaları ----
 // oyuncunun hareket yönü (dx,dz birim) +lead önü merkez; yanlara spread. -> [{x,z}] (arena sınırına kırpılı)

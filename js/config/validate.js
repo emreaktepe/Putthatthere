@@ -363,7 +363,7 @@ function semantic(c, raw, err, warn) {
 
   // kullanılmayanlar
   const refEnemies = new Set(usedEnemies);
-  for (const e of Object.values(en)) if (isObj(e)) { if (e.summon) refEnemies.add(e.summon); (e.summons1 || []).forEach((k) => refEnemies.add(k)); (e.summons2 || []).forEach((k) => refEnemies.add(k)); }
+  for (const e of Object.values(en)) if (isObj(e)) { if (e.summon) refEnemies.add(e.summon); (e.summons1 || []).forEach((k) => refEnemies.add(k)); (e.summons2 || []).forEach((k) => refEnemies.add(k)); (e.deathSpawn || []).forEach((k) => refEnemies.add(k)); }
   if (Object.values(lv).some((L) => isObj(L) && L.objective === "totem")) for (const id of Object.keys(en)) if (aiOf(id) === "static") refEnemies.add(id);
   for (const id of Object.keys(en)) if (!refEnemies.has(id)) warn("W_UNUSED", ["enemies", id], `${id} düşmanı hiçbir bölümde kullanılmıyor`);
   const first = Array.isArray(c.weaponOrder) ? c.weaponOrder[0] : null;

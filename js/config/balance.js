@@ -6,9 +6,9 @@
 import { skillSteps } from "../game/skills.js";
 import { hazardSteps } from "../game/hazards.js";
 
-export const TP = { hpExp: 0.45, speedBase: 0.5, speedK: 0.25, ai: { chase: 1, ranged: 1.5, charge: 1.3, bomber: 1, support: 1.5, knight: 1.3, boss: 1.5 }, totem: 3.0 };
+export const TP = { hpExp: 0.45, speedBase: 0.5, speedK: 0.25, ai: { chase: 1, ranged: 1.5, charge: 1.3, bomber: 1, support: 1.5, caster: 1.5, knight: 1.3, boss: 1.5 }, totem: 3.0 };
 // "mesafe tutan / hücumlu" düşmanlar için etkin hız (plan §1.2 notu)
-export const V_EFF = { charge: 3.4, ranged: 2.0, support: 1.5 };
+export const V_EFF = { charge: 3.4, ranged: 2.0, support: 1.5, caster: 1.5 };
 export const OBJ_X = { crystal: 0.75, survive: 1, totem: 1, miniboss: 1.4, boss: 2.2 };
 export const WEAPON_COEF = { fire: 1.0, frost: 1.05, arcane: 1.35, lightning: 2.0, poison: 1.5, meteor: 1.6, nova: 0.9 };
 export const Z_MODEL = { z50: 2.5, s: 0.375, anchorB30: 7.4, anchorP: 3.0, anchorX: 0.75 };
@@ -21,7 +21,7 @@ export const JUMP_MAX = 1.35;
 export const JUMP_FLOOR_Z = 1.2;
 // Aşama B: zorluğu STATİK modele değil, becerileri bilen denge botuna (tools/balance/sim.mjs) göre ayarlanmış bölümler. Statik TP modeli beceri baskısını
 // ve bot kaçınmasını bilmez; bu bölümlerde Z sıçraması/monotonluk/tepe ve model-p bandı kuralları uygulanmaz (p >= 0.3 şartı sürer). Sayılar VARSAYIMDIR.
-export const BOT_CALIBRATED = new Set(["w1-08"]); // ardışık Z sıçraması (sınav bölümleri hariç)
+export const BOT_CALIBRATED = new Set(["w1-08", "w2-01", "w2-02", "w2-03", "w2-04", "w2-05", "w2-06", "w2-07", "w2-08", "w2-09"]); // Aşama D: Perde II bölümleri de bota göre ayarlandı (model p orta botla 20-50 puan ayrışıyor: bkz. docs Aşama D notları) // ardışık Z sıçraması (sınav bölümleri hariç)
 
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const r1 = (x) => Math.round(x * 10 + 1e-9) / 10; // plan tablolarıyla aynı yuvarlama (1 ondalık)
